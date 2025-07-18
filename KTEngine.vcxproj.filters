@@ -1,0 +1,143 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="ソース ファイル">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="ヘッダー ファイル">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="リソース ファイル">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="ソース ファイル\Shader">
+      <UniqueIdentifier>{2fc07e1a-bee3-448f-b120-92d2cdd9a074}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\Framework">
+      <UniqueIdentifier>{f940ab92-cad0-4aaf-9137-ff4be9d1ea1f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\Object">
+      <UniqueIdentifier>{0d1f334b-761b-4c68-90c4-5f308d505745}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\Framework">
+      <UniqueIdentifier>{ac11fd73-431b-4232-940d-9a59f62068a5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\Object">
+      <UniqueIdentifier>{77381c81-311c-41e4-906d-b850837305cc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\Framework\ImGui">
+      <UniqueIdentifier>{3da7f066-4701-433e-bd22-9caed704c97a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\Framework\ImGui">
+      <UniqueIdentifier>{229a31bb-6250-4422-b21d-7357c3f872b6}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\main.cpp">
+      <Filter>ソース ファイル\Framework</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ImGuiLayer.cpp">
+      <Filter>ソース ファイル\Framework</Filter>
+    </ClCompile>
+    <ClCompile Include="src\RendererDX11.cpp">
+      <Filter>ソース ファイル\Framework</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\imgui\imgui.cpp">
+      <Filter>ソース ファイル\Framework\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\imgui\imgui_demo.cpp">
+      <Filter>ソース ファイル\Framework\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\imgui\imgui_draw.cpp">
+      <Filter>ソース ファイル\Framework\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\imgui\imgui_tables.cpp">
+      <Filter>ソース ファイル\Framework\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\imgui\imgui_widgets.cpp">
+      <Filter>ソース ファイル\Framework\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\imgui\backends\imgui_impl_dx11.cpp">
+      <Filter>ソース ファイル\Framework\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\imgui\backends\imgui_impl_win32.cpp">
+      <Filter>ソース ファイル\Framework\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Manager.cpp">
+      <Filter>ソース ファイル\Framework</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Scene.cpp">
+      <Filter>ソース ファイル\Framework</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Square.cpp">
+      <Filter>ソース ファイル\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Camera.cpp">
+      <Filter>ソース ファイル\Object</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\ImGuiLayer.h">
+      <Filter>ヘッダー ファイル\Framework</Filter>
+    </ClInclude>
+    <ClInclude Include="src\RendererDX11.h">
+      <Filter>ヘッダー ファイル\Framework</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\imgui\imconfig.h">
+      <Filter>ヘッダー ファイル\Framework\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\imgui\imgui.h">
+      <Filter>ヘッダー ファイル\Framework\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\imgui\imgui_internal.h">
+      <Filter>ヘッダー ファイル\Framework\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\imgui\imstb_rectpack.h">
+      <Filter>ヘッダー ファイル\Framework\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\imgui\imstb_textedit.h">
+      <Filter>ヘッダー ファイル\Framework\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\imgui\imstb_truetype.h">
+      <Filter>ヘッダー ファイル\Framework\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\imgui\backends\imgui_impl_dx11.h">
+      <Filter>ヘッダー ファイル\Framework\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\imgui\backends\imgui_impl_win32.h">
+      <Filter>ヘッダー ファイル\Framework\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Manager.h">
+      <Filter>ヘッダー ファイル\Framework</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Scene.h">
+      <Filter>ヘッダー ファイル\Framework</Filter>
+    </ClInclude>
+    <ClInclude Include="src\GameObject.h">
+      <Filter>ヘッダー ファイル\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ktvector.hpp">
+      <Filter>ヘッダー ファイル\Framework</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Square.h">
+      <Filter>ヘッダー ファイル\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Camera.h">
+      <Filter>ヘッダー ファイル\Object</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="shader\Common.hlsl">
+      <Filter>ソース ファイル\Shader</Filter>
+    </FxCompile>
+    <FxCompile Include="shader\UnlitColorVS.hlsl">
+      <Filter>ソース ファイル\Shader</Filter>
+    </FxCompile>
+    <FxCompile Include="shader\UnlitColorPS.hlsl">
+      <Filter>ソース ファイル\Shader</Filter>
+    </FxCompile>
+  </ItemGroup>
+</Project>
