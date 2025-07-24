@@ -31,6 +31,7 @@
     <ClCompile Include="libs\imgui\imgui_widgets.cpp" />
     <ClCompile Include="src\Camera.cpp" />
     <ClCompile Include="src\ImGuiLayer.cpp" />
+    <ClCompile Include="src\Input.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Manager.cpp" />
     <ClCompile Include="src\RendererDX11.cpp" />
@@ -52,6 +53,7 @@
     <ClInclude Include="src\Camera.h" />
     <ClInclude Include="src\GameObject.h" />
     <ClInclude Include="src\ImGuiLayer.h" />
+    <ClInclude Include="src\Input.h" />
     <ClInclude Include="src\ktvector.hpp" />
     <ClInclude Include="src\Manager.h" />
     <ClInclude Include="src\RendererDX11.h" />

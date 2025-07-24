@@ -38,7 +38,7 @@ void Square::Update()
 
 void Square::Render()
 {
-	RendererDX11::SetWorldProjection3D();
+	//RendererDX11::SetWorldProjection3D();
 
 	//頂点バッファ設定
 	UINT stride = sizeof(Vertex);

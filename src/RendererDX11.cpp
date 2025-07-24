@@ -161,7 +161,7 @@ void RendererDX11::SetWorldProjection2D(){
 }
 
 void RendererDX11::SetWorldProjection3D()
-{
+{//êîílÇÕâº
     XMMATRIX worldViewProjection;
 	XMMATRIX world = XMMatrixIdentity();
     XMMATRIX view = XMMatrixLookAtLH(

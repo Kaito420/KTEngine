@@ -6,7 +6,9 @@
 #include "imgui.h"
 
 #include "Manager.h"
+#include "Input.h"
 
+#include "Camera.h"
 #include "Square.h"
 
 // グローバル変数
@@ -19,6 +21,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         return true;
 
     switch (msg) {
+    case WM_INPUT:
+        Input::ProcessRawInput(lParam);
+        break;
+
     case WM_DESTROY:
         PostQuitMessage(0);
         return 0;
@@ -47,10 +53,13 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
 
     //Manager 初期化
     Manager::Initialize();
+    Input::Initialize(hwnd);
 
 
     //テスト用
     //============================================
+        Camera mainCamera;
+        mainCamera.Awake();
         Square test;
         test.Awake();
 
@@ -71,7 +80,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
 
         //テスト用Update
         {
-
+            mainCamera.Update();
         }
 
         RendererDX11::BeginFrame();
