@@ -19,7 +19,7 @@ protected:
 	struct Transform {
 		KTVECTOR3 _position = { 0.0f, 0.0f, 0.0f };
 		KTVECTOR3 _scale = { 1.0f, 1.0f, 1.0f };
-		KTVECTOR3 _rotation = { 0.0f, 0.0f, 0.0f };
+		KTVECTOR3 _rotation = { 0.0f, 0.0f, 0.0f };	//Degree
 	};
 
 	Transform _transform; //位置、スケール、回転を保持するTransform構造体

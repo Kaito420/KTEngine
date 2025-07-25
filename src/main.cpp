@@ -78,6 +78,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
 
         Manager::Update(); // Managerの更新
 
+
         //テスト用Update
         {
             mainCamera.Update();
@@ -94,7 +95,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
 
         ImGuiLayer::Begin();
         {
-            
+            //Managerの中にUI描画関数を作成してそれを呼ぶ
             ImGui::Begin("Hello ImGui");
             ImGui::Text("This is ImGui inside DirectX11!");
             ImGui::Button("Button", { 100,50 });
@@ -106,12 +107,19 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
             ImGui::Button("Another Button", { 150, 50 });
 			ImGui::End();
 
+            ImGui::Begin("Mouse Status");
+            ImGui::Text("MouseX:%d\nMouseY:%d\nDeltaX:%d\nDeltaY:%d\n",
+                Input::GetMousePosition().first, Input::GetMousePosition().second, Input::GetMouseDelta().first, Input::GetMouseDelta().second);
+            ImGui::End();
+
         }
         ImGuiLayer::End();
 
-        
 
         RendererDX11::EndFrame();
+
+        Input::Update();    //Inputの更新
+
     }
 
     // クリーンアップ

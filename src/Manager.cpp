@@ -10,6 +10,7 @@
 
 #include "RendererDX11.h"
 #include "ImGuiLayer.h"
+#include "imgui.h"
 
 std::shared_ptr<Scene> Manager::_currentScene = nullptr;
 

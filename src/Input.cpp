@@ -5,6 +5,8 @@
 //=====================================================================================
 
 #include "Input.h"
+#include "ImGuiLayer.h"
+#include "imgui.h"
 
 namespace {
 	HWND _hWnd = nullptr;
@@ -49,6 +51,7 @@ void Input::Update(){
 
 	_deltaX = 0;
 	_deltaY = 0;
+
 }
 
 void Input::Finalize(){
