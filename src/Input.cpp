@@ -22,6 +22,8 @@ namespace {
 	LONG _deltaX = 0;
 	LONG _deltaY = 0;
 
+	int _wheelDelta = 0;
+
 }
 
 void Input::Initialize(HWND hwnd){
@@ -51,7 +53,7 @@ void Input::Update(){
 
 	_deltaX = 0;
 	_deltaY = 0;
-
+	_wheelDelta = 0;
 }
 
 void Input::Finalize(){
@@ -103,6 +105,11 @@ void Input::ProcessRawInput(LPARAM lParam){
 			_currentMouseButtons[(int)MouseButton::Middle] = true;
 		if (mouse.usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_UP)
 			_currentMouseButtons[(int)MouseButton::Middle] = false;
+
+		if (mouse.usButtonFlags & RI_MOUSE_WHEEL) {
+			SHORT wheel = (SHORT)mouse.usButtonData;
+			_wheelDelta += wheel;	//WHEEL_DELTAíPà Åií èÌ120Åj
+		}
 	}
 
 	delete[] lpb;
@@ -142,4 +149,9 @@ std::pair<LONG, LONG> Input::GetMousePosition(){
 
 std::pair<LONG, LONG> Input::GetMouseDelta(){
 	return { _deltaX, _deltaY };
+}
+
+int Input::GetMouseWheelDelta()
+{
+	return _wheelDelta;
 }

@@ -40,6 +40,7 @@ void Camera::Update() {
 
 	KTVECTOR3 frontKTVec(frontTemp.x, frontTemp.y, frontTemp.z);
 	KTVECTOR3 rightKTVec(rightTemp.x, rightTemp.y, rightTemp.z);
+	KTVECTOR3 upKTVec(upTemp.x, upTemp.y, upTemp.z);
 
 	XMVECTOR position = XMVectorSet(_transform._position.x, _transform._position.y, _transform._position.z, 1.0f);
 
@@ -59,7 +60,11 @@ void Camera::Update() {
 	}
 
 	if (Input::IsMouseButtonDown(Input::MouseButton::Middle)) {
-		_transform._position += frontKTVec * -(float)Input::GetMouseDelta().second * 0.1f;
+		_transform._position += upKTVec * (float)Input::GetMouseDelta().second * 0.1f;
 		_transform._position += rightKTVec * -(float)Input::GetMouseDelta().first * 0.1f;
+	}
+
+	if (Input::GetMouseWheelDelta() != 0) {
+		_transform._position += frontKTVec * (float)Input::GetMouseWheelDelta() * 0.03f;
 	}
 }

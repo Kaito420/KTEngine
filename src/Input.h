@@ -40,6 +40,8 @@ namespace Input {
 	std::pair<LONG, LONG> GetMousePosition();
 	std::pair<LONG, LONG> GetMouseDelta();
 
+	int GetMouseWheelDelta();
+
 }
 
 
