@@ -23,7 +23,7 @@ public:
 	virtual void Initialize();
 	virtual void Finalize();
 	virtual void Update();
-	virtual void Render();
+	virtual void Render()const;
 	virtual void RenderHierarchy();
 	virtual void RenderInspector();
 
@@ -34,7 +34,9 @@ public:
 		static_assert(std::is_base_of<GameObject, T>::value, "T must inherit from GameObjcet");
 		auto gameObject = std::make_shared<T>(std::forward<Args>(args)...);
 		gameObject->_id = _gameObjects.size();
+		gameObject->Active(true);
 		gameObject->Awake();
+		gameObject->Awakened();
 		_gameObjects.push_back(gameObject);
 		return gameObject;
 	}

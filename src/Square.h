@@ -19,7 +19,7 @@ public:
 
 	void Update() override;
 
-	void Render() override;
+	void Render()const override;
 
 
 

@@ -36,7 +36,7 @@ void Square::Update()
 {
 }
 
-void Square::Render()
+void Square::Render()const
 {
 	//RendererDX11::SetWorldProjection3D();
 

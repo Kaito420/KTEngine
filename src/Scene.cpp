@@ -21,24 +21,31 @@ void Scene::Initialize(){
 }
 
 void Scene::Finalize() {
-	for (auto gameObject : _gameObjects) {
+	for (auto& gameObject : _gameObjects) {
 		gameObject->OnDestroy();
 	}
 }
 
 void Scene::Update(){
-	for( auto gameObject : _gameObjects ){
-		gameObject->Update();
+	for( auto& gameObject : _gameObjects ){
+		if(gameObject->GetActive() && gameObject->GetStarted() == false) {
+			gameObject->Start();
+			gameObject->Started();
+		}
+		if (gameObject->GetActive())
+			gameObject->Update();
 	}
 
-	for( auto gameObject : _gameObjects ){
-		gameObject->LateUpdate();
+	for( auto& gameObject : _gameObjects ){
+		if (gameObject->GetActive())
+			gameObject->LateUpdate();
 	}
 }
 
-void Scene::Render(){
-	for(auto gameObject : _gameObjects){
-		gameObject->Render();
+void Scene::Render()const{
+	for(const auto& gameObject : _gameObjects){
+		if (gameObject->GetActive())
+			gameObject->Render();
 	}
 }
 
