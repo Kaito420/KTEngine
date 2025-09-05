@@ -36,6 +36,7 @@
     <ClCompile Include="src\Manager.cpp" />
     <ClCompile Include="src\RendererDX11.cpp" />
     <ClCompile Include="src\Scene.cpp" />
+    <ClCompile Include="src\Sphere.cpp" />
     <ClCompile Include="src\Square.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -59,6 +60,7 @@
     <ClInclude Include="src\Manager.h" />
     <ClInclude Include="src\RendererDX11.h" />
     <ClInclude Include="src\Scene.h" />
+    <ClInclude Include="src\Sphere.h" />
     <ClInclude Include="src\Square.h" />
   </ItemGroup>
   <ItemGroup>

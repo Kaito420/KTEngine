@@ -5,6 +5,7 @@
 //=====================================================================================
 
 #include "Square.h"
+#include "GameObject.h"
 
 void Square::Awake()
 {
@@ -26,8 +27,8 @@ void Square::Awake()
 	sd.SysMemPitch = 0;
 	sd.SysMemSlicePitch = 0;
 
-	_transform._position = { 0.0f, 0.0f, 0.0f };
-	_transform._rotation = { 0.0f, 30.0f, 0.0f };
+	_owner->_transform._position = { 0.0f, 0.0f, 0.0f };
+	_owner->_transform._rotation = { 0.0f, 0.0f, 0.0f };
 
 	RendererDX11::GetDevice()->CreateBuffer(&bd, &sd, _vertexBuffer.GetAddressOf());
 }
@@ -46,15 +47,15 @@ void Square::Render()const
 	RendererDX11::GetContext()->IASetVertexBuffers(0, 1, _vertexBuffer.GetAddressOf(), &stride, &offset);
 
 	//マトリクス設定
-	XMMATRIX world = XMMatrixTranslation(_transform._position.x, _transform._position.y, _transform._position.z);
+	XMMATRIX world = XMMatrixTranslation(_owner->_transform._position.x, _owner->_transform._position.y, _owner->_transform._position.z);
 
-	KTVECTOR3 radians = { XMConvertToRadians(_transform._rotation.x),
-						  XMConvertToRadians(_transform._rotation.y),
-						  XMConvertToRadians(_transform._rotation.z) };
+	KTVECTOR3 radians = { XMConvertToRadians(_owner->_transform._rotation.x),
+						  XMConvertToRadians(_owner->_transform._rotation.y),
+						  XMConvertToRadians(_owner->_transform._rotation.z) };
 
 	XMMATRIX rotation = XMMatrixRotationRollPitchYaw(radians.x, radians.y, radians.z);
 
-	XMMATRIX scale = XMMatrixScaling(_transform._scale.x, _transform._scale.y, _transform._scale.z);
+	XMMATRIX scale = XMMatrixScaling(_owner->_transform._scale.x, _owner->_transform._scale.y, _owner->_transform._scale.z);
 
 	XMMATRIX worldMatrix = scale * rotation * world;
 

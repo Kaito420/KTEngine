@@ -7,10 +7,11 @@
 #ifndef _SQUARE_H
 #define _SQUARE_H
 
-#include "GameObject.h"
+
+#include "Component.h"
 #include "RendererDX11.h"
 
-class Square : public GameObject{
+class Square : public Component{
 private:
 	ComPtr<ID3D11Buffer> _vertexBuffer;
 
@@ -20,8 +21,6 @@ public:
 	void Update() override;
 
 	void Render()const override;
-
-
 
 };
 

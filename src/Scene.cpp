@@ -9,13 +9,18 @@
 
 #include "Camera.h"
 #include "Square.h"
+#include "Sphere.h"
 
 void Scene::Initialize(){
 	//テスト用
 	//============================================
 
 	AddGameObject<Camera>()->_name = "Camera";
-	AddGameObject<Square>();
+	AddGameObject<GameObject>()->_name = "Square1";
+	FindGameObjectByName<GameObject>("Square1")->AddComponent<Square>();
+	AddGameObject<GameObject>()->_name = "Sphere1";
+	FindGameObjectByName<GameObject>("Sphere1")->AddComponent<Sphere>();
+
 
 	//============================================
 }
@@ -32,20 +37,26 @@ void Scene::Update(){
 			gameObject->Start();
 			gameObject->Started();
 		}
-		if (gameObject->GetActive())
+		if (gameObject->GetActive()) {
 			gameObject->Update();
+			gameObject->UpdateComponents();
+		}
 	}
 
 	for( auto& gameObject : _gameObjects ){
-		if (gameObject->GetActive())
+		if (gameObject->GetActive()) {
 			gameObject->LateUpdate();
+			gameObject->LateUpdateComponents();
+		}
 	}
 }
 
 void Scene::Render()const{
 	for(const auto& gameObject : _gameObjects){
-		if (gameObject->GetActive())
+		if (gameObject->GetActive()) {
 			gameObject->Render();
+			gameObject->RenderComponents();
+		}
 	}
 }
 
@@ -111,7 +122,7 @@ void Scene::RenderInspector()
 		for (auto gameObject : _gameObjects) {
 			if (_selectedObjId == gameObject->_id) {
 				ImGui::Text("%s", gameObject->_name.c_str());
-
+				ImGui::Checkbox("Active", &gameObject->_active);
 				//Transform
 				if(ImGui::BeginTable("Transform", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg))
 				{
@@ -155,7 +166,24 @@ void Scene::RenderInspector()
 					}
 					ImGui::EndTable();
 				}
-				
+
+				for (auto& component : gameObject->_components) {
+					if(ImGui::TreeNode(typeid(component).name())){
+						ImGui::Checkbox("Active", &component->_active);
+						component->ShowUI();
+						ImGui::TreePop();
+					}
+				}
+				if (ImGui::TreeNode("Tree1")) {
+					
+					ImGui::Text("aaaaa");
+					ImGui::TreePop();
+				}
+
+				if (ImGui::TreeNode("Tree2")) {
+					ImGui::Text("bbbbb");
+					ImGui::TreePop();
+				}
 			}
 		}
 	}

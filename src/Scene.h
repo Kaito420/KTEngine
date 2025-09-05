@@ -16,6 +16,7 @@ class Scene {
 private:
 	int _selectedObjId = -1;
 	int _dragSrcIndex = -1;
+
 protected:
 	std::list<std::shared_ptr<GameObject>> _gameObjects;
 
@@ -29,17 +30,36 @@ public:
 
 	virtual std::shared_ptr<Scene> Clone() { return nullptr; }
 
+	/// <summary>
+	/// ゲームオブジェクトを追加する
+	/// </summary>
 	template <typename T, typename... Args>
 	std::shared_ptr<T> AddGameObject(Args&&... args) {
 		static_assert(std::is_base_of<GameObject, T>::value, "T must inherit from GameObjcet");
 		auto gameObject = std::make_shared<T>(std::forward<Args>(args)...);
 		gameObject->_id = _gameObjects.size();
+		gameObject->_name = typeid(T).name() + gameObject->_id;
 		gameObject->Active(true);
 		gameObject->Awake();
 		gameObject->Awakened();
 		_gameObjects.push_back(gameObject);
 		return gameObject;
 	}
+	
+	/// <summary>
+	/// ゲームオブジェクトの名前検索
+	/// </summary>
+	template <typename T>
+	std::shared_ptr<T> FindGameObjectByName(const std::string& name) {
+		static_assert(std::is_base_of<GameObject, T>::value, "T must inherit from GameObjcet");
+		for (const auto& gameObject : _gameObjects) {
+			if (gameObject->_name == name) {
+				return std::dynamic_pointer_cast<T>(gameObject);
+			}
+		}
+		return nullptr;
+	}
+
 
 };
 

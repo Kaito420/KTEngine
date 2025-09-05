@@ -14,16 +14,18 @@
 
 class GameObject {
 private:
-	bool _active = true; //アクティブ状態（true:有効, false:無効）
+
 	bool _awakened = false; //Awakeが実行されたかどうか
 	bool _started = false; //Startが実行されたかどうか
 protected:
 	bool _destroy = false;
-	std::list<std::unique_ptr<Component>> _components; //このGameObjectにアタッチされているコンポーネントのリスト
 
 public:
 	uint32_t _id;
 	std::string _name = "gameObject";
+	bool _active = true; //アクティブ状態（true:有効, false:無効）
+	std::list<std::unique_ptr<Component>> _components; //このGameObjectにアタッチされているコンポーネントのリスト
+
 	struct Transform {
 		KTVECTOR3 _position = { 0.0f, 0.0f, 0.0f };
 		KTVECTOR3 _scale = { 1.0f, 1.0f, 1.0f };
@@ -73,15 +75,66 @@ public:
 	/// コンポーネントを追加する
 	/// </summary>
 	template <typename T, typename... Args>
-	std::shared_ptr<T> AddComponent(Args&&... args) {
+	std::unique_ptr<T> AddComponent(Args&&... args) {
 		static_assert(std::is_base_of<Component, T>::value,"T must be derived from Component");
 		auto component = std::make_unique<T>(std::forward<Args>(args)...);
-		component->_owner = std::make_unique<GameObject>(this); //コンポーネントにこのGameObjectのポインタを設定
+		component->_owner = this; //コンポーネントにこのGameObjectのポインタを設定
 		component->Active(true); //追加したコンポーネントを有効化
 		component->Awake();
 		component->Awakened();
-		_components.push_back(component);
+		_components.push_back(std::move(component));
 		return component;
+	}
+
+	/// <summary>
+	/// 指定した型のコンポーネントを取得する
+	/// </summary>
+	template <typename T>
+	std::shared_ptr<T> GetComponent() {
+		static_assert(std::is_base_of<Component, T>::value, "T must be derived from Component");
+		for (const auto& component : _components) {
+			if (auto castedComponent = dynamic_cast<T*>(component.get())) {
+				return std::shared_ptr<T>(castedComponent);
+			}
+		}
+		return nullptr; //指定した型のコンポーネントが見つからなかった場合はnullptrを返す
+	}
+
+	/// <summary>
+	/// コンポーネントのUpdateを呼び出す
+	/// </summary>
+	void UpdateComponents() {
+		for (const auto& component : _components) {
+			if (component->GetActive()) {
+				if (!component->GetStarted()) {
+					component->Start();
+					component->Started();
+				}
+				component->Update();
+			}
+		}
+	}
+
+	/// <summary>
+	/// コンポーネントのLateUpdateを呼び出す
+	/// 
+	void LateUpdateComponents() {
+		for (const auto& component : _components) {
+			if (component->GetActive()) {
+				component->LateUpdate();
+			}
+		}
+	}
+
+	/// <summary>
+	/// コンポーネントの描画を呼び出す
+	/// </summary>
+	void RenderComponents() const {
+		for (const auto& component : _components) {
+			if (component->GetActive()) {
+				component->Render();
+			}
+		}
 	}
 
 };
