@@ -63,8 +63,8 @@ bool RendererDX11::Init(HWND hwnd) {
     D3D11_RASTERIZER_DESC rd;
     ZeroMemory(&rd, sizeof(rd));
     rd.FillMode = D3D11_FILL_SOLID;
-    rd.CullMode = D3D11_CULL_NONE;
-    //	rd.CullMode = D3D11_CULL_BACK; //裏カリング（表表示）
+    //rd.CullMode = D3D11_CULL_NONE;
+    rd.CullMode = D3D11_CULL_BACK; //裏カリング（表表示）
     //rd.CullMode = D3D11_CULL_FRONT; //表カリング（裏表示）すべて時計回りが表
 
     rd.DepthClipEnable = TRUE;

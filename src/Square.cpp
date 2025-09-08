@@ -16,10 +16,10 @@ void Square::Awake()
 	bd.CPUAccessFlags = 0;
 
 	Vertex v[4] = {
-		{ {-1.0f, -1.0f, 0.0f}, {-1.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f} },
-		{ {+1.0f, -1.0f, 0.0f}, {-1.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 0.0f} },
-		{ {-1.0f, +1.0f, 0.0f}, {-1.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 1.0f} },
-		{ {+1.0f, +1.0f, 0.0f}, {-1.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f} },
+		{ {-0.5f, +0.5f, 0.0f}, {-1.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f} },
+		{ {+0.5f, +0.5f, 0.0f}, {-1.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 0.0f} },
+		{ {-0.5f, -0.5f, 0.0f}, {-1.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 1.0f} },
+		{ {+0.5f, -0.5f, 0.0f}, {-1.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f} },
 	};
 
 	D3D11_SUBRESOURCE_DATA sd = {};
@@ -39,7 +39,6 @@ void Square::Update()
 
 void Square::Render()const
 {
-	//RendererDX11::SetWorldProjection3D();
 
 	//頂点バッファ設定
 	UINT stride = sizeof(Vertex);
@@ -47,7 +46,7 @@ void Square::Render()const
 	RendererDX11::GetContext()->IASetVertexBuffers(0, 1, _vertexBuffer.GetAddressOf(), &stride, &offset);
 
 	//マトリクス設定
-	XMMATRIX world = XMMatrixTranslation(_owner->_transform._position.x, _owner->_transform._position.y, _owner->_transform._position.z);
+	XMMATRIX translation = XMMatrixTranslation(_owner->_transform._position.x, _owner->_transform._position.y, _owner->_transform._position.z);
 
 	KTVECTOR3 radians = { XMConvertToRadians(_owner->_transform._rotation.x),
 						  XMConvertToRadians(_owner->_transform._rotation.y),
@@ -57,7 +56,7 @@ void Square::Render()const
 
 	XMMATRIX scale = XMMatrixScaling(_owner->_transform._scale.x, _owner->_transform._scale.y, _owner->_transform._scale.z);
 
-	XMMATRIX worldMatrix = scale * rotation * world;
+	XMMATRIX worldMatrix = scale * rotation * translation;
 
 	RendererDX11::SetWorldMatrix(worldMatrix);
 

@@ -127,19 +127,22 @@ void Sphere::Render()const {
 
 
 	//マトリクス設定
-//平行移動行列
-	XMMATRIX TranslationMatrix = XMMatrixTranslation(_owner->_transform._position.x, _owner->_transform._position.y, _owner->_transform._position.z);
+	//平行移動行列
+	XMMATRIX translation = XMMatrixTranslation(_owner->_transform._position.x, _owner->_transform._position.y, _owner->_transform._position.z);
 
-	//回転行列
-	XMMATRIX RotationMatrix = XMMatrixRotationRollPitchYaw(_owner->_transform._rotation.x, _owner->_transform._rotation.y, _owner->_transform._rotation.z);
+	KTVECTOR3 radians = { XMConvertToRadians(_owner->_transform._rotation.x),
+						  XMConvertToRadians(_owner->_transform._rotation.y),
+						  XMConvertToRadians(_owner->_transform._rotation.z) };
+
+	XMMATRIX rotation = XMMatrixRotationRollPitchYaw(radians.x, radians.y, radians.z);
 
 	//スケーリング行列
-	XMMATRIX ScalingMatrix = XMMatrixScaling(_owner->_transform._scale.x, _owner->_transform._scale.y, _owner->_transform._scale.z);
+	XMMATRIX scaling = XMMatrixScaling(_owner->_transform._scale.x, _owner->_transform._scale.y, _owner->_transform._scale.z);
 
 	//ワールド行列
-	XMMATRIX WorldMatrix = RotationMatrix * ScalingMatrix * TranslationMatrix;
+	XMMATRIX worldMatrix = scaling * rotation * translation;
 
-	RendererDX11::SetWorldMatrix(WorldMatrix);
+	RendererDX11::SetWorldMatrix(worldMatrix);
 
 	// プリミティブトポロジ設定
 	RendererDX11::GetContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);

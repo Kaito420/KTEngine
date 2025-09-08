@@ -59,11 +59,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
 
     //テスト用
     //============================================
-        //Camera mainCamera;
-        //mainCamera.Awake();
-        //Square test;
-        //test.Awake();
-
         int num = 0;
     //============================================
 
@@ -96,23 +91,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
 
         ImGuiLayer::Begin();
         {
-            //Managerの中にUI描画関数を作成してそれを呼ぶ
-   //         ImGui::Begin("Hello ImGui");
-   //         ImGui::Text("This is ImGui inside DirectX11!");
-   //         ImGui::Button("Button", { 100,50 });
-   //         ImGui::SliderInt("sliderInt", &num, -100, 100);
-   //         ImGui::End();
-
-   //         ImGui::Begin("Another Window");
-   //         ImGui::Text("This is another window!");
-   //         ImGui::Button("Another Button", { 150, 50 });
-			//ImGui::End();
-
-   //         ImGui::Begin("Mouse Status");
-   //         ImGui::Text("MouseX:%d\nMouseY:%d\nDeltaX:%d\nDeltaY:%d\n",
-   //             Input::GetMousePosition().first, Input::GetMousePosition().second, Input::GetMouseDelta().first, Input::GetMouseDelta().second);
-   //         ImGui::End();
-
             Manager::GetCurrentScene()->RenderHierarchy();
             Manager::GetCurrentScene()->RenderInspector();
         }

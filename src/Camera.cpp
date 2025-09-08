@@ -13,7 +13,7 @@ void Camera::Awake() {
 }
 
 void Camera::Update() {
-	//ここでRendererDX11のViewとProjectionを更新する？
+	//ここでRendererDX11のViewとProjectionを更新する
 
 	//ラジアンに変換
 	float pitch = XMConvertToRadians(_transform._rotation.x);

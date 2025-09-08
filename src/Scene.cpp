@@ -10,6 +10,7 @@
 #include "Camera.h"
 #include "Square.h"
 #include "Sphere.h"
+#include "Cube.h"
 
 void Scene::Initialize(){
 	//テスト用
@@ -20,6 +21,8 @@ void Scene::Initialize(){
 	FindGameObjectByName<GameObject>("Square1")->AddComponent<Square>();
 	AddGameObject<GameObject>()->_name = "Sphere1";
 	FindGameObjectByName<GameObject>("Sphere1")->AddComponent<Sphere>();
+	AddGameObject<GameObject>()->_name = "Cube1";
+	FindGameObjectByName<GameObject>("Cube1")->AddComponent<Cube>();
 
 
 	//============================================
