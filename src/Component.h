@@ -4,8 +4,8 @@
 // Date:2025/08/14
 //=====================================================================================
 
-#ifndef _COMPONENT_H
-#define _COMPONENT_H
+#ifndef _COMPONENT_H_
+#define _COMPONENT_H_
 
 #include <memory>
 class GameObject;
@@ -63,6 +63,8 @@ public:
 	/// コンポーネントの情報をインスペクター上に表示
 	/// </summary>
 	virtual void ShowUI() {}
+
+	virtual std::string GetComponentName() { return "default"; }
 };
 
-#endif // !_COMPONENT_H
+#endif // !_COMPONENT_H_

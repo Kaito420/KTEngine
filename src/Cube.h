@@ -23,6 +23,7 @@ public:
 
 	void ShowUI() override;
 
+	std::string GetComponentName()override { return "Cube"; }
 };
 
 

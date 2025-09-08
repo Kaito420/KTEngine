@@ -22,6 +22,7 @@ public:
 
 	void Render()const override;
 
+	std::string GetComponentName()override { return "Square"; }
 };
 
 

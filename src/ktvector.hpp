@@ -1,3 +1,6 @@
+#ifndef _KTVECTOR_HPP_
+#define _KTVECTOR_HPP_
+
 #include <math.h>
 #include <stdexcept>
 
@@ -243,3 +246,5 @@ public:
         return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
     }
 };
+
+#endif // !_KTVECTOR_HPP_

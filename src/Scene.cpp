@@ -11,6 +11,7 @@
 #include "Square.h"
 #include "Sphere.h"
 #include "Cube.h"
+#include "Collider.h"
 
 void Scene::Initialize(){
 	//テスト用
@@ -23,6 +24,12 @@ void Scene::Initialize(){
 	FindGameObjectByName<GameObject>("Sphere1")->AddComponent<Sphere>();
 	AddGameObject<GameObject>()->_name = "Cube1";
 	FindGameObjectByName<GameObject>("Cube1")->AddComponent<Cube>();
+	FindGameObjectByName<GameObject>("Cube1")->AddComponent<ColliderBox>();
+
+	AddGameObject<GameObject>()->_name = "Cube2";
+	FindGameObjectByName<GameObject>("Cube2")->AddComponent<Cube>();
+	FindGameObjectByName<GameObject>("Cube2")->AddComponent<ColliderBox>();
+
 
 
 	//============================================
