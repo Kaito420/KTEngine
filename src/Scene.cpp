@@ -178,7 +178,7 @@ void Scene::RenderInspector()
 				}
 
 				for (auto& component : gameObject->_components) {
-					if(ImGui::TreeNode(typeid(component).name())){
+					if(ImGui::TreeNode(component->GetComponentName().c_str())){
 						ImGui::Checkbox("Active", &component->_active);
 						component->ShowUI();
 						ImGui::TreePop();

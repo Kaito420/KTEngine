@@ -8,6 +8,7 @@
 #define _COMPONENT_H_
 
 #include <memory>
+#include <string>
 class GameObject;
 
 class Component {
