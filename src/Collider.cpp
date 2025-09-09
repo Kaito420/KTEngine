@@ -6,9 +6,12 @@
 
 #include "Collider.h"
 #include "GameObject.h"
+#include "Manager.h"
+#include "Scene.h"
 
 
 void ColliderBox::Awake() {
+	Manager::GetCurrentScene()->GetPhysicsSystem()->RegisterCollider(this);
 	_center = _owner->_transform._position;
 	_axis[0] = _owner->GetRight();
 	_axis[1] = _owner->GetUp();
@@ -75,4 +78,8 @@ bool ColliderBox::OverlapOnAxis(const ColliderBox* other, const KTVECTOR3& axis)
 	//•ª—£Ž²‚Ì—L–³
 	return distance <= (rA + rB);
 
+}
+
+void ColliderBox::ShowUI() {
+	ImGui::Checkbox("_isOverlap", &_isOverlap);
 }

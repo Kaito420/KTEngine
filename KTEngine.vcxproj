@@ -62,6 +62,7 @@
     <ClInclude Include="src\Input.h" />
     <ClInclude Include="src\ktvector.hpp" />
     <ClInclude Include="src\Manager.h" />
+    <ClInclude Include="src\PhysicsSystem.h" />
     <ClInclude Include="src\RendererDX11.h" />
     <ClInclude Include="src\Scene.h" />
     <ClInclude Include="src\Sphere.h" />

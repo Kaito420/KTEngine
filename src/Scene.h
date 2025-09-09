@@ -10,6 +10,7 @@
 #include <memory>
 #include <list>
 #include <unordered_map>
+#include "PhysicsSystem.h"
 #include "GameObject.h"
 
 class Scene {
@@ -19,6 +20,7 @@ private:
 
 protected:
 	std::list<std::shared_ptr<GameObject>> _gameObjects;
+	PhysicsSystem* _physicsSystem;
 
 public:
 	virtual void Initialize();
@@ -27,6 +29,8 @@ public:
 	virtual void Render()const;
 	virtual void RenderHierarchy();
 	virtual void RenderInspector();
+
+	virtual PhysicsSystem* GetPhysicsSystem() { return _physicsSystem; }
 
 	virtual std::shared_ptr<Scene> Clone() { return nullptr; }
 

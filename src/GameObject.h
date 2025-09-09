@@ -13,6 +13,7 @@
 #include "Component.h"
 #include <DirectXMath.h>
 using namespace DirectX;
+class Collider;
 
 class GameObject {
 private:
@@ -171,6 +172,14 @@ public:
 		for (const auto& component : _components) {
 			if (component->GetActive()) {
 				component->Render();
+			}
+		}
+	}
+
+	void DispatchCollision(Collider* other) {
+		for(auto& component : _components) {
+			if (component->GetActive()) {
+				component->OnCollisionEnter(other);
 			}
 		}
 	}

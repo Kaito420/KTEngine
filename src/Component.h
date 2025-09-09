@@ -9,7 +9,10 @@
 
 #include <memory>
 #include <string>
+#include <imgui.h>
+
 class GameObject;
+class Collider;
 
 class Component {
 	friend class GameObject;
@@ -29,6 +32,7 @@ public:
 	bool GetAwakened() { return _awakened; }
 	bool Started() { return _started = true; }
 	bool GetStarted() { return _started; }
+	GameObject* GetOwner() const { return _owner; }
 
 	/// <summary>
 	/// インスタンス生成直後に実行（コンポーネント有効無効に関係なく呼ばれる）
@@ -65,7 +69,16 @@ public:
 	/// </summary>
 	virtual void ShowUI() {}
 
+	/// <summary>
+	/// コンポーネントの名前を取得します。
+	/// </summary>
+	/// <returns>コンポーネントの名前を表す std::string 型の値。</returns>
 	virtual std::string GetComponentName() { return "default"; }
+
+	/// <summary>
+	/// 衝突が発生したときに呼び出される仮想関数
+	/// </summary>
+	virtual void OnCollisionEnter(Collider* other){}
 };
 
 #endif // !_COMPONENT_H_

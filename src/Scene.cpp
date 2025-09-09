@@ -17,6 +17,8 @@ void Scene::Initialize(){
 	//テスト用
 	//============================================
 
+	_physicsSystem = new PhysicsSystem();
+
 	AddGameObject<Camera>()->_name = "Camera";
 	AddGameObject<GameObject>()->_name = "Square1";
 	FindGameObjectByName<GameObject>("Square1")->AddComponent<Square>();
@@ -27,6 +29,7 @@ void Scene::Initialize(){
 	FindGameObjectByName<GameObject>("Cube1")->AddComponent<ColliderBox>();
 
 	AddGameObject<GameObject>()->_name = "Cube2";
+	FindGameObjectByName<GameObject>("Cube2")->_transform._position = { 0.0f,1.5f,0.0f };
 	FindGameObjectByName<GameObject>("Cube2")->AddComponent<Cube>();
 	FindGameObjectByName<GameObject>("Cube2")->AddComponent<ColliderBox>();
 
@@ -52,6 +55,8 @@ void Scene::Update(){
 			gameObject->UpdateComponents();
 		}
 	}
+
+	_physicsSystem->Update();
 
 	for( auto& gameObject : _gameObjects ){
 		if (gameObject->GetActive()) {
