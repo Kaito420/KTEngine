@@ -33,7 +33,7 @@ void ColliderBox::Render()const {
 
 }
 
-bool ColliderBox::IsOverlap(ColliderBox* other) {
+bool ColliderBox::CheckVSOBB(ColliderBox* other) {
 	//各軸について投影してチェック
 	//分離軸SAT判定
 	for(int i = 0; i<3; i++) {

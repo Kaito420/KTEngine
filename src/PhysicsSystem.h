@@ -19,20 +19,29 @@ public:
 	}
 
 	void Update() {
-		for (int i = 0; i < _colliders.size() - 1; i++) {
-			for (int j = i + 1; j < _colliders.size(); j++) {
-				Collider* colA = _colliders[i];
-				Collider* colB = _colliders[j];
-				if(colA->IsOverlap((ColliderBox*)colB)) {	//今はColliderBox*にしているが、将来的に他のColliderにも対応させる
-					colA->_isOverlap = true;
+
+		//各Colliderの現在フレームの情報をリセット
+		for (auto* col : _colliders) {
+			col->BeginFrame();
+		}
+
+		for (size_t i = 0; i < _colliders.size() - 1; i++) {
+			for (size_t j = i + 1; j < _colliders.size(); j++) {
+				auto* colA = _colliders[i];
+				auto* colB = _colliders[j];
+				if(colA->IsOverlap(colB)) {
+					colA->_isOverlap = true;//確認用
 					colB->_isOverlap = true;
 
-					if (!colA->_wasOverlap)
+					colA->_currentOverlaps.insert(colB);
+					colB->_currentOverlaps.insert(colA);
+
+					if (colA->_previousOverlaps.find(colB) == colA->_previousOverlaps.end())
 						colA->GetOwner()->DispatchOnCollisionEnter(colB);
 					else
 						colA->GetOwner()->DispatchOnCollisionStay(colB);
 
-					if (!colB->_wasOverlap)
+					if (colB->_previousOverlaps.find(colA) == colB->_previousOverlaps.end())
 						colB->GetOwner()->DispatchOnCollisionEnter(colA);
 					else
 						colB->GetOwner()->DispatchOnCollisionStay(colA);
@@ -42,14 +51,15 @@ public:
 
 		//Exit判定
 		for (auto* col : _colliders) {
-			if (col->_wasOverlap && !col->_isOverlap) {
-				col->GetOwner()->DispatchOnCollisionExit(nullptr);
+			for (auto* prevCol : col->_previousOverlaps) {
+				if (col->_currentOverlaps.find(prevCol) == col->_currentOverlaps.end())
+					col->GetOwner()->DispatchOnCollisionExit(prevCol);
 			}
 		}
 
 		//状態更新
 		for (auto* col : _colliders) {
-			col->RestFrame();
+			col->EndFrame();
 		}
 	}
 };

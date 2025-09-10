@@ -9,7 +9,7 @@
 
 #include "Component.h"
 #include "ktvector.hpp"
-
+#include <unordered_set>
 
 class ColliderBox;
 
@@ -22,15 +22,28 @@ protected:
 public:
 	bool _isOverlap;
 	bool _wasOverlap;
+
 	/// <summary>
-	/// 衝突リセット用
+	/// 現在フレームで当たっているコリジョン
 	/// </summary>
-	void RestFrame() {
-		_wasOverlap = _isOverlap;
-		_isOverlap = false;
+	std::unordered_set<Collider*> _currentOverlaps;
+	/// <summary>
+	/// 前フレームで当たっていたコリジョン
+	/// </summary>
+	std::unordered_set<Collider*> _previousOverlaps;
+
+	void BeginFrame() {
+		_currentOverlaps.clear();
 	}
 
-	virtual bool IsOverlap(ColliderBox* other) { return false; }
+	void EndFrame() {
+		_wasOverlap = _isOverlap;
+		_isOverlap = false;
+
+		_previousOverlaps = _currentOverlaps;
+	}
+	virtual bool IsOverlap(Collider* other) = 0;
+	virtual bool IsOverlapWith(ColliderBox* other) = 0;
 	std::string GetComponentName() { return "Collider"; }
 
 };
@@ -48,15 +61,21 @@ public:
 
 	void Render()const override;
 
-	bool IsOverlap(ColliderBox* other) override;
+	bool IsOverlap(Collider* other) {
+		return other->IsOverlapWith(this);
+	}
+
+	bool IsOverlapWith(ColliderBox* other) {
+		return CheckVSOBB(other);
+	}
+
+	bool CheckVSOBB(ColliderBox* other);
 
 	bool OverlapOnAxis(const ColliderBox* other, const KTVECTOR3& axis)const;
 
 	std::string GetComponentName() { return "ColliderBox"; }
 
 	void ShowUI()override;
-
-	void OnCollisionEnter(Collider* other)override { _isOverlap = true; }
 
 
 };
