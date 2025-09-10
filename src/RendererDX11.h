@@ -32,6 +32,8 @@ namespace RendererDX11 {
     ID3D11Device* GetDevice();
     ID3D11DeviceContext* GetContext();
 
+    void SetDepthEnable(bool enable);
+
     void SetWorldMatrix(XMMATRIX world);
     void SetViewMatrix(XMMATRIX view);
     void SetProjectionMatrix(XMMATRIX projection);

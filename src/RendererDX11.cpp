@@ -9,10 +9,13 @@
 #include <io.h>
 
 namespace {
+    D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
+
     ID3D11Device* device = nullptr;
     ID3D11DeviceContext* context = nullptr;
     IDXGISwapChain* swapChain = nullptr;
     ID3D11RenderTargetView* rtv = nullptr;
+    ID3D11DepthStencilView* dsv = nullptr;
 
     ID3D11Buffer* worldBuffer = nullptr;
     ID3D11Buffer* viewBuffer = nullptr;
@@ -22,6 +25,9 @@ namespace {
     ID3D11InputLayout* vertexLayout = nullptr;
     ID3D11PixelShader* pixelShader = nullptr;
 
+    ID3D11DepthStencilState* depthStateEnable;
+    ID3D11DepthStencilState* depthStateDisable;
+
 }
 
 bool RendererDX11::Init(HWND hwnd) {
@@ -29,8 +35,8 @@ bool RendererDX11::Init(HWND hwnd) {
     //スワップチェーン生成
     DXGI_SWAP_CHAIN_DESC scd = {};
     scd.BufferCount = 1;
-    scd.BufferDesc.Width = 0;
-    scd.BufferDesc.Height = 0;
+    scd.BufferDesc.Width = 1280;
+    scd.BufferDesc.Height = 720;
     scd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
     scd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
     scd.OutputWindow = hwnd;
@@ -39,7 +45,7 @@ bool RendererDX11::Init(HWND hwnd) {
 
     HRESULT hr = D3D11CreateDeviceAndSwapChain(
         nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, 0, nullptr, 0,
-        D3D11_SDK_VERSION, &scd, &swapChain, &device, nullptr, &context);
+        D3D11_SDK_VERSION, &scd, &swapChain, &device, &featureLevel, &context);
 
     if (FAILED(hr)) return false;
 
@@ -59,6 +65,30 @@ bool RendererDX11::Init(HWND hwnd) {
     device->CreateRenderTargetView(backBuffer, nullptr, &rtv);
     backBuffer->Release();
 
+    //デプスステンシルバッファ作成
+    ID3D11Texture2D* depthStencile{};
+    D3D11_TEXTURE2D_DESC textureDesc{};
+    textureDesc.Width = scd.BufferDesc.Width;
+    textureDesc.Height = scd.BufferDesc.Height;
+    textureDesc.MipLevels = 1;
+    textureDesc.ArraySize = 1;
+    textureDesc.Format = DXGI_FORMAT_D16_UNORM;
+    textureDesc.SampleDesc = scd.SampleDesc;
+    textureDesc.Usage = D3D11_USAGE_DEFAULT;
+    textureDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+    textureDesc.CPUAccessFlags = 0;
+    textureDesc.MiscFlags = 0;
+    device->CreateTexture2D(&textureDesc, NULL, &depthStencile);
+
+    //デプスステンシルビュー作成
+    D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc{};
+    depthStencilViewDesc.Format = textureDesc.Format;
+    depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+    depthStencilViewDesc.Flags = 0;
+    device->CreateDepthStencilView(depthStencile, &depthStencilViewDesc, &dsv);
+    depthStencile->Release();
+    context->OMSetRenderTargets(1, &rtv, dsv);
+
     // ラスタライザステート設定
     D3D11_RASTERIZER_DESC rd;
     ZeroMemory(&rd, sizeof(rd));
@@ -74,6 +104,23 @@ bool RendererDX11::Init(HWND hwnd) {
     device->CreateRasterizerState(&rd, &rs);
 
     context->RSSetState(rs);
+
+    //深度ステンシルステート設定
+    D3D11_DEPTH_STENCIL_DESC depthStencilDesc = {};
+    depthStencilDesc.DepthEnable = TRUE;
+    depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+    depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS;
+    depthStencilDesc.StencilEnable = FALSE;
+    device->CreateDepthStencilState(&depthStencilDesc, &depthStateEnable);
+
+    depthStencilDesc.DepthEnable = FALSE;
+    depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+    device->CreateDepthStencilState(&depthStencilDesc, &depthStateDisable);
+
+    //初期有効
+    context->OMSetDepthStencilState(depthStateEnable, NULL);
+
+
 
     //定数バッファ生成
     D3D11_BUFFER_DESC bd = {};
@@ -107,8 +154,8 @@ bool RendererDX11::Init(HWND hwnd) {
 
 void RendererDX11::BeginFrame() {
     float clearColor[4] = { 0.3f, 0.3f, 0.3f, 1.0f };
-    context->OMSetRenderTargets(1, &rtv, nullptr);
     context->ClearRenderTargetView(rtv, clearColor);
+    context->ClearDepthStencilView(dsv, D3D11_CLEAR_DEPTH, 1.0f, 0);
 }
 
 void RendererDX11::EndFrame() {
@@ -131,6 +178,14 @@ void RendererDX11::Shutdown() {
 
 ID3D11Device* RendererDX11::GetDevice() { return device; }
 ID3D11DeviceContext* RendererDX11::GetContext() { return context; }
+
+void RendererDX11::SetDepthEnable(bool enable){
+    if(enable)
+        context->OMSetDepthStencilState(depthStateEnable, NULL);
+    else
+        context->OMSetDepthStencilState(depthStateDisable, NULL);
+
+}
 
 void RendererDX11::SetWorldMatrix(XMMATRIX world){
     XMFLOAT4X4 worldf;
