@@ -26,7 +26,7 @@ void ColliderBox::Update() {
 	_axis[1] = _owner->GetUp();
 	_axis[2] = _owner->GetForward();
 
-	
+	_extents = _owner->_transform._scale * 0.5f;
 }
 
 void ColliderBox::Render()const {
@@ -81,5 +81,5 @@ bool ColliderBox::OverlapOnAxis(const ColliderBox* other, const KTVECTOR3& axis)
 }
 
 void ColliderBox::ShowUI() {
-	ImGui::Checkbox("_isOverlap", &_isOverlap);
+	ImGui::Checkbox("_wasOverlap", &_wasOverlap);
 }

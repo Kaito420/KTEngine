@@ -17,14 +17,19 @@ class Collider : public Component
 {
 protected:
 	KTVECTOR3 _center;
-	bool _isOverlap;
-	bool _wasOverlap;
 
-	virtual bool BeginOverlap() { return false; }
-	virtual bool StayOverlap() { return false; }
-	virtual bool EndOverlap() { return false; }
 
 public:
+	bool _isOverlap;
+	bool _wasOverlap;
+	/// <summary>
+	/// 衝突リセット用
+	/// </summary>
+	void RestFrame() {
+		_wasOverlap = _isOverlap;
+		_isOverlap = false;
+	}
+
 	virtual bool IsOverlap(ColliderBox* other) { return false; }
 	std::string GetComponentName() { return "Collider"; }
 

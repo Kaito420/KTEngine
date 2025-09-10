@@ -176,10 +176,26 @@ public:
 		}
 	}
 
-	void DispatchCollision(Collider* other) {
+	void DispatchOnCollisionEnter(Collider* other) {
 		for(auto& component : _components) {
 			if (component->GetActive()) {
 				component->OnCollisionEnter(other);
+			}
+		}
+	}
+
+	void DispatchOnCollisionStay(Collider* other) {
+		for (auto& component : _components) {
+			if (component->GetActive()) {
+				component->OnCollisionStay(other);
+			}
+		}
+	}
+
+	void DispatchOnCollisionExit(Collider* other) {
+		for (auto& component : _components) {
+			if (component->GetActive()) {
+				component->OnCollisionExit(other);
 			}
 		}
 	}

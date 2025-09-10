@@ -79,6 +79,17 @@ public:
 	/// 衝突が発生したときに呼び出される仮想関数
 	/// </summary>
 	virtual void OnCollisionEnter(Collider* other){}
+
+	/// <summary>
+	/// 衝突している状態で呼び出される関数
+	/// </summary>
+	virtual void OnCollisionStay(Collider* other) {}
+
+	/// <summary>
+	/// 衝突が終わったときに呼び出される関数
+	/// </summary>
+	virtual void OnCollisionExit(Collider* other) {}
+
 };
 
 #endif // !_COMPONENT_H_

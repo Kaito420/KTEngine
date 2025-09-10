@@ -24,10 +24,32 @@ public:
 				Collider* colA = _colliders[i];
 				Collider* colB = _colliders[j];
 				if(colA->IsOverlap((ColliderBox*)colB)) {	//今はColliderBox*にしているが、将来的に他のColliderにも対応させる
-					colA->GetOwner()->DispatchCollision(colB);
-					colB->GetOwner()->DispatchCollision(colA);
+					colA->_isOverlap = true;
+					colB->_isOverlap = true;
+
+					if (!colA->_wasOverlap)
+						colA->GetOwner()->DispatchOnCollisionEnter(colB);
+					else
+						colA->GetOwner()->DispatchOnCollisionStay(colB);
+
+					if (!colB->_wasOverlap)
+						colB->GetOwner()->DispatchOnCollisionEnter(colA);
+					else
+						colB->GetOwner()->DispatchOnCollisionStay(colA);
 				}
 			}
+		}
+
+		//Exit判定
+		for (auto* col : _colliders) {
+			if (col->_wasOverlap && !col->_isOverlap) {
+				col->GetOwner()->DispatchOnCollisionExit(nullptr);
+			}
+		}
+
+		//状態更新
+		for (auto* col : _colliders) {
+			col->RestFrame();
 		}
 	}
 };
