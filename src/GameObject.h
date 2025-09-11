@@ -114,7 +114,7 @@ public:
 	/// コンポーネントを追加する
 	/// </summary>
 	template <typename T, typename... Args>
-	std::unique_ptr<T> AddComponent(Args&&... args) {
+	T* AddComponent(Args&&... args) {
 		static_assert(std::is_base_of<Component, T>::value,"T must be derived from Component");
 		auto component = std::make_unique<T>(std::forward<Args>(args)...);
 		component->_owner = this; //コンポーネントにこのGameObjectのポインタを設定
@@ -122,18 +122,18 @@ public:
 		component->Awake();
 		component->Awakened();
 		_components.push_back(std::move(component));
-		return component;
+		return component.get();
 	}
 
 	/// <summary>
 	/// 指定した型のコンポーネントを取得する
 	/// </summary>
 	template <typename T>
-	std::shared_ptr<T> GetComponent() {
+	T* GetComponent() {
 		static_assert(std::is_base_of<Component, T>::value, "T must be derived from Component");
 		for (const auto& component : _components) {
 			if (auto castedComponent = dynamic_cast<T*>(component.get())) {
-				return std::shared_ptr<T>(castedComponent);
+				return castedComponent;
 			}
 		}
 		return nullptr; //指定した型のコンポーネントが見つからなかった場合はnullptrを返す

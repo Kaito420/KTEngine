@@ -10,6 +10,7 @@
 #include <vector>
 #include "GameObject.h"
 #include "Collider.h"
+#include "RigidBody.h"
 
 class PhysicsSystem {
 	std::vector<Collider*> _colliders;
@@ -29,7 +30,23 @@ public:
 			for (size_t j = i + 1; j < _colliders.size(); j++) {
 				auto* colA = _colliders[i];
 				auto* colB = _colliders[j];
-				if(colA->IsOverlap(colB)) {
+				if(colA->IsOverlap(colB)) {	//衝突した際
+					//RigidBodyの処理を追加
+					if (colA->GetOwner()->GetComponent<RigidBody>() && colB->GetOwner()->GetComponent<RigidBody>()) {
+						RigidBody* rbA = colA->GetOwner()->GetComponent<RigidBody>();
+						RigidBody* rbB = colB->GetOwner()->GetComponent<RigidBody>();
+
+						GameObject::Transform* transformA = &colA->GetOwner()->_transform;
+						//今はA側のめり込みを修正するだけだから使わない？
+						GameObject::Transform* transformB = &colB->GetOwner()->_transform;
+
+						//AとBの位置修正
+						transformA->_position += colA->_collisionInfo._collisionNormal * colA->_collisionInfo._penetrationDepth;
+						transformB->_position += colB->_collisionInfo._collisionNormal * colB->_collisionInfo._penetrationDepth;
+
+						
+					}
+
 					colA->_isOverlap = true;//確認用
 					colB->_isOverlap = true;
 

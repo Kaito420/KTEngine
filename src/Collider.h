@@ -15,6 +15,13 @@ class ColliderBox;
 
 class Collider : public Component
 {
+	struct CollisionInfo {
+		Collider* _other;			//衝突相手
+		KTVECTOR3 _collisionPoint;	//衝突座標
+		KTVECTOR3 _collisionNormal;	//衝突法線
+		float _penetrationDepth;	//深度
+	};
+
 protected:
 	KTVECTOR3 _center;
 
@@ -22,6 +29,8 @@ protected:
 public:
 	bool _isOverlap;
 	bool _wasOverlap;
+
+	CollisionInfo _collisionInfo;
 
 	/// <summary>
 	/// 現在フレームで当たっているコリジョン
@@ -72,6 +81,8 @@ public:
 	bool CheckVSOBB(ColliderBox* other);
 
 	bool OverlapOnAxis(const ColliderBox* other, const KTVECTOR3& axis)const;
+
+	bool OverlapOnAxis(const ColliderBox* other, const KTVECTOR3& axis, float& outOverlap)const;
 
 	std::string GetComponentName() { return "ColliderBox"; }
 

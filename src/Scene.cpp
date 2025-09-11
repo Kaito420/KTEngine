@@ -12,6 +12,7 @@
 #include "Sphere.h"
 #include "Cube.h"
 #include "Collider.h"
+#include "RigidBody.h"
 
 void Scene::Initialize(){
 	//テスト用
@@ -27,11 +28,14 @@ void Scene::Initialize(){
 	AddGameObject<GameObject>()->_name = "Cube1";
 	FindGameObjectByName<GameObject>("Cube1")->AddComponent<Cube>();
 	FindGameObjectByName<GameObject>("Cube1")->AddComponent<ColliderBox>();
+	FindGameObjectByName<GameObject>("Cube1")->AddComponent<RigidBody>();
+
 
 	AddGameObject<GameObject>()->_name = "Cube2";
 	FindGameObjectByName<GameObject>("Cube2")->_transform._position = { 0.0f,1.5f,0.0f };
 	FindGameObjectByName<GameObject>("Cube2")->AddComponent<Cube>();
 	FindGameObjectByName<GameObject>("Cube2")->AddComponent<ColliderBox>();
+	FindGameObjectByName<GameObject>("Cube2")->AddComponent<RigidBody>();
 
 
 
