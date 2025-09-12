@@ -31,21 +31,6 @@ public:
 				auto* colA = _colliders[i];
 				auto* colB = _colliders[j];
 				if(colA->IsOverlap(colB)) {	//衝突した際
-					//RigidBodyの処理を追加
-					if (colA->GetOwner()->GetComponent<RigidBody>() && colB->GetOwner()->GetComponent<RigidBody>()) {
-						RigidBody* rbA = colA->GetOwner()->GetComponent<RigidBody>();
-						RigidBody* rbB = colB->GetOwner()->GetComponent<RigidBody>();
-
-						GameObject::Transform* transformA = &colA->GetOwner()->_transform;
-						//今はA側のめり込みを修正するだけだから使わない？
-						GameObject::Transform* transformB = &colB->GetOwner()->_transform;
-
-						//AとBの位置修正
-						transformA->_position += colA->_collisionInfo._collisionNormal * colA->_collisionInfo._penetrationDepth;
-						transformB->_position += colB->_collisionInfo._collisionNormal * colB->_collisionInfo._penetrationDepth;
-
-						
-					}
 
 					colA->_isOverlap = true;//確認用
 					colB->_isOverlap = true;
@@ -73,6 +58,46 @@ public:
 					col->GetOwner()->DispatchOnCollisionExit(prevCol);
 			}
 		}
+
+		//めり込み解消
+		for (size_t i = 0; i < _colliders.size() - 1; i++) {
+			for (size_t j = i + 1; j < _colliders.size(); j++) {
+				auto* colA = _colliders[i];
+				auto* colB = _colliders[j];
+
+				if (!colA->IsOverlap(colB)) continue; // 衝突していない
+
+				// RigidBody を持つかどうか
+				auto* rbA = colA->GetOwner()->GetComponent<RigidBody>();
+				auto* rbB = colB->GetOwner()->GetComponent<RigidBody>();
+				if (!rbA && !rbB) continue; // 両方静的ならスキップ
+
+				// 衝突情報
+				KTVECTOR3 normal = colA->_collisionInfo._collisionNormal;
+				float depth = colA->_collisionInfo._penetrationDepth;
+
+				// 小さな隙間（slop）を残して過剰補正を防ぐ
+				float slop = 0.01f;
+				float correctionDepth = (std::max)(0.0f, depth - slop);
+
+				float invA = (rbA) ? rbA->_invMass : 0.0f;
+				float invB = (rbB) ? rbB->_invMass : 0.0f;
+				float invSum = invA + invB;
+
+				if (invSum <= 0.0f) continue;
+
+				// 押し戻し量
+				KTVECTOR3 correction = normal * (correctionDepth / invSum);
+
+				if (rbA) {
+					colA->GetOwner()->_transform._position -= correction * invA;
+				}
+				if (rbB) {
+					colB->GetOwner()->_transform._position += correction * invB;
+				}
+			}
+		}
+
 
 		//状態更新
 		for (auto* col : _colliders) {

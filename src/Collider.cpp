@@ -71,9 +71,17 @@ bool ColliderBox::CheckVSOBB(ColliderBox* other) {
 	}
 
 	//衝突情報更新
+
+	KTVECTOR3 centerDelta = other->_center - _center;
+	if (Dot(centerDelta, bestAxis) < 0.0f)
+		bestAxis = -bestAxis;
+
 	_collisionInfo._other = other;
+	other->_collisionInfo._other = this;
 	_collisionInfo._collisionNormal = bestAxis.Normalize();
+	other->_collisionInfo._collisionNormal = -_collisionInfo._collisionNormal;
 	_collisionInfo._penetrationDepth = minOverlap;
+	other->_collisionInfo._penetrationDepth = minOverlap;
 	
 	//全ての軸で重なっているので衝突している
 	return true;
