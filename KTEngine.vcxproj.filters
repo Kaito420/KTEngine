@@ -99,6 +99,9 @@
     <ClCompile Include="src\RigidBody.cpp">
       <Filter>ソース ファイル\Component</Filter>
     </ClCompile>
+    <ClCompile Include="src\PhysicsSystem.cpp">
+      <Filter>ソース ファイル\Framework</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ImGuiLayer.h">
