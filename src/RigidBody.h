@@ -19,7 +19,10 @@ public:
 	bool _useGravity = false;
 	float _mass = 1.0f;
 	float _invMass = (_mass != 0.0f) ? 1.0f / _mass : 0.0f; // ‹t¿—Ê
-	float _restitution = 1.0f; // ”½”­ŒW”
+	float _restitution = 0.0f; // ”½”­ŒW”
+
+	float _staticFriction = 0.6f;  // Ã~–€CŒW”
+	float _dynamicFriction = 0.4f; // “®–€CŒW”
 
 	KTVECTOR3 _velocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
 

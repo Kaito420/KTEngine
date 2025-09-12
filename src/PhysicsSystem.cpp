@@ -85,6 +85,7 @@ void PhysicsSystem::Update() {
 			}
 
 			//ë¨ìxèCê≥
+
 			KTVECTOR3 vA = rbA ? rbA->_velocity : KTVECTOR3(0.0f, 0.0f, 0.0f);
 			KTVECTOR3 vB = rbB ? rbB->_velocity : KTVECTOR3(0.0f, 0.0f, 0.0f);
 
@@ -93,6 +94,7 @@ void PhysicsSystem::Update() {
 			float relVelAlongNormal = Dot(rV, normal);
 
 			if (relVelAlongNormal < 0.0f) { // ó£ÇÍÇƒÇ¢Ç≠èÍçáÇÕÉXÉLÉbÉv
+				//ñ@ê¸ï˚å¸
 				// îΩî≠åWêî
 				float e = 0.0f;
 				if (rbA && rbB)
@@ -106,12 +108,64 @@ void PhysicsSystem::Update() {
 				float j = -(1.0f + e) * relVelAlongNormal;
 				j /= invSum;
 
-				if(rbA)
+				if (rbA)
 					rbA->_velocity -= (j * invA) * normal;
 				if (rbB)
 					rbB->_velocity += (j * invB) * normal;
-			}
 
+				// ñÄéCóÕÇÃåvéZÅiê⁄ê¸ï˚å¸Åj
+				KTVECTOR3 tangent = rV - Dot(rV, normal) * normal;
+				if (tangent.Absolute() > 1e-6f) {
+					tangent = tangent.Normalize();
+
+					float jt = -Dot(rV, tangent);
+					jt /= invSum;
+
+					// ê√é~ñÄéCÇ∆ìÆñÄéCÇÃåàíË
+					float mu_s = 0.0f;
+					float mu_d = 0.0f;
+					if (rbA && rbB) {
+						mu_s = (std::max)(rbA->_staticFriction, rbB->_staticFriction);
+						mu_d = (std::max)(rbA->_dynamicFriction, rbB->_dynamicFriction);
+					}
+					else if (rbA) {
+						mu_s = rbA->_staticFriction;
+						mu_d = rbA->_dynamicFriction;
+					}
+					else if (rbB) {
+						mu_s = rbB->_staticFriction;
+						mu_d = rbB->_dynamicFriction;
+					}
+
+					//ÉNÅ[ÉçÉìñÄéCêßå¿
+					float maxStaticFriction = mu_s * j;
+					float maxDynamicFriction = mu_d * j;
+
+					//ñÄéCÇÃîªíË
+					if (std::fabs(jt) < maxStaticFriction) {
+						//ê√é~ñÄéC
+						if (rbA) {
+							rbA->_velocity += (jt * invA) * tangent;
+							if (rbA->_velocity.Absolute() < 1e-4f)//î˜è≠Ç≈Ç†ÇÍÇŒ0Ç…Ç∑ÇÈ
+								rbA->_velocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
+						}
+						if (rbB) {
+							rbB->_velocity -= (jt * invB) * tangent;
+							if (rbB->_velocity.Absolute() < 1e-4f)//î˜è≠Ç≈Ç†ÇÍÇŒ0Ç…Ç∑ÇÈ
+								rbB->_velocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
+						}
+					}
+					else {
+						//ìÆñÄéC
+						float jtFriction = -j * mu_d;
+						if (jt < 0) jtFriction = -jtFriction;
+						if (rbA)
+							rbA->_velocity += (jtFriction * invA) * tangent;
+						if (rbB)
+							rbB->_velocity -= (jtFriction * invB) * tangent;
+					}
+				}
+			}
 		}
 	}
 

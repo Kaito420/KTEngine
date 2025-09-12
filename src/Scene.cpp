@@ -193,16 +193,6 @@ void Scene::RenderInspector()
 						ImGui::TreePop();
 					}
 				}
-				if (ImGui::TreeNode("Tree1")) {
-					
-					ImGui::Text("aaaaa");
-					ImGui::TreePop();
-				}
-
-				if (ImGui::TreeNode("Tree2")) {
-					ImGui::Text("bbbbb");
-					ImGui::TreePop();
-				}
 			}
 		}
 	}
