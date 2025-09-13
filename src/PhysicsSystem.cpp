@@ -63,31 +63,43 @@ void PhysicsSystem::Update() {
 			// 衝突情報
 			KTVECTOR3 normal = colA->_collisionInfo._collisionNormal;
 			float depth = colA->_collisionInfo._penetrationDepth;
+			KTVECTOR3 contactPoint = colA->_collisionInfo._collisionPoint;
+			KTVECTOR3 rA = contactPoint - colA->GetOwner()->_transform._position;
+			KTVECTOR3 rB = contactPoint - colB->GetOwner()->_transform._position;
 
 			// 小さな隙間（slop）を残して過剰補正を防ぐ
 			float slop = 0.01f;
 			float correctionDepth = (std::max)(0.0f, depth - slop);
 
-			float invA = (rbA) ? rbA->_invMass : 0.0f;
-			float invB = (rbB) ? rbB->_invMass : 0.0f;
-			float invSum = invA + invB;
+			//有効質量の計算
+			float invMassA = (rbA) ? rbA->_invMass : 0.0f;
+			float invMassB = (rbB) ? rbB->_invMass : 0.0f;
 
-			if (invSum <= 0.0f) continue;
+			KTVECTOR3 rnA = rbA ? Cross(rA, normal) : KTVECTOR3(0.0f, 0.0f, 0.0f);
+			KTVECTOR3 rnB = rbB ? Cross(rB, normal) : KTVECTOR3(0.0f, 0.0f, 0.0f);
+
+			float angA = rbA ? Dot(rbA->_inertiaTensorWorldInv * rnA, rnA) : 0.0f;
+			float angB = rbB ? Dot(rbB->_inertiaTensorWorldInv * rnB, rnB) : 0.0f;
+
+			float invMassSum = invMassA + invMassB + angA + angB;
+
+
+			if (invMassSum <= 0.0f) continue;
 
 			// 押し戻し量
-			KTVECTOR3 correction = normal * (correctionDepth / invSum);
+			KTVECTOR3 correction = normal * (correctionDepth / invMassSum);
 
 			if (rbA) {
-				colA->GetOwner()->_transform._position -= correction * invA;
+				colA->GetOwner()->_transform._position -= correction * invMassA;
 			}
 			if (rbB) {
-				colB->GetOwner()->_transform._position += correction * invB;
+				colB->GetOwner()->_transform._position += correction * invMassB;
 			}
 
 			//速度修正
 
-			KTVECTOR3 vA = rbA ? rbA->_velocity : KTVECTOR3(0.0f, 0.0f, 0.0f);
-			KTVECTOR3 vB = rbB ? rbB->_velocity : KTVECTOR3(0.0f, 0.0f, 0.0f);
+			KTVECTOR3 vA = rbA ? rbA->_velocity + Cross(rbA->_angularVelocity,rA) : KTVECTOR3(0.0f, 0.0f, 0.0f);
+			KTVECTOR3 vB = rbB ? rbB->_velocity + Cross(rbB->_angularVelocity,rB) : KTVECTOR3(0.0f, 0.0f, 0.0f);
 
 			//相対速度
 			KTVECTOR3 rV = vB - vA;
@@ -106,15 +118,19 @@ void PhysicsSystem::Update() {
 
 				// 衝突インパルスの計算
 				float j = -(1.0f + e) * relVelAlongNormal;
-				j /= invSum;
+				j /= invMassSum;
+
+				KTVECTOR3 impulse = j * normal;
 
 				if (rbA) {
-					rbA->_velocity -= (j * invA) * normal;
+					rbA->_velocity -= (impulse* invMassA);
+					rbA->_angularVelocity -= rbA->_inertiaTensorWorldInv * Cross(rA, impulse);
 					if(rbA->_velocity.Absolute() < 1e-2f)//微少であれば0にする
 						rbA->_velocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
 				}
 				if (rbB) {
-					rbB->_velocity += (j * invB) * normal;
+					rbB->_velocity += (impulse * invMassB);
+					rbB->_angularVelocity += rbB->_inertiaTensorWorldInv * Cross(rB, impulse);
 					if(rbB->_velocity.Absolute() < 1e-2f)//微少であれば0にする
 						rbB->_velocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
 				}
@@ -125,7 +141,7 @@ void PhysicsSystem::Update() {
 					tangent = tangent.Normalize();
 
 					float jt = -Dot(rV, tangent);
-					jt /= invSum;
+					jt /= invMassSum;
 
 					// 静止摩擦と動摩擦の決定
 					float mu_s = 0.0f;
@@ -160,12 +176,12 @@ void PhysicsSystem::Update() {
 						float jtFriction = -j * mu_d;
 						if (jt < 0) jtFriction = -jtFriction;
 						if (rbA) {
-							rbA->_velocity += (jtFriction * invA) * tangent;
+							rbA->_velocity += (jtFriction * invMassA) * tangent;
 							if (rbA->_velocity.Absolute() < 1e-2f)//微少であれば0にする
 								rbA->_velocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
 						}
 						if (rbB) {
-							rbB->_velocity -= (jtFriction * invB) * tangent;
+							rbB->_velocity -= (jtFriction * invMassB) * tangent;
 							if (rbB->_velocity.Absolute() < 1e-2f)//微少であれば0にする
 								rbB->_velocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
 						}

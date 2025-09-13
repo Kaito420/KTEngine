@@ -40,7 +40,7 @@ void RigidBody::Integrate(){
 	//速度の更新
 	_velocity += acceleration * DT;
 	//速度の減衰
-	_velocity *= 0.99f;
+	_velocity *= _linearDamping;
 
 	//位置の更新
 	_owner->_transform._position += _velocity * DT;
@@ -56,6 +56,11 @@ void RigidBody::Integrate(){
 
 	_angularVelocity += angularAcceleration * DT;
 
+	//角速度の減衰
+	_angularVelocity *= _angularDamping;
+	if(_angularVelocity.Absolute() < 0.15f)
+		_angularVelocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
+
 	//姿勢の更新
 	KTQUATERNION omegaQuat(_angularVelocity.x, _angularVelocity.y, _angularVelocity.z, 0.0f);
 	KTQUATERNION dq = (omegaQuat * _orientation) * 0.5f;
@@ -63,7 +68,7 @@ void RigidBody::Integrate(){
 
 	//姿勢の反映
 	_owner->_transform._quaternion = _orientation;
-
+	_owner->_transform._rotation = _orientation.ToEulerAngles();
 
 	//トルクのリセット
 	_torqueAccum = KTVECTOR3(0.0f, 0.0f, 0.0f);
@@ -77,7 +82,7 @@ void RigidBody::Awake(){
 	_inertiaTensorBody = KTMATRIX3::Identity();
 	_inertiaTensorBodyInv = KTMATRIX3::Identity();
 	
-	auto* colBox = _owner->GetComponent<ColliderBox>();
+	auto* colBox = _owner->GetComponent<ColliderBox>();//Box以外にも対応させる
 	if (colBox) {
 		_inertiaTensorBody = InertiaTensorBox(_mass, colBox->_extents);
 		_inertiaTensorBodyInv = _inertiaTensorBody.Inverse();
@@ -92,6 +97,11 @@ void RigidBody::Update() {
 	else
 		_velocity.y = 0.0f;
 
+	auto* colBox = _owner->GetComponent<ColliderBox>();
+	if (colBox) {//0質量にしたときにエラーになるので対処を考える
+		_inertiaTensorBody = InertiaTensorBox(_mass, colBox->_extents);
+		_inertiaTensorBodyInv = _inertiaTensorBody.Inverse();
+	}
 }
 
 

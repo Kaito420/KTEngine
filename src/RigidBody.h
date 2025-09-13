@@ -34,6 +34,9 @@ public:
 	KTMATRIX3 _inertiaTensorWorld; // ワールド空間での慣性テンソル
 	KTMATRIX3 _inertiaTensorWorldInv; // ワールド空間での逆慣性テンソル
 
+	float _linearDamping = 0.99f; // 線形減衰
+	float _angularDamping = 0.98f; // 角減衰
+
 	KTVECTOR3 _velocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
 
 	KTMATRIX3 InertiaTensorSphere(float mass, float radius);

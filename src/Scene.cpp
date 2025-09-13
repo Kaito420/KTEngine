@@ -145,7 +145,7 @@ void Scene::RenderInspector()
 				//Transform
 				if(ImGui::BeginTable("Transform", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg))
 				{
-
+					bool changed = false;
 					ImGui::TableSetupColumn("Property");
 					ImGui::TableSetupColumn("X");
 					ImGui::TableSetupColumn("Y");
@@ -163,7 +163,7 @@ void Scene::RenderInspector()
 						ImGui::PopID();
 					}
 
-
+					changed = false;
 					ImGui::TableNextRow();
 					ImGui::TableSetColumnIndex(0);
 					ImGui::Text("Scale");
@@ -173,7 +173,7 @@ void Scene::RenderInspector()
 						ImGui::InputFloat("", &((&gameObject->_transform._scale.x)[i]));
 						ImGui::PopID();
 					}
-					bool changed = false;
+					changed = false;
 					ImGui::TableNextRow();
 					ImGui::TableSetColumnIndex(0);
 					ImGui::Text("Rotation");
