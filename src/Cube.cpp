@@ -98,6 +98,7 @@ void Cube::Render()const {
 	//マトリクス設定
 	//平行移動行列
 	XMMATRIX translation = XMMatrixTranslation(_owner->_transform._position.x, _owner->_transform._position.y, _owner->_transform._position.z);
+	//回転行列
 	KTVECTOR3 radians = { XMConvertToRadians(_owner->_transform._rotation.x),
 						  XMConvertToRadians(_owner->_transform._rotation.y),
 						  XMConvertToRadians(_owner->_transform._rotation.z) };
