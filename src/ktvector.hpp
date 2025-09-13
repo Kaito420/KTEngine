@@ -4,6 +4,8 @@
 #include <math.h>
 #include <stdexcept>
 
+#define DT 0.00016f // 60fps想定
+
 struct KTVECTOR2{
 public:
     float x = 0.0f;
@@ -267,6 +269,10 @@ struct KTMATRIX3 {
             0, 0, 1
         );
 	}
+
+    KTMATRIX3 Transposed() {
+		return Transpose(*this);
+    }
 
     KTMATRIX3 Transpose(const KTMATRIX3& mat) {
         return KTMATRIX3(
@@ -578,6 +584,30 @@ struct KTQUATERNION {
             cr * cp * sy - sr * sp * cy,
             cr * cp * cy + sr * sp * sy
         );
+	}
+
+	/// <summary>
+	/// Euler角を取得
+	/// </summary>
+	/// <returns></returns>
+	KTVECTOR3 ToEulerAngles()const {
+        //クォータニオンからEuler角へ変換
+		KTVECTOR3 euler;
+        // ピッチ (x軸回りの回転)
+        float sinp = 2.0f * (w * x + y * z);
+        float cosp = 1.0f - 2.0f * (x * x + y * y);
+        euler.x = atan2f(sinp, cosp) * (180.0f / 3.14159265359f);
+        // ヨー (y軸回りの回転)
+        float siny = 2.0f * (w * y - z * x);
+        if (fabs(siny) >= 1)
+            euler.y = copysignf(90.0f, siny); // 90度または-90度
+        else
+            euler.y = asinf(siny) * (180.0f / 3.14159265359f);
+        // ロール (z軸回りの回転)
+        float sinr = 2.0f * (w * z + x * y);
+        float cosr = 1.0f - 2.0f * (y * y + z * z);
+        euler.z = atan2f(sinr, cosr) * (180.0f / 3.14159265359f);
+		return euler;
 	}
 
     KTMATRIX4 ToMatrix()const {

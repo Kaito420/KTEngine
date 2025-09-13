@@ -15,6 +15,14 @@ private:
 	float _gravity = -9.8f;
 	float _gravityScale = 1.0f;
 
+	KTQUATERNION _orientation;	//姿勢
+	KTVECTOR3 _angularVelocity; //角速度
+	KTVECTOR3 _torqueAccum; //トルクの蓄積
+	KTMATRIX3 _inertiaTensorBody; // 慣性テンソル
+	KTMATRIX3 _inertiaTensorBodyInv; // 逆慣性テンソル
+	KTMATRIX3 _inertiaTensorWorld; // ワールド空間での慣性テンソル
+	KTMATRIX3 _inertiaTensorWorldInv; // ワールド空間での逆慣性テンソル
+
 public:
 	bool _useGravity = false;
 	float _mass = 1.0f;
@@ -25,6 +33,22 @@ public:
 	float _dynamicFriction = 0.4f; // 動摩擦係数
 
 	KTVECTOR3 _velocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
+
+	KTMATRIX3 InertiaTensorSphere(float mass, float radius);
+
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="mass"></param>
+	/// <param name="halfSize">col->extentsそのままでOK</param>
+	/// <returns></returns>
+	KTMATRIX3 InertiaTensorBox(float mass, const KTVECTOR3& halfSize);
+
+	void ApplyTorque(const KTVECTOR3& torque) {
+		_torqueAccum += torque;
+	}
+
+	void IntegrateRotation();
 
 	void Update() override;
 

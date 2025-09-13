@@ -33,6 +33,7 @@ public:
 		KTVECTOR3 _position = { 0.0f, 0.0f, 0.0f };
 		KTVECTOR3 _scale = { 1.0f, 1.0f, 1.0f };
 		KTVECTOR3 _rotation = { 0.0f, 0.0f, 0.0f };	//Degree
+		KTQUATERNION _quaternion = { 0.0f, 0.0f, 0.0f, 1.0f }; //回転を表すクォータニオン
 	};
 	Transform _transform; //位置、スケール、回転を保持するTransform構造体
 	virtual ~GameObject() {}
@@ -43,6 +44,10 @@ public:
 	bool GetAwakened() { return _awakened; }
 	bool Started() { return _started = true; }
 	bool GetStarted() { return _started; }
+
+	void RotationToQuaternion() {
+		_transform._quaternion = KTQUATERNION::FromEulerAngles(_transform._rotation.y, _transform._rotation.z, _transform._rotation.x);
+	}
 
 	KTVECTOR3 GetRight() const {
 		XMMATRIX matrix;

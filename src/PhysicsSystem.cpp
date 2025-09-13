@@ -159,10 +159,16 @@ void PhysicsSystem::Update() {
 						//“®–€ŽC
 						float jtFriction = -j * mu_d;
 						if (jt < 0) jtFriction = -jtFriction;
-						if (rbA)
+						if (rbA) {
 							rbA->_velocity += (jtFriction * invA) * tangent;
-						if (rbB)
+							if (rbA->_velocity.Absolute() < 1e-3f)//”÷­‚Å‚ ‚ê‚Î0‚É‚·‚é
+								rbA->_velocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
+						}
+						if (rbB) {
 							rbB->_velocity -= (jtFriction * invB) * tangent;
+							if (rbB->_velocity.Absolute() < 1e-3f)//”÷­‚Å‚ ‚ê‚Î0‚É‚·‚é
+								rbB->_velocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
+						}
 					}
 				}
 			}

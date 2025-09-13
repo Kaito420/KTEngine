@@ -181,6 +181,7 @@ void Scene::RenderInspector()
 						ImGui::TableSetColumnIndex(i + 1);
 						ImGui::PushID(i + 7);
 						ImGui::InputFloat("", &((&gameObject->_transform._rotation.x)[i]));
+						gameObject->RotationToQuaternion();//回転をクォータニオンに変換して保存
 						ImGui::PopID();
 					}
 					ImGui::EndTable();

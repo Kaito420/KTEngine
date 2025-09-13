@@ -105,6 +105,10 @@ void Cube::Render()const {
 
 	XMMATRIX rotation = XMMatrixRotationRollPitchYaw(radians.x, radians.y, radians.z);
 
+	//XMFLOAT4 q = XMFLOAT4(_owner->_transform._quaternion.x, _owner->_transform._quaternion.y, _owner->_transform._quaternion.z, _owner->_transform._quaternion.w);
+
+	//XMMATRIX rotation = XMMatrixRotationQuaternion(XMLoadFloat4(&q));
+
 	//スケーリング行列
 	XMMATRIX scaling = XMMatrixScaling(_owner->_transform._scale.x, _owner->_transform._scale.y, _owner->_transform._scale.z);
 
