@@ -268,6 +268,14 @@ struct KTMATRIX3 {
         );
 	}
 
+    KTMATRIX3 Transpose(const KTMATRIX3& mat) {
+        return KTMATRIX3(
+            mat.m[0][0], mat.m[1][0], mat.m[2][0],
+            mat.m[0][1], mat.m[1][1], mat.m[2][1],
+            mat.m[0][2], mat.m[1][2], mat.m[2][2]
+        );
+    }
+
     KTMATRIX3 operator*(const KTMATRIX3& mat) const {
         KTMATRIX3 result;
         for (int i = 0; i < 3; ++i) {
@@ -472,6 +480,15 @@ struct KTMATRIX4 {
 			}
         }
     }
+
+    KTMATRIX3 ToMatrix3()const {
+        return KTMATRIX3(
+            m[0][0], m[0][1], m[0][2],
+            m[1][0], m[1][1], m[1][2],
+            m[2][0], m[2][1], m[2][2]
+        );
+	}
+
 };
 
 struct KTQUATERNION {
@@ -499,6 +516,9 @@ struct KTQUATERNION {
 
     //ââéZéq
 
+    KTQUATERNION operator+(const KTQUATERNION& q)const {
+        return KTQUATERNION(x + q.x, y + q.y, z + q.z, w + q.w);
+    }
 
     /// <summary>
     /// âÒì]ÇÃçáê¨
