@@ -10,8 +10,15 @@
 #include "Component.h"
 #include "ktvector.hpp"
 #include <unordered_set>
+#include <vector>
 
 class ColliderBox;
+
+class Plane {
+public:
+	KTVECTOR3 n;	//法線ベクトル
+	float d;		//平面オフセット
+};
 
 class Collider : public Component
 {
@@ -83,6 +90,17 @@ public:
 	bool OverlapOnAxis(const ColliderBox* other, const KTVECTOR3& axis)const;
 
 	bool OverlapOnAxis(const ColliderBox* other, const KTVECTOR3& axis, float& outOverlap)const;
+
+	static std::vector<KTVECTOR3> GetFaceVertices(const ColliderBox* box, int axisIndex, int sign);
+
+	static std::vector<Plane> GetOBBPlanes(const ColliderBox* box);
+
+	static std::vector<KTVECTOR3> ClipPolygonAgainstPlane(const std::vector<KTVECTOR3>& polygon, const Plane& plane, float eps = 1e-6f);
+
+	static KTVECTOR3 ComputePolygonCentroid(const std::vector<KTVECTOR3>& polygon, const KTVECTOR3& refNormal);
+
+	static std::vector<KTVECTOR3> ComputeContactPolygon(const ColliderBox* refBox, const ColliderBox* incBox, const KTVECTOR3& collisionNormal);
+
 
 	std::string GetComponentName() { return "ColliderBox"; }
 

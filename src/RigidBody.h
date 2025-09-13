@@ -17,14 +17,6 @@ private:
 
 	KTVECTOR3 _forceAccum = KTVECTOR3(0.0f, 0.0f, 0.0f); // 力の蓄積
 
-	KTQUATERNION _orientation;	//姿勢
-	KTVECTOR3 _angularVelocity; //角速度
-	KTVECTOR3 _torqueAccum; //トルクの蓄積
-	KTMATRIX3 _inertiaTensorBody; // 慣性テンソル
-	KTMATRIX3 _inertiaTensorBodyInv; // 逆慣性テンソル
-	KTMATRIX3 _inertiaTensorWorld; // ワールド空間での慣性テンソル
-	KTMATRIX3 _inertiaTensorWorldInv; // ワールド空間での逆慣性テンソル
-
 public:
 	bool _useGravity = false;
 	float _mass = 1.0f;
@@ -33,6 +25,14 @@ public:
 
 	float _staticFriction = 0.6f;  // 静止摩擦係数
 	float _dynamicFriction = 0.4f; // 動摩擦係数
+
+	KTQUATERNION _orientation;	//姿勢
+	KTVECTOR3 _angularVelocity; //角速度
+	KTVECTOR3 _torqueAccum; //トルクの蓄積
+	KTMATRIX3 _inertiaTensorBody; // 慣性テンソル
+	KTMATRIX3 _inertiaTensorBodyInv; // 逆慣性テンソル
+	KTMATRIX3 _inertiaTensorWorld; // ワールド空間での慣性テンソル
+	KTMATRIX3 _inertiaTensorWorldInv; // ワールド空間での逆慣性テンソル
 
 	KTVECTOR3 _velocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
 

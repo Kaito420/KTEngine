@@ -108,10 +108,16 @@ void PhysicsSystem::Update() {
 				float j = -(1.0f + e) * relVelAlongNormal;
 				j /= invSum;
 
-				if (rbA)
+				if (rbA) {
 					rbA->_velocity -= (j * invA) * normal;
-				if (rbB)
+					if(rbA->_velocity.Absolute() < 1e-2f)//”÷­‚Å‚ ‚ê‚Î0‚É‚·‚é
+						rbA->_velocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
+				}
+				if (rbB) {
 					rbB->_velocity += (j * invB) * normal;
+					if(rbB->_velocity.Absolute() < 1e-2f)//”÷­‚Å‚ ‚ê‚Î0‚É‚·‚é
+						rbB->_velocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
+				}
 
 				// –€C—Í‚ÌŒvZiÚü•ûŒüj
 				KTVECTOR3 tangent = rV - Dot(rV, normal) * normal;

@@ -61,6 +61,9 @@ void RigidBody::Integrate(){
 	KTQUATERNION dq = (omegaQuat * _orientation) * 0.5f;
 	_orientation = (_orientation + dq * DT).Normalize();
 
+	//姿勢の反映
+	_owner->_transform._quaternion = _orientation;
+
 
 	//トルクのリセット
 	_torqueAccum = KTVECTOR3(0.0f, 0.0f, 0.0f);
@@ -112,7 +115,19 @@ void RigidBody::ShowUI() {
 			ImGui::PushID(i);
 			ImGui::InputFloat("", &((&_velocity.x)[i]));
 			ImGui::PopID();
+
 		}
+
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(0);
+		ImGui::Text("AngularVel");
+		for (int i = 0; i < 3; i++) {
+			ImGui::TableSetColumnIndex(i + 1);
+			ImGui::PushID(i + 3);
+			ImGui::InputFloat("", &((&_angularVelocity.x)[i]));
+			ImGui::PopID();
+		}
+
 		ImGui::EndTable();
 	}
 	ImGui::InputFloat("Mass", &_mass, 0.1f, 1.0f, "%.3f");

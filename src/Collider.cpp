@@ -82,6 +82,21 @@ bool ColliderBox::CheckVSOBB(ColliderBox* other) {
 	other->_collisionInfo._collisionNormal = -_collisionInfo._collisionNormal;
 	_collisionInfo._penetrationDepth = minOverlap;
 	other->_collisionInfo._penetrationDepth = minOverlap;
+
+	//衝突点の計算
+	std::vector<KTVECTOR3> contactPolygon = ComputeContactPolygon(this, other, _collisionInfo._collisionNormal);
+	if (!contactPolygon.empty()) {
+		KTVECTOR3 contactPoint = ComputePolygonCentroid(contactPolygon, _collisionInfo._collisionNormal);
+		_collisionInfo._collisionPoint = contactPoint;
+		other->_collisionInfo._collisionPoint = contactPoint;
+	}
+	else {//クリップで消えた場合の処理（最近傍中点）
+		KTVECTOR3 pointOnA = _center + _collisionInfo._collisionNormal * (_extents.x + _extents.y + _extents.z);
+		KTVECTOR3 pointOnB = other->_center - _collisionInfo._collisionNormal * (other->_extents.x + other->_extents.y + other->_extents.z);
+		KTVECTOR3 contactPoint = (pointOnA + pointOnB) * 0.5f;
+		_collisionInfo._collisionPoint = contactPoint;
+		other->_collisionInfo._collisionPoint = contactPoint;
+	}
 	
 	//全ての軸で重なっているので衝突している
 	return true;
@@ -142,6 +157,174 @@ bool ColliderBox::OverlapOnAxis(const ColliderBox* other, const KTVECTOR3& axis,
 	return distance <= (rA + rB);
 }
 
+std::vector<KTVECTOR3> ColliderBox::GetFaceVertices(const ColliderBox* box, int axisIndex, int sign){
+	std::vector<KTVECTOR3> verts;
+	verts.reserve(4);
+
+	// extents の各軸成分を取り出し
+	float ex = box->_extents.x;
+	float ey = box->_extents.y;
+	float ez = box->_extents.z;
+
+	float extent = (axisIndex == 0) ? ex : (axisIndex == 1 ? ey : ez);
+
+	// face center
+	KTVECTOR3 faceCenter = box->_center + box->_axis[axisIndex] * (extent * (float)sign);
+
+	// face のローカル2軸
+	int iu = (axisIndex + 1) % 3;
+	int iv = (axisIndex + 2) % 3;
+
+	float eu = (iu == 0) ? ex : (iu == 1 ? ey : ez);
+	float ev = (iv == 0) ? ex : (iv == 1 ? ey : ez);
+
+	KTVECTOR3 axisU = box->_axis[iu];
+	KTVECTOR3 axisV = box->_axis[iv];
+
+	verts.push_back(faceCenter + axisU * eu + axisV * ev);
+	verts.push_back(faceCenter - axisU * eu + axisV * ev);
+	verts.push_back(faceCenter - axisU * eu - axisV * ev);
+	verts.push_back(faceCenter + axisU * eu - axisV * ev);
+
+	return verts;
+}
+
+std::vector<Plane> ColliderBox::GetOBBPlanes(const ColliderBox* box){
+	std::vector<Plane> planes;
+	planes.reserve(6);
+
+	float ex = box->_extents.x;
+	float ey = box->_extents.y;
+	float ez = box->_extents.z;
+
+	for (int i = 0; i < 3; ++i) {
+		KTVECTOR3 a = box->_axis[i].Normalize();
+		float extent = (i == 0) ? ex : (i == 1 ? ey : ez);
+
+		// +面
+		KTVECTOR3 pPos = box->_center + a * extent;
+		planes.push_back({ a, Dot(a, pPos) });
+
+		// -面
+		KTVECTOR3 pNeg = box->_center - a * extent;
+		planes.push_back({ -a, Dot(-a, pNeg) });
+	}
+
+	return planes;
+}
+
+std::vector<KTVECTOR3> ColliderBox::ClipPolygonAgainstPlane(const std::vector<KTVECTOR3>& polygon, const Plane& plane, float eps){
+	std::vector<KTVECTOR3> out;
+	if (polygon.empty()) return out;
+
+	auto inside = [&](const KTVECTOR3& v) {
+		// 内側条件: Dot(n, v) <= d (+ eps マージン)
+		return Dot(plane.n, v) <= plane.d + eps;
+		};
+
+	size_t N = polygon.size();
+	for (size_t i = 0; i < N; ++i) {
+		const KTVECTOR3& A = polygon[i];
+		const KTVECTOR3& B = polygon[(i + 1) % N];
+
+		bool inA = inside(A);
+		bool inB = inside(B);
+
+		if (inA && inB) {
+			// 両方内側 -> B を追加
+			out.push_back(B);
+		}
+		else if (inA && !inB) {
+			// A inside, B outside -> 交点を追加
+			float da = Dot(plane.n, A) - plane.d;
+			float db = Dot(plane.n, B) - plane.d;
+			float t = da / (da - db); // da/(da-db)
+			KTVECTOR3 P = A + (B - A) * t;
+			out.push_back(P);
+		}
+		else if (!inA && inB) {
+			// A outside, B inside -> 交点 + B
+			float da = Dot(plane.n, A) - plane.d;
+			float db = Dot(plane.n, B) - plane.d;
+			float t = da / (da - db);
+			KTVECTOR3 P = A + (B - A) * t;
+			out.push_back(P);
+			out.push_back(B);
+		}
+		else {
+			// 両方外側 -> 何もしない
+		}
+	}
+
+	return out;
+}
+
+KTVECTOR3 ColliderBox::ComputePolygonCentroid(const std::vector<KTVECTOR3>& polygon, const KTVECTOR3& refNormal){
+	KTVECTOR3 centroid(0.0f, 0.0f, 0.0f);
+	if (polygon.size() == 0) return centroid;
+	if (polygon.size() == 1) return polygon[0];
+	if (polygon.size() == 2) return (polygon[0] + polygon[1]) * 0.5f;
+
+	// 三角分割: v0 を基準に (v0, vi, vi+1)
+	KTVECTOR3 v0 = polygon[0];
+	double areaSum = 0.0;
+	KTVECTOR3 cSum(0.0f, 0.0f, 0.0f);
+
+	for (size_t i = 1; i + 1 < polygon.size(); ++i) {
+		KTVECTOR3 a = polygon[i] - v0;
+		KTVECTOR3 b = polygon[i + 1] - v0;
+		KTVECTOR3 cross = Cross(a, b);
+		double triArea = 0.5 * (double)cross.Absolute(); // 面積
+		if (triArea <= 1e-12) continue;
+		// 三角形の重心
+		KTVECTOR3 triCentroid = (v0 + polygon[i] + polygon[i + 1]) * (1.0f / 3.0f);
+		cSum += triCentroid * (float)triArea;
+		areaSum += triArea;
+	}
+
+	if (areaSum <= 1e-12) {
+		// 面積がほぼ0 -> 頂点平均で代替
+		KTVECTOR3 s(0, 0, 0);
+		for (auto& p : polygon) s += p;
+		return s * (1.0f / (float)polygon.size());
+	}
+
+	centroid = cSum * (1.0f / (float)areaSum);
+	return centroid;
+}
+
+std::vector<KTVECTOR3> ColliderBox::ComputeContactPolygon(const ColliderBox* refBox, const ColliderBox* incBox, const KTVECTOR3& collisionNormal){
+	// 1) 参照ボックス（refBox）および参照面の決定
+ //    参照軸は bestAxis に最も近い軸 (abs dot 最大) を選ぶ
+	int refAxis = 0;
+	float bestDot = fabs(Dot(refBox->_axis[0], collisionNormal));
+	for (int i = 1; i < 3; ++i) {
+		float d = fabs(Dot(refBox->_axis[i], collisionNormal));
+		if (d > bestDot) { bestDot = d; refAxis = i; }
+	}
+
+	// sign: +1 if collisionNormal is in same direction as axis, else -1
+	float s = Dot(collisionNormal, refBox->_axis[refAxis]);
+	int refSign = (s >= 0.0f) ? +1 : -1;
+
+	// 初期ポリゴン = 参照面の4頂点
+	std::vector<KTVECTOR3> poly = GetFaceVertices(refBox, refAxis, refSign);
+
+	// 2) インシデントボックス (incBox) の 6平面を取得
+	std::vector<Plane> incPlanes = GetOBBPlanes(incBox);
+
+	// 3) poly を各平面で順にクリップ
+	for (const Plane& pl : incPlanes) {
+		poly = ClipPolygonAgainstPlane(poly, pl);
+		if (poly.empty()) break;
+	}
+
+	return poly; // 空ならクリップで消えたことを示す
+}
+
 void ColliderBox::ShowUI() {
 	ImGui::Checkbox("_wasOverlap", &_wasOverlap);
+	ImGui::Text("_collisionPoint.x: %.3f", _collisionInfo._collisionPoint.x);
+	ImGui::Text("_collisionPoint.y: %.3f", _collisionInfo._collisionPoint.y);
+	ImGui::Text("_collisionPoint.z: %.3f", _collisionInfo._collisionPoint.z);
 }

@@ -173,17 +173,24 @@ void Scene::RenderInspector()
 						ImGui::InputFloat("", &((&gameObject->_transform._scale.x)[i]));
 						ImGui::PopID();
 					}
-
+					bool changed = false;
 					ImGui::TableNextRow();
 					ImGui::TableSetColumnIndex(0);
 					ImGui::Text("Rotation");
 					for (int i = 0; i < 3; i++) {
 						ImGui::TableSetColumnIndex(i + 1);
 						ImGui::PushID(i + 7);
-						ImGui::InputFloat("", &((&gameObject->_transform._rotation.x)[i]));
-						gameObject->RotationToQuaternion();//回転をクォータニオンに変換して保存
+						changed |= ImGui::InputFloat("", &((&gameObject->_transform._rotation.x)[i]));
 						ImGui::PopID();
 					}
+					if (changed) {
+						gameObject->_transform._quaternion = KTQUATERNION::FromEulerAngles(gameObject->_transform._rotation.y, gameObject->_transform._rotation.z, gameObject->_transform._rotation.x);
+						if (gameObject->GetComponent<RigidBody>()) {
+							gameObject->GetComponent<RigidBody>()->_orientation = KTQUATERNION::FromEulerAngles(gameObject->_transform._rotation.y, gameObject->_transform._rotation.z, gameObject->_transform._rotation.x);
+							gameObject->GetComponent<RigidBody>()->_angularVelocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
+						}
+					}
+
 					ImGui::EndTable();
 				}
 
