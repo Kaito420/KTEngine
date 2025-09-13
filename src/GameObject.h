@@ -45,7 +45,7 @@ public:
 	bool Started() { return _started = true; }
 	bool GetStarted() { return _started; }
 
-	void RotationToQuaternion() {
+	void RotationToQuaternion() {//オイラー角からクォータニオンへ変換、DirectX11だとこの順番らしい
 		_transform._quaternion = KTQUATERNION::FromEulerAngles(_transform._rotation.y, _transform._rotation.z, _transform._rotation.x);
 	}
 

@@ -15,6 +15,8 @@ private:
 	float _gravity = -9.8f;
 	float _gravityScale = 1.0f;
 
+	KTVECTOR3 _forceAccum = KTVECTOR3(0.0f, 0.0f, 0.0f); // óÕÇÃí~êœ
+
 	KTQUATERNION _orientation;	//épê®
 	KTVECTOR3 _angularVelocity; //äpë¨ìx
 	KTVECTOR3 _torqueAccum; //ÉgÉãÉNÇÃí~êœ
@@ -48,7 +50,9 @@ public:
 		_torqueAccum += torque;
 	}
 
-	void IntegrateRotation();
+	void Integrate();
+
+	void Awake() override;
 
 	void Update() override;
 

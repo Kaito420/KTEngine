@@ -7,6 +7,7 @@
 #include "RigidBody.h"
 #include "GameObject.h"
 #include <imgui.h>
+#include "Collider.h"
 
 KTMATRIX3 RigidBody::InertiaTensorSphere(float mass, float radius){
 	float v = (2.0f / 5.0f) * mass * radius * radius;
@@ -29,7 +30,23 @@ KTMATRIX3 RigidBody::InertiaTensorBox(float mass, const KTVECTOR3& halfSize){
 	);
 }
 
-void RigidBody::IntegrateRotation(){
+void RigidBody::Integrate(){
+
+	//平行移動の計算
+	if (_invMass <= 0.0f)return;//静的な場合は無視
+
+	//加速度の計算 = F/m
+	KTVECTOR3 acceleration = _forceAccum * _invMass; // F=ma → a=F/m
+	//速度の更新
+	_velocity += acceleration * DT;
+	//速度の減衰
+	_velocity *= 0.99f;
+
+	//位置の更新
+	_owner->_transform._position += _velocity * DT;
+
+
+
 	//ワールド空間の慣性テンソルに変換
 	KTMATRIX3 R = _orientation.ToMatrix().ToMatrix3();//回転行列
 	_inertiaTensorWorldInv = R * _inertiaTensorBodyInv * R.Transposed();
@@ -40,16 +57,28 @@ void RigidBody::IntegrateRotation(){
 	_angularVelocity += angularAcceleration * DT;
 
 	//姿勢の更新
-	KTQUATERNION deltaOrientation(
-		_angularVelocity.x * 0.5f * DT,
-		_angularVelocity.y * 0.5f * DT,
-		_angularVelocity.z * 0.5f * DT,
-		0.0f
-	);
-	_orientation = (_orientation + deltaOrientation * _orientation).Normalize();
+	KTQUATERNION omegaQuat(_angularVelocity.x, _angularVelocity.y, _angularVelocity.z, 0.0f);
+	KTQUATERNION dq = (omegaQuat * _orientation) * 0.5f;
+	_orientation = (_orientation + dq * DT).Normalize();
+
 
 	//トルクのリセット
 	_torqueAccum = KTVECTOR3(0.0f, 0.0f, 0.0f);
+
+}
+
+void RigidBody::Awake(){
+	_invMass = (_mass != 0.0f) ? 1.0f / _mass : 0.0f; // 逆質量
+
+	//慣性テンソルの初期化
+	_inertiaTensorBody = KTMATRIX3::Identity();
+	_inertiaTensorBodyInv = KTMATRIX3::Identity();
+	
+	auto* colBox = _owner->GetComponent<ColliderBox>();
+	if (colBox) {
+		_inertiaTensorBody = InertiaTensorBox(_mass, colBox->_extents);
+		_inertiaTensorBodyInv = _inertiaTensorBody.Inverse();
+	}
 
 }
 
@@ -59,7 +88,6 @@ void RigidBody::Update() {
 		_velocity.y += _gravity * _gravityScale * DT;
 	else
 		_velocity.y = 0.0f;
-	_owner->_transform._position += _velocity;
 
 }
 

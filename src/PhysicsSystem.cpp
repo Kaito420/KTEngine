@@ -144,16 +144,10 @@ void PhysicsSystem::Update() {
 					//–€ŽC‚Ì”»’è
 					if (std::fabs(jt) < maxStaticFriction) {
 						//ÃŽ~–€ŽC
-						if (rbA) {
-							rbA->_velocity += (jt * invA) * tangent;
-							if (rbA->_velocity.Absolute() < 1e-4f)//”÷­‚Å‚ ‚ê‚Î0‚É‚·‚é
-								rbA->_velocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
-						}
-						if (rbB) {
-							rbB->_velocity -= (jt * invB) * tangent;
-							if (rbB->_velocity.Absolute() < 1e-4f)//”÷­‚Å‚ ‚ê‚Î0‚É‚·‚é
-								rbB->_velocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
-						}
+						if (rbA)
+							rbA->_velocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
+						if (rbB)
+							rbB->_velocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
 					}
 					else {
 						//“®–€ŽC
@@ -161,12 +155,12 @@ void PhysicsSystem::Update() {
 						if (jt < 0) jtFriction = -jtFriction;
 						if (rbA) {
 							rbA->_velocity += (jtFriction * invA) * tangent;
-							if (rbA->_velocity.Absolute() < 1e-3f)//”÷­‚Å‚ ‚ê‚Î0‚É‚·‚é
+							if (rbA->_velocity.Absolute() < 1e-2f)//”÷­‚Å‚ ‚ê‚Î0‚É‚·‚é
 								rbA->_velocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
 						}
 						if (rbB) {
 							rbB->_velocity -= (jtFriction * invB) * tangent;
-							if (rbB->_velocity.Absolute() < 1e-3f)//”÷­‚Å‚ ‚ê‚Î0‚É‚·‚é
+							if (rbB->_velocity.Absolute() < 1e-2f)//”÷­‚Å‚ ‚ê‚Î0‚É‚·‚é
 								rbB->_velocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
 						}
 					}
@@ -180,4 +174,14 @@ void PhysicsSystem::Update() {
 	for (auto* col : _colliders) {
 		col->EndFrame();
 	}
+
+	//„‘Ì‰^“®
+	for (auto* col : _colliders) {
+				auto* rb = col->GetOwner()->GetComponent<RigidBody>();
+		if (rb && rb->GetActive()) {
+			rb->Integrate();
+		}
+	}
+
+
 }

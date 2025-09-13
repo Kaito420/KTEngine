@@ -4,7 +4,7 @@
 #include <math.h>
 #include <stdexcept>
 
-#define DT 0.00016f // 60fpsëzíË
+#define DT 0.016f // 60fpsëzíË
 
 struct KTVECTOR2{
 public:
@@ -282,6 +282,27 @@ struct KTMATRIX3 {
         );
     }
 
+    KTMATRIX3 Inverse() {
+		KTMATRIX3 a = *this;
+        float det = a.m[0][0] * (a.m[1][1] * a.m[2][2] - a.m[1][2] * a.m[2][1]) -
+                    a.m[0][1] * (a.m[1][0] * a.m[2][2] - a.m[1][2] * a.m[2][0]) +
+                    a.m[0][2] * (a.m[1][0] * a.m[2][1] - a.m[1][1] * a.m[2][0]);
+        if (det == 0.0f) throw std::runtime_error("Matrix is singular and cannot be inverted.");
+        float invDet = 1.0f / det;
+        KTMATRIX3 inv;
+        inv.m[0][0] =  (a.m[1][1] * a.m[2][2] - a.m[1][2] * a.m[2][1]) * invDet;
+        inv.m[0][1] = -(a.m[0][1] * a.m[2][2] - a.m[0][2] * a.m[2][1]) * invDet;
+        inv.m[0][2] =  (a.m[0][1] * a.m[1][2] - a.m[0][2] * a.m[1][1]) * invDet;
+        inv.m[1][0] = -(a.m[1][0] * a.m[2][2] - a.m[1][2] * a.m[2][0]) * invDet;
+        inv.m[1][1] =  (a.m[0][0] * a.m[2][2] - a.m[0][2] * a.m[2][0]) * invDet;
+        inv.m[1][2] = -(a.m[0][0] * a.m[1][2] - a.m[0][2] * a.m[1][0]) * invDet;
+        inv.m[2][0] =  (a.m[1][0] * a.m[2][1] - a.m[1][1] * a.m[2][0]) * invDet;
+		inv.m[2][1] = -(a.m[0][0] * a.m[2][1] - a.m[0][1] * a.m[2][0]) * invDet;
+        inv.m[2][2] =  (a.m[0][0] * a.m[1][1] - a.m[0][1] * a.m[1][0]) * invDet;
+		return inv;
+	}
+
+
     KTMATRIX3 operator*(const KTMATRIX3& mat) const {
         KTMATRIX3 result;
         for (int i = 0; i < 3; ++i) {
@@ -525,6 +546,10 @@ struct KTQUATERNION {
     KTQUATERNION operator+(const KTQUATERNION& q)const {
         return KTQUATERNION(x + q.x, y + q.y, z + q.z, w + q.w);
     }
+
+    KTQUATERNION operator *(float f)const {
+        return KTQUATERNION(x * f, y * f, z * f, w * f);
+	}
 
     /// <summary>
     /// âÒì]ÇÃçáê¨
