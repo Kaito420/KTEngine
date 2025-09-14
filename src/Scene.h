@@ -43,7 +43,7 @@ public:
 		static_assert(std::is_base_of<GameObject, T>::value, "T must inherit from GameObjcet");
 		auto gameObject = std::make_shared<T>(std::forward<Args>(args)...);
 		gameObject->_id = _gameObjects.size();
-		gameObject->_name = typeid(T).name() + gameObject->_id;
+		gameObject->_name = std::string(typeid(T).name()) + std::to_string(_gameObjects.size());
 		gameObject->Active(true);
 		gameObject->Awake();
 		gameObject->Awakened();

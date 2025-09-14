@@ -30,6 +30,8 @@
     <ClCompile Include="libs\imgui\imgui_tables.cpp" />
     <ClCompile Include="libs\imgui\imgui_widgets.cpp" />
     <ClCompile Include="src\Billboard.cpp" />
+    <ClCompile Include="src\Block.cpp" />
+    <ClCompile Include="src\BlockSpawner.cpp" />
     <ClCompile Include="src\Camera.cpp" />
     <ClCompile Include="src\Collider.cpp" />
     <ClCompile Include="src\Cube.cpp" />
@@ -61,6 +63,8 @@
     <ClInclude Include="libs\imgui\imstb_textedit.h" />
     <ClInclude Include="libs\imgui\imstb_truetype.h" />
     <ClInclude Include="src\Billboard.h" />
+    <ClInclude Include="src\Block.h" />
+    <ClInclude Include="src\BlockSpawner.h" />
     <ClInclude Include="src\Camera.h" />
     <ClInclude Include="src\Collider.h" />
     <ClInclude Include="src\Component.h" />

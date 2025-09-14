@@ -58,7 +58,7 @@ void RigidBody::Integrate(){
 
 	//Šp‘¬“x‚ÌŒ¸Š
 	_angularVelocity *= _angularDamping;
-	if(_angularVelocity.Absolute() < 0.15f)
+	if(_angularVelocity.Absolute() < 0.18f)
 		_angularVelocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
 
 	//p¨‚ÌXV

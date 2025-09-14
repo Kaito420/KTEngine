@@ -16,6 +16,7 @@
 #include "Texture.h"
 #include "SkyDome.h"
 #include "Billboard.h"
+#include "BlockSpawner.h"
 
 void SceneGame::Initialize() {
 	_physicsSystem = new PhysicsSystem();
@@ -24,7 +25,12 @@ void SceneGame::Initialize() {
 	AddGameObject<GameObject>()->_name = "Square1";
 	FindGameObjectByName<GameObject>("Square1")->AddComponent<Billboard>();
 	AddGameObject<GameObject>()->_name = "BlockSpawner";
-	FindGameObjectByName<GameObject>("BlockSpawner")->AddComponent<Sphere>()->_texture = Texture::Load("asset\\texture\\Brick.jpg");
+	FindGameObjectByName<GameObject>("BlockSpawner")->AddComponent<BlockSpawner>();
+	FindGameObjectByName<GameObject>("BlockSpawner")->_transform._position = { 0.0f, 10.0f, 0.0f };
+	FindGameObjectByName<GameObject>("BlockSpawner")->_transform._scale = { 50.0f, 50.0f, 50.0f };
+	FindGameObjectByName<GameObject>("BlockSpawner")->_transform._rotation = { 180.0f, 0.0f, 0.0f };
+	FindGameObjectByName<GameObject>("BlockSpawner")->AddComponent<ModelRenderer>()->Load("asset\\model\\Arrow.obj");
+
 
 	AddGameObject<GameObject>()->_name = "Floor";
 	FindGameObjectByName<GameObject>("Floor")->_transform._position = { 0.0f, -1.5f,0.0f };
