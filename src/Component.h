@@ -60,7 +60,7 @@ public:
 	virtual void Render()const {}
 
 	/// <summary>
-	/// 削除直前に実行（非アクティブの際は無視）
+	/// Ownerが削除される直前に実行（非アクティブの際は無視）
 	/// </summary>
 	virtual void OnDestroy() {}
 

@@ -38,7 +38,7 @@ public:
 	/// ゲームオブジェクトを追加する
 	/// </summary>
 	template <typename T, typename... Args>
-	std::shared_ptr<T> AddGameObject(Args&&... args) {
+	T* AddGameObject(Args&&... args) {
 		static_assert(std::is_base_of<GameObject, T>::value, "T must inherit from GameObjcet");
 		auto gameObject = std::make_shared<T>(std::forward<Args>(args)...);
 		gameObject->_id = _gameObjects.size();
@@ -47,18 +47,18 @@ public:
 		gameObject->Awake();
 		gameObject->Awakened();
 		_gameObjects.push_back(gameObject);
-		return gameObject;
+		return gameObject.get();
 	}
 	
 	/// <summary>
 	/// ゲームオブジェクトの名前検索
 	/// </summary>
 	template <typename T>
-	std::shared_ptr<T> FindGameObjectByName(const std::string& name) {
-		static_assert(std::is_base_of<GameObject, T>::value, "T must inherit from GameObjcet");
+	T* FindGameObjectByName(const std::string& name) {
+		static_assert(std::is_base_of<GameObject, T>::value, "T must inherit from GameObject");
 		for (const auto& gameObject : _gameObjects) {
 			if (gameObject->_name == name) {
-				return std::dynamic_pointer_cast<T>(gameObject);
+				return dynamic_cast<T*>(gameObject.get());
 			}
 		}
 		return nullptr;

@@ -6,6 +6,7 @@
 
 #include "Square.h"
 #include "GameObject.h"
+#include "Input.h"
 
 void Square::Awake()
 {

@@ -68,6 +68,13 @@ void Scene::Update(){
 			gameObject->LateUpdateComponents();
 		}
 	}
+
+	//íœˆ—
+	_gameObjects.remove_if([](const std::shared_ptr<GameObject>& obj) { 
+		if (obj->IsDestroy())
+			obj->ProcessDestroyComponents();
+		return obj->IsDestroy();
+	});
 }
 
 void Scene::Render()const{
@@ -138,7 +145,7 @@ void Scene::RenderInspector()
 {
 	ImGui::Begin("Inspector");
 	{
-		for (auto gameObject : _gameObjects) {
+		for (auto& gameObject : _gameObjects) {
 			if (_selectedObjId == gameObject->_id) {
 				ImGui::Text("%s", gameObject->_name.c_str());
 				ImGui::Checkbox("Active", &gameObject->_active);

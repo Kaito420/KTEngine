@@ -39,11 +39,14 @@ public:
 	virtual ~GameObject() {}
 
 	bool Active(bool active) { _active = active; return _active; }
-	bool GetActive() const{ return _active; }
+	bool GetActive() const { return _active; }
 	bool Awakened() { return _awakened = true; }
 	bool GetAwakened() { return _awakened; }
 	bool Started() { return _started = true; }
 	bool GetStarted() { return _started; }
+
+	void Destroy() { _destroy = true; }
+	bool IsDestroy() const { return _destroy; }
 
 	void RotationToQuaternion() {//オイラー角からクォータニオンへ変換、DirectX11だとこの順番らしい
 		_transform._quaternion = KTQUATERNION::FromEulerAngles(_transform._rotation.y, _transform._rotation.z, _transform._rotation.x);
@@ -103,7 +106,7 @@ public:
 	/// <summary>
 	/// //Update後に実行（非アクティブの際は無視）
 	/// </summary>
-	virtual void LateUpdate() {} 
+	virtual void LateUpdate() {}
 
 	/// <summary>
 	/// LateUpdate後に実行（非アクティブの際は無視）
@@ -120,7 +123,7 @@ public:
 	/// </summary>
 	template <typename T, typename... Args>
 	T* AddComponent(Args&&... args) {
-		static_assert(std::is_base_of<Component, T>::value,"T must be derived from Component");
+		static_assert(std::is_base_of<Component, T>::value, "T must be derived from Component");
 		auto component = std::make_unique<T>(std::forward<Args>(args)...);
 		component->_owner = this; //コンポーネントにこのGameObjectのポインタを設定
 		component->Active(true); //追加したコンポーネントを有効化
@@ -181,8 +184,14 @@ public:
 		}
 	}
 
+	void ProcessDestroyComponents() {
+		for (auto& component : _components) {
+			component->OnDestroy();
+		}
+	}
+
 	void DispatchOnCollisionEnter(Collider* other) {
-		for(auto& component : _components) {
+		for (auto& component : _components) {
 			if (component->GetActive()) {
 				component->OnCollisionEnter(other);
 			}
