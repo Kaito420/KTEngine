@@ -72,6 +72,8 @@ public:
 
 	void Awake() override;
 
+	void OnDestroy() override;
+
 	// GameObject‚Ìî•ñ‚ÅXV‚·‚é
 	void Update() override;
 

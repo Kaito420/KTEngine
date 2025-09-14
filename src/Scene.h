@@ -65,7 +65,6 @@ public:
 		return nullptr;
 	}
 
-
 };
 
 #endif // ! _SCENE_H

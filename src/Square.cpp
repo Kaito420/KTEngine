@@ -29,9 +29,6 @@ void Square::Awake()
 	sd.SysMemPitch = 0;
 	sd.SysMemSlicePitch = 0;
 
-	_owner->_transform._position = { 0.0f, 0.0f, 0.0f };
-	_owner->_transform._rotation = { 0.0f, 0.0f, 0.0f };
-
 	RendererDX11::GetDevice()->CreateBuffer(&bd, &sd, _vertexBuffer.GetAddressOf());
 
 	_texture = Texture::Load("asset/texture/Brick.jpg");

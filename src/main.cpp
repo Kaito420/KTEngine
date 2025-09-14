@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <time.h>
 #include "ImGuiLayer.h"
 #include "RendererDX11.h"
 #include "backends/imgui_impl_win32.h"
@@ -34,6 +35,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 }
 
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
+
+    srand((unsigned)time(NULL));
     // ウィンドウクラス登録
     WNDCLASSEX wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L,
                       hInstance, NULL, NULL, NULL, NULL,

@@ -45,7 +45,7 @@ void RigidBody::Integrate(){
 	//位置の更新
 	_owner->_transform._position += _velocity * DT;
 
-
+	_orientation = _owner->_transform._quaternion;
 
 	//ワールド空間の慣性テンソルに変換
 	KTMATRIX3 R = _orientation.ToMatrix().ToMatrix3();//回転行列
@@ -58,7 +58,7 @@ void RigidBody::Integrate(){
 
 	//角速度の減衰
 	_angularVelocity *= _angularDamping;
-	if(_angularVelocity.Absolute() < 0.18f)
+	if(_angularVelocity.Absolute() < 0.20f)
 		_angularVelocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
 
 	//姿勢の更新

@@ -29,6 +29,10 @@ namespace {
     ID3D11DepthStencilState* depthStateEnable;
     ID3D11DepthStencilState* depthStateDisable;
 
+    ID3D11BlendState* blendState;
+    ID3D11BlendState* blendStateATC;
+
+
 }
 
 bool RendererDX11::Init(HWND hwnd) {
@@ -105,6 +109,29 @@ bool RendererDX11::Init(HWND hwnd) {
     device->CreateRasterizerState(&rd, &rs);
 
     context->RSSetState(rs);
+
+	//ブレンドステート設定
+	D3D11_BLEND_DESC blendDesc = {};
+	blendDesc.AlphaToCoverageEnable = FALSE;
+	blendDesc.IndependentBlendEnable = FALSE;
+	blendDesc.RenderTarget[0].BlendEnable = TRUE;
+	blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+	blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+	blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+	blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+	blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+	blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+	device->CreateBlendState(&blendDesc, &blendState);
+
+	blendDesc.AlphaToCoverageEnable = TRUE;
+	device->CreateBlendState(&blendDesc, &blendStateATC);
+
+	context->OMSetBlendState(blendState, nullptr, 0xffffffff);
+	float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	context->OMSetBlendState(blendState, blendFactor, 0xffffffff);
+
+
 
     //深度ステンシルステート設定
     D3D11_DEPTH_STENCIL_DESC depthStencilDesc = {};

@@ -7,7 +7,9 @@
 #include <memory>
 #include "Manager.h"
 #include "Scene.h"
+#include "SceneTitle.h"
 #include "SceneGame.h"
+#include "SceneResult.h"
 
 #include "RendererDX11.h"
 #include "ImGuiLayer.h"
@@ -20,7 +22,7 @@ void Manager::Initialize() {
 
 
 	//‚Æ‚è‚ ‚¦‚¸ƒeƒXƒgì¬
-	_currentScene = std::make_shared<SceneGame>();
+	_currentScene = std::make_shared<SceneTitle>();
 
 	if(_currentScene) {
 		_currentScene->Initialize();

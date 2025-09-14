@@ -123,6 +123,39 @@
     <ClCompile Include="src\BlockSpawner.cpp">
       <Filter>ソース ファイル\Component</Filter>
     </ClCompile>
+    <ClCompile Include="src\CubeKiller.cpp">
+      <Filter>ソース ファイル\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="src\BillboardEffect.cpp">
+      <Filter>ソース ファイル\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Piece.cpp">
+      <Filter>ソース ファイル\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Explosion.cpp">
+      <Filter>ソース ファイル\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SceneResult.cpp">
+      <Filter>ソース ファイル\Framework</Filter>
+    </ClCompile>
+    <ClCompile Include="src\FadeObject.cpp">
+      <Filter>ソース ファイル\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SceneTitle.cpp">
+      <Filter>ソース ファイル\Framework</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Fade.cpp">
+      <Filter>ソース ファイル\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ResultManager.cpp">
+      <Filter>ソース ファイル\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="src\TitleManager.cpp">
+      <Filter>ソース ファイル\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Particle.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ImGuiLayer.h">
@@ -213,6 +246,39 @@
       <Filter>ヘッダー ファイル\Object</Filter>
     </ClInclude>
     <ClInclude Include="src\BlockSpawner.h">
+      <Filter>ヘッダー ファイル\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="src\CubeKiller.h">
+      <Filter>ヘッダー ファイル\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Piece.h">
+      <Filter>ヘッダー ファイル\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="src\BillboardEffect.h">
+      <Filter>ヘッダー ファイル\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Explosion.h">
+      <Filter>ヘッダー ファイル\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SceneResult.h">
+      <Filter>ヘッダー ファイル\Framework</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SceneTitle.h">
+      <Filter>ヘッダー ファイル\Framework</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ResultManager.h">
+      <Filter>ヘッダー ファイル\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="src\FadeObject.h">
+      <Filter>ヘッダー ファイル\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Fade.h">
+      <Filter>ヘッダー ファイル\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="src\TitleManager.h">
+      <Filter>ヘッダー ファイル\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Particle.h">
       <Filter>ヘッダー ファイル\Component</Filter>
     </ClInclude>
   </ItemGroup>
