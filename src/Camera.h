@@ -25,6 +25,9 @@ public:
 	//void LateUpdate() override;
 	//void Render()const  override;
 
+	const XMMATRIX GetViewMatrix() { return _viewMatrix; }
+	const XMMATRIX GetProjectionMatrix() { return _projectionMatrix; }
+
 };
 
 #endif // !_CAMERA_H

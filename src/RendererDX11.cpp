@@ -20,6 +20,7 @@ namespace {
     ID3D11Buffer* worldBuffer = nullptr;
     ID3D11Buffer* viewBuffer = nullptr;
     ID3D11Buffer* projectionBuffer = nullptr;
+	ID3D11Buffer* materialBuffer = nullptr;
 
     ID3D11VertexShader* vertexShader = nullptr;
     ID3D11InputLayout* vertexLayout = nullptr;
@@ -93,8 +94,8 @@ bool RendererDX11::Init(HWND hwnd) {
     D3D11_RASTERIZER_DESC rd;
     ZeroMemory(&rd, sizeof(rd));
     rd.FillMode = D3D11_FILL_SOLID;
-    //rd.CullMode = D3D11_CULL_NONE;
-    rd.CullMode = D3D11_CULL_BACK; //裏カリング（表表示）
+    rd.CullMode = D3D11_CULL_NONE;
+    //rd.CullMode = D3D11_CULL_BACK; //裏カリング（表表示）
     //rd.CullMode = D3D11_CULL_FRONT; //表カリング（裏表示）すべて時計回りが表
 
     rd.DepthClipEnable = TRUE;
@@ -120,11 +121,23 @@ bool RendererDX11::Init(HWND hwnd) {
     //初期有効
     context->OMSetDepthStencilState(depthStateEnable, NULL);
 
+    // サンプラーステート設定
+    D3D11_SAMPLER_DESC samplerDesc{};
+    samplerDesc.Filter = D3D11_FILTER_ANISOTROPIC;
+    samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+    samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+    samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+    samplerDesc.MaxAnisotropy = 4;
+    samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
 
+    ID3D11SamplerState* samplerState{};
+    device->CreateSamplerState(&samplerDesc, &samplerState);
+
+    context->PSSetSamplers(0, 1, &samplerState);
 
     //定数バッファ生成
     D3D11_BUFFER_DESC bd = {};
-    bd.ByteWidth = sizeof(XMMATRIX);
+    bd.ByteWidth = sizeof(XMFLOAT4X4);
     bd.Usage = D3D11_USAGE_DEFAULT;
     bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     bd.CPUAccessFlags = 0;
@@ -140,6 +153,12 @@ bool RendererDX11::Init(HWND hwnd) {
     device->CreateBuffer(&bd, NULL, &projectionBuffer);
     context->VSSetConstantBuffers(2, 1, &projectionBuffer);
 
+    bd.ByteWidth = sizeof(MATERIAL);
+	device->CreateBuffer(&bd, NULL, &materialBuffer);
+	context->VSSetConstantBuffers(3, 1, &materialBuffer);
+	context->PSSetConstantBuffers(3, 1, &materialBuffer);
+
+
 
     //シェーダー初期化
     CreateVertexShader();
@@ -148,6 +167,12 @@ bool RendererDX11::Init(HWND hwnd) {
 	context->IASetInputLayout(vertexLayout);
 	context->VSSetShader(vertexShader, nullptr, 0);
 	context->PSSetShader(pixelShader, nullptr, 0);
+
+    // マテリアル初期化
+    MATERIAL material{};
+    material.Diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+    material.Ambient = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+    SetMaterial(material);
 
     return true;
 }
@@ -205,6 +230,11 @@ void RendererDX11::SetProjectionMatrix(XMMATRIX projection){
     context->UpdateSubresource(projectionBuffer, 0, NULL, &projectionf, 0, 0);
 }
 
+void RendererDX11::SetMaterial(MATERIAL material)
+{
+    context->UpdateSubresource(materialBuffer, 0, NULL, &material, 0, 0);
+}
+
 void RendererDX11::SetWorldProjection2D(){
     SetWorldMatrix(XMMatrixIdentity());
     SetViewMatrix(XMMatrixIdentity());
@@ -236,7 +266,7 @@ void RendererDX11::CreateVertexShader(){
     FILE* file;
     long int fsize;
 
-    file = fopen("shader/UnlitColorVS.cso", "rb");
+    file = fopen("shader/UnlitTextureVS.cso", "rb");
     assert(file);
 
     fsize = _filelength(_fileno(file));
@@ -264,7 +294,7 @@ void RendererDX11::CreatePixelShader(){
     FILE* file;
     long int fsize;
 
-    file = fopen("shader/UnlitColorPS.cso", "rb");
+    file = fopen("shader/UnlitTexturePS.cso", "rb");
     assert(file);
 
     fsize = _filelength(_fileno(file));

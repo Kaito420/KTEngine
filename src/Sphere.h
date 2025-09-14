@@ -24,6 +24,8 @@ public:
 	int _stackCount = 10;
 	int _sliceCount = 10;
 
+	ID3D11ShaderResourceView* _texture = nullptr;
+
 	void Awake() override;
 	void Render()const override;
 

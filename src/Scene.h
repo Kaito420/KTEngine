@@ -15,10 +15,11 @@
 
 class Scene {
 private:
-	int _selectedObjId = -1;
-	int _dragSrcIndex = -1;
+
 
 protected:
+	int _selectedObjId = -1;
+	int _dragSrcIndex = -1;
 	std::list<std::shared_ptr<GameObject>> _gameObjects;
 	PhysicsSystem* _physicsSystem;
 

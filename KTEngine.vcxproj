@@ -29,6 +29,7 @@
     <ClCompile Include="libs\imgui\imgui_draw.cpp" />
     <ClCompile Include="libs\imgui\imgui_tables.cpp" />
     <ClCompile Include="libs\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="src\Billboard.cpp" />
     <ClCompile Include="src\Camera.cpp" />
     <ClCompile Include="src\Collider.cpp" />
     <ClCompile Include="src\Cube.cpp" />
@@ -36,12 +37,16 @@
     <ClCompile Include="src\Input.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Manager.cpp" />
+    <ClCompile Include="src\ModelRenderer.cpp" />
     <ClCompile Include="src\PhysicsSystem.cpp" />
     <ClCompile Include="src\RendererDX11.cpp" />
     <ClCompile Include="src\RigidBody.cpp" />
     <ClCompile Include="src\Scene.cpp" />
+    <ClCompile Include="src\SceneGame.cpp" />
+    <ClCompile Include="src\SkyDome.cpp" />
     <ClCompile Include="src\Sphere.cpp" />
     <ClCompile Include="src\Square.cpp" />
+    <ClCompile Include="src\Texture.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="libs\imgui\backends\imgui_impl_dx11.h" />
@@ -55,6 +60,7 @@
     <ClInclude Include="libs\imgui\imstb_rectpack.h" />
     <ClInclude Include="libs\imgui\imstb_textedit.h" />
     <ClInclude Include="libs\imgui\imstb_truetype.h" />
+    <ClInclude Include="src\Billboard.h" />
     <ClInclude Include="src\Camera.h" />
     <ClInclude Include="src\Collider.h" />
     <ClInclude Include="src\Component.h" />
@@ -64,12 +70,16 @@
     <ClInclude Include="src\Input.h" />
     <ClInclude Include="src\ktvector.hpp" />
     <ClInclude Include="src\Manager.h" />
+    <ClInclude Include="src\ModelRenderer.h" />
     <ClInclude Include="src\PhysicsSystem.h" />
     <ClInclude Include="src\RendererDX11.h" />
     <ClInclude Include="src\RigidBody.h" />
     <ClInclude Include="src\Scene.h" />
+    <ClInclude Include="src\SceneGame.h" />
+    <ClInclude Include="src\SkyDome.h" />
     <ClInclude Include="src\Sphere.h" />
     <ClInclude Include="src\Square.h" />
+    <ClInclude Include="src\Texture.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="shader\Common.hlsl">
@@ -192,6 +202,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(SolutionDir)src;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <FxCompile>
       <AdditionalIncludeDirectories>$(ProjectDir)shader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -214,6 +225,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(SolutionDir)src;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <FxCompile>
       <AdditionalIncludeDirectories>$(ProjectDir)shader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -237,6 +249,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>d3d11.lib;dxgi.lib;dxguid.lib;d3dcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)src;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <FxCompile>
       <AdditionalIncludeDirectories>$(ProjectDir)shader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -262,6 +275,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>d3d11.lib;dxgi.lib;dxguid.lib;d3dcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)src;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <FxCompile>
       <AdditionalIncludeDirectories>$(ProjectDir)shader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>

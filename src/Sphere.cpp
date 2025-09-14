@@ -8,6 +8,8 @@
 #include "GameObject.h"
 #include <imgui.h>
 
+#include "Texture.h"
+
 void Sphere::CreateSphereMesh(float radius, int sliceCount, int stackCount, std::vector<Vertex>& vertices, std::vector<UINT>& indices){
 	vertices.clear();
 	indices.clear();
@@ -116,6 +118,7 @@ void Sphere::Awake() {
 	sd.pSysMem = indices.data();
 
 	RendererDX11::GetDevice()->CreateBuffer(&bd, &sd, &_indexBuffer);
+
 }
 
 void Sphere::Render()const {
@@ -146,6 +149,14 @@ void Sphere::Render()const {
 
 	// プリミティブトポロジ設定
 	RendererDX11::GetContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	MATERIAL material = {};
+	material.Diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
+	material.TextureEnable = true;
+	RendererDX11::SetMaterial(material);
+
+	// シェーダーリソースビュー設定
+	RendererDX11::GetContext()->PSSetShaderResources(0, 1, &_texture);
 
 	// ポリゴン描画
 	RendererDX11::GetContext()->DrawIndexed(_indexCount, 0, 0);

@@ -16,6 +16,7 @@ class Scene;
 class Manager {
 private:
 	static std::shared_ptr<Scene> _currentScene;
+	static std::shared_ptr<Scene> _nextScene;
 
 public:
 	static void Initialize();
@@ -24,6 +25,11 @@ public:
 	static void Render();
 
 	static std::shared_ptr<Scene> GetCurrentScene();
+
+	template<typename T>
+	static void ChangeScene() {
+		_nextScene = std::make_shared<T>();
+	}
 };
 
 

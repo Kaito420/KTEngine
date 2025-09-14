@@ -7,18 +7,20 @@
 #include <memory>
 #include "Manager.h"
 #include "Scene.h"
+#include "SceneGame.h"
 
 #include "RendererDX11.h"
 #include "ImGuiLayer.h"
 #include "imgui.h"
 
 std::shared_ptr<Scene> Manager::_currentScene = nullptr;
+std::shared_ptr<Scene> Manager::_nextScene = nullptr;
 
 void Manager::Initialize() {
 
 
 	//‚Æ‚è‚ ‚¦‚¸ƒeƒXƒgì¬
-	_currentScene = std::make_shared<Scene>();
+	_currentScene = std::make_shared<SceneGame>();
 
 	if(_currentScene) {
 		_currentScene->Initialize();
@@ -40,6 +42,13 @@ void Manager::Update() {
 void Manager::Render() {
 	if(_currentScene)
 		_currentScene->Render();
+
+	if (_nextScene != nullptr) {
+		_currentScene->Finalize();
+		_currentScene = _nextScene;
+		_currentScene->Initialize();
+		_nextScene = nullptr;
+	}
 }
 
 std::shared_ptr<Scene> Manager::GetCurrentScene() {

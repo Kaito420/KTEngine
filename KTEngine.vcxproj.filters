@@ -102,6 +102,21 @@
     <ClCompile Include="src\PhysicsSystem.cpp">
       <Filter>ソース ファイル\Framework</Filter>
     </ClCompile>
+    <ClCompile Include="src\SceneGame.cpp">
+      <Filter>ソース ファイル\Framework</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ModelRenderer.cpp">
+      <Filter>ソース ファイル\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Texture.cpp">
+      <Filter>ソース ファイル\Framework</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SkyDome.cpp">
+      <Filter>ソース ファイル\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Billboard.cpp">
+      <Filter>ソース ファイル\Component</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ImGuiLayer.h">
@@ -171,6 +186,21 @@
       <Filter>ヘッダー ファイル\Framework</Filter>
     </ClInclude>
     <ClInclude Include="src\RigidBody.h">
+      <Filter>ヘッダー ファイル\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SceneGame.h">
+      <Filter>ヘッダー ファイル\Framework</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ModelRenderer.h">
+      <Filter>ヘッダー ファイル\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Texture.h">
+      <Filter>ヘッダー ファイル\Framework</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SkyDome.h">
+      <Filter>ヘッダー ファイル\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Billboard.h">
       <Filter>ヘッダー ファイル\Component</Filter>
     </ClInclude>
   </ItemGroup>
