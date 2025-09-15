@@ -57,6 +57,7 @@ void SceneGame::Initialize() {
 	cubeKiller->AddComponent<ColliderBox>();
 
 	GameObject* skyDome = AddGameObject<GameObject>();
+	skyDome->_name = "SkyDome";
 	skyDome->AddComponent<SkyDome>();
 	skyDome->AddComponent<Sphere>()->_texture = Texture::Load("asset\\texture\\Sky.png");
 	skyDome->_transform._scale = { 300.0f, 300.0f, 300.0f };

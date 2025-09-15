@@ -64,11 +64,11 @@ void Particle::Update()
 	for (int i = 0; i < PARTICLE_MAX; i++) {
 		if (_particle[i].enable == false) {
 			_particle[i].enable = true;
-			_particle[i].Life = 60;
-			_particle[i].Position = _owner->_transform._position;
-			_particle[i].Velocity = KTVECTOR3((rand() % 100 - 50) / 500.0f
+			_particle[i].Life = 20;
+			_particle[i].Position = _owner->_transform._position;//生まれた瞬間親の位置
+			_particle[i].Velocity = KTVECTOR3((rand() % 100 - 50) / 5000.0f
 				, (rand() % 100 + 50) / 500.0f
-				, (rand() % 100 - 50) / 500.0f);
+				, (rand() % 100 - 50) / 5000.0f);
 
 			break;
 		}
@@ -105,16 +105,18 @@ void Particle::Render() const
 	// マテリアル設定
 	MATERIAL material;
 	ZeroMemory(&material, sizeof(material));
-	material.Diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	material.Diffuse = XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f);
 	material.TextureEnable = true;
 	RendererDX11::SetMaterial(material);
 
-	RendererDX11::SetDepthEnable(false);
+	//RendererDX11::SetDepthEnable(false);
 
 	for (int i = 0; i < PARTICLE_MAX; i++) {
 		if (_particle[i].enable == true) {
 			//マトリクス設定
-			XMMATRIX translation = XMMatrixTranslation(_owner->_transform._position.x, _owner->_transform._position.y, _owner->_transform._position.z);
+			XMMATRIX translation = XMMatrixTranslation( _particle[i].Position.x,
+				 _particle[i].Position.y,
+				 _particle[i].Position.z);
 
 			KTVECTOR3 radians = { XMConvertToRadians(_owner->_transform._rotation.x),
 								  XMConvertToRadians(_owner->_transform._rotation.y),
@@ -134,5 +136,5 @@ void Particle::Render() const
 	}
 
 
-	RendererDX11::SetDepthEnable(true);
+	//RendererDX11::SetDepthEnable(true);
 }
