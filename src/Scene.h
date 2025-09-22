@@ -15,10 +15,11 @@
 
 class Scene {
 private:
-	int _selectedObjId = -1;
-	int _dragSrcIndex = -1;
+
 
 protected:
+	int _selectedObjId = -1;
+	int _dragSrcIndex = -1;
 	std::list<std::shared_ptr<GameObject>> _gameObjects;
 	PhysicsSystem* _physicsSystem;
 
@@ -42,7 +43,7 @@ public:
 		static_assert(std::is_base_of<GameObject, T>::value, "T must inherit from GameObjcet");
 		auto gameObject = std::make_shared<T>(std::forward<Args>(args)...);
 		gameObject->_id = _gameObjects.size();
-		gameObject->_name = typeid(T).name() + gameObject->_id;
+		gameObject->_name = std::string(typeid(T).name()) + std::to_string(_gameObjects.size());
 		gameObject->Active(true);
 		gameObject->Awake();
 		gameObject->Awakened();
@@ -63,7 +64,6 @@ public:
 		}
 		return nullptr;
 	}
-
 
 };
 

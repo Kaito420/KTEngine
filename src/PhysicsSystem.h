@@ -19,6 +19,13 @@ public:
 		_colliders.push_back(collider);
 	}
 
+	void RemoveCollider(Collider* collider) {
+		auto it = std::find(_colliders.begin(), _colliders.end(), collider);
+		if (it != _colliders.end()) {
+			_colliders.erase(it);
+		}
+	}
+
 	void Update();
 };
 

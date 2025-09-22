@@ -7,6 +7,7 @@
 #include "Square.h"
 #include "GameObject.h"
 #include "Input.h"
+#include "Texture.h"
 
 void Square::Awake()
 {
@@ -28,10 +29,9 @@ void Square::Awake()
 	sd.SysMemPitch = 0;
 	sd.SysMemSlicePitch = 0;
 
-	_owner->_transform._position = { 0.0f, 0.0f, 0.0f };
-	_owner->_transform._rotation = { 0.0f, 0.0f, 0.0f };
-
 	RendererDX11::GetDevice()->CreateBuffer(&bd, &sd, _vertexBuffer.GetAddressOf());
+
+	_texture = Texture::Load("asset/texture/Brick.jpg");
 }
 
 void Square::Update()
@@ -64,7 +64,12 @@ void Square::Render()const
 	//プリミティブトポロジ設定
 	RendererDX11::GetContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
+	MATERIAL material = {};
+	material.Diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
+	material.TextureEnable = true;
+	RendererDX11::SetMaterial(material);
 	
+	RendererDX11::GetContext()->PSSetShaderResources(0, 1, &_texture);
 
 	//ポリゴン描画
 	RendererDX11::GetContext()->Draw(4, 0);

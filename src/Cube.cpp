@@ -117,6 +117,11 @@ void Cube::Render()const {
 
 	RendererDX11::SetWorldMatrix(worldMatrix);
 
+	MATERIAL material = {};
+	material.Diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
+	material.TextureEnable = false;
+	RendererDX11::SetMaterial(material);
+
 	//プリミティブトポロジの設定（三角形リスト）
 	RendererDX11::GetContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	//描画コール

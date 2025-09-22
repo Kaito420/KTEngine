@@ -16,6 +16,21 @@ cbuffer ProjectionBuffer : register(b2){
     matrix Projection;
 }
 
+struct MATERIAL
+{
+    float4 Ambient;
+    float4 Diffuse;
+    float4 Specular;
+    float4 Emission;
+    float Shininess;
+    bool TextureEnable;
+    float2 Dummy;
+};
+
+cbuffer MaterialBuffer : register(b3)
+{
+    MATERIAL Material;
+}
 
 struct VS_IN{
     float4 Position : POSITION0;

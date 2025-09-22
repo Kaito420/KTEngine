@@ -20,6 +20,11 @@ void ColliderBox::Awake() {
 	_extents = _owner->_transform._scale * 0.5f;
 }
 
+void ColliderBox::OnDestroy()
+{
+	Manager::GetCurrentScene()->GetPhysicsSystem()->RemoveCollider(this);
+}
+
 void ColliderBox::Update() {
 	_center = _owner->_transform._position;
 	_axis[0] = _owner->GetRight();

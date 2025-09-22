@@ -13,9 +13,12 @@
 
 class Square : public Component{
 private:
-	ComPtr<ID3D11Buffer> _vertexBuffer;
+
 
 public:
+	ComPtr<ID3D11Buffer> _vertexBuffer;
+	ID3D11ShaderResourceView* _texture = nullptr;
+
 	void Awake() override;
 
 	void Update() override;

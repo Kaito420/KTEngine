@@ -7,6 +7,9 @@
 #include "PhysicsSystem.h"
 
 void PhysicsSystem::Update() {
+
+	if (_colliders.size() < 2) return; //衝突判定するものが2つ未満ならスキップ
+
 	//各Colliderの現在フレームの情報をリセット
 	for (auto* col : _colliders) {
 		col->BeginFrame();
@@ -69,6 +72,7 @@ void PhysicsSystem::Update() {
 
 			// 小さな隙間（slop）を残して過剰補正を防ぐ
 			float slop = 0.01f;
+			float percent = 0.4f; // 0.2～0.8の範囲で調整可能
 			float correctionDepth = (std::max)(0.0f, depth - slop);
 
 			//有効質量の計算
@@ -87,7 +91,7 @@ void PhysicsSystem::Update() {
 			if (invMassSum <= 0.0f) continue;
 
 			// 押し戻し量
-			KTVECTOR3 correction = normal * (correctionDepth / invMassSum);
+			KTVECTOR3 correction = normal * (correctionDepth / invMassSum) * percent;
 
 			if (rbA) {
 				colA->GetOwner()->_transform._position -= correction * invMassA;
@@ -204,6 +208,4 @@ void PhysicsSystem::Update() {
 			rb->Integrate();
 		}
 	}
-
-
 }

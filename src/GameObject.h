@@ -129,8 +129,10 @@ public:
 		component->Active(true); //追加したコンポーネントを有効化
 		component->Awake();
 		component->Awakened();
+
+		T* rawPtr = component.get();
 		_components.push_back(std::move(component));
-		return component.get();
+		return rawPtr;
 	}
 
 	/// <summary>

@@ -16,12 +16,32 @@ using Microsoft::WRL::ComPtr;
 #include <DirectXMath.h>
 using namespace DirectX;
 
+#include "DirectXTex.h"
+
+#if _DEBUG
+#pragma comment(lib,"DirectXTex_Debug.lib")
+#else
+#pragma comment(lib,"DirectXTex_Release.lib")
+#endif
+
 // 頂点構造体
 struct Vertex {
     XMFLOAT3 position;
     XMFLOAT3 normal;
     XMFLOAT4 color;
     XMFLOAT2 uv;
+};
+
+// マテリアル構造体
+struct MATERIAL
+{
+    XMFLOAT4	Ambient;
+    XMFLOAT4	Diffuse;
+    XMFLOAT4	Specular;
+    XMFLOAT4	Emission;
+    float		Shininess;
+    BOOL         TextureEnable;
+    float		Dummy[2];
 };
 
 namespace RendererDX11 {
@@ -37,6 +57,8 @@ namespace RendererDX11 {
     void SetWorldMatrix(XMMATRIX world);
     void SetViewMatrix(XMMATRIX view);
     void SetProjectionMatrix(XMMATRIX projection);
+
+	void SetMaterial(MATERIAL material);
 
     void SetWorldProjection2D();
 	void SetWorldProjection3D();

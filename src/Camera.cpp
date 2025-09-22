@@ -54,6 +54,9 @@ void Camera::Update() {
 	RendererDX11::SetViewMatrix(view);
 	RendererDX11::SetProjectionMatrix(projection);
 
+	_viewMatrix = view;
+	_projectionMatrix = projection;
+
 	if (Input::IsMouseButtonDown(Input::MouseButton::Right)) {
 		_transform._rotation.y += (float)Input::GetMouseDelta().first * 0.1f;
 		_transform._rotation.x += (float)Input::GetMouseDelta().second * 0.1f;
