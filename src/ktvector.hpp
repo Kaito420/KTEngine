@@ -287,7 +287,7 @@ struct KTMATRIX3 {
         float det = a.m[0][0] * (a.m[1][1] * a.m[2][2] - a.m[1][2] * a.m[2][1]) -
                     a.m[0][1] * (a.m[1][0] * a.m[2][2] - a.m[1][2] * a.m[2][0]) +
                     a.m[0][2] * (a.m[1][0] * a.m[2][1] - a.m[1][1] * a.m[2][0]);
-        if (det == 0.0f) throw std::runtime_error("Matrix is singular and cannot be inverted.");
+        //if (det == 0.0f) throw std::runtime_error("Matrix is singular and cannot be inverted.");
         float invDet = 1.0f / det;
         KTMATRIX3 inv;
         inv.m[0][0] =  (a.m[1][1] * a.m[2][2] - a.m[1][2] * a.m[2][1]) * invDet;

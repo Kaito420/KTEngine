@@ -72,6 +72,8 @@ void RigidBody::Integrate(){
 
 	//トルクのリセット
 	_torqueAccum = KTVECTOR3(0.0f, 0.0f, 0.0f);
+	//力のリセット
+	_forceAccum = KTVECTOR3(0.0f, 0.0f, 0.0f);
 
 }
 

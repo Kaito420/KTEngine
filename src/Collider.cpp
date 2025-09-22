@@ -38,7 +38,10 @@ void ColliderBox::Render()const {
 
 }
 
-bool ColliderBox::CheckVSOBB(ColliderBox* other) {
+CollisionManifold ColliderBox::CheckVSOBB(ColliderBox* other) {
+	CollisionManifold manifold;
+	manifold.a = this;
+	manifold.b = other;
 
 	float minOverlap = FLT_MAX;	//最小の重なり量
 	KTVECTOR3 bestAxis;			//最小の重なり軸
@@ -47,13 +50,13 @@ bool ColliderBox::CheckVSOBB(ColliderBox* other) {
 	//分離軸SAT判定
 	for(int i = 0; i<3; i++) {
 		float overlap = 0.0f;
-		if (!OverlapOnAxis(other, _axis[i], overlap)) return false;
+		if (!OverlapOnAxis(other, _axis[i], overlap)) return manifold;
 		if(overlap < minOverlap) {
 			minOverlap = overlap;
 			bestAxis = _axis[i];
 		}
 
-		if (!OverlapOnAxis(other, other->_axis[i], overlap)) return false;
+		if (!OverlapOnAxis(other, other->_axis[i], overlap)) return manifold;
 		if (overlap < minOverlap) {
 			minOverlap = overlap;
 			bestAxis = other->_axis[i];
@@ -67,7 +70,7 @@ bool ColliderBox::CheckVSOBB(ColliderBox* other) {
 			if (axis.Absolute() < DBL_EPSILON) continue;
 
 			float overlap = 0.0f;
-			if (!OverlapOnAxis(other, axis.Normalize(), overlap)) return false;
+			if (!OverlapOnAxis(other, axis.Normalize(), overlap)) return manifold;
 			if(overlap < minOverlap) {
 				minOverlap = overlap;
 				bestAxis = axis;
@@ -81,30 +84,32 @@ bool ColliderBox::CheckVSOBB(ColliderBox* other) {
 	if (Dot(centerDelta, bestAxis) < 0.0f)
 		bestAxis = -bestAxis;
 
-	_collisionInfo._other = other;
-	other->_collisionInfo._other = this;
-	_collisionInfo._collisionNormal = bestAxis.Normalize();
-	other->_collisionInfo._collisionNormal = -_collisionInfo._collisionNormal;
-	_collisionInfo._penetrationDepth = minOverlap;
-	other->_collisionInfo._penetrationDepth = minOverlap;
+	manifold.hasCollision = true;
+	manifold.normal = bestAxis.Normalize();
+	manifold.penetrationDepth = minOverlap;
+
 
 	//衝突点の計算
-	std::vector<KTVECTOR3> contactPolygon = ComputeContactPolygon(this, other, _collisionInfo._collisionNormal);
+	std::vector<KTVECTOR3> contactPolygon = ComputeContactPolygon(this, other, manifold.normal);
 	if (!contactPolygon.empty()) {
-		KTVECTOR3 contactPoint = ComputePolygonCentroid(contactPolygon, _collisionInfo._collisionNormal);
-		_collisionInfo._collisionPoint = contactPoint;
-		other->_collisionInfo._collisionPoint = contactPoint;
+		for (auto& p : contactPolygon) {
+			ContactPoint cp;
+			cp.position = p;
+			cp.penetration = minOverlap;	//とりあえず同じ値、より正確にするなら個別に算出
+			manifold.contacts.push_back(cp);
+		}
 	}
 	else {//クリップで消えた場合の処理（最近傍中点）
-		KTVECTOR3 pointOnA = _center + _collisionInfo._collisionNormal * (_extents.x + _extents.y + _extents.z);
-		KTVECTOR3 pointOnB = other->_center - _collisionInfo._collisionNormal * (other->_extents.x + other->_extents.y + other->_extents.z);
-		KTVECTOR3 contactPoint = (pointOnA + pointOnB) * 0.5f;
-		_collisionInfo._collisionPoint = contactPoint;
-		other->_collisionInfo._collisionPoint = contactPoint;
+		KTVECTOR3 pointOnA = _center + manifold.normal * (_extents.x + _extents.y + _extents.z);
+		KTVECTOR3 pointOnB = other->_center - manifold.normal * (other->_extents.x + other->_extents.y + other->_extents.z);
+		ContactPoint cp;
+		cp.position = (pointOnA + pointOnB) * 0.5f;
+		cp.penetration = minOverlap;
+		manifold.contacts.push_back(cp);
 	}
 	
 	//全ての軸で重なっているので衝突している
-	return true;
+	return manifold;
 }
 
 bool ColliderBox::OverlapOnAxis(const ColliderBox* other, const KTVECTOR3& axis) const{
@@ -329,7 +334,4 @@ std::vector<KTVECTOR3> ColliderBox::ComputeContactPolygon(const ColliderBox* ref
 
 void ColliderBox::ShowUI() {
 	ImGui::Checkbox("_wasOverlap", &_wasOverlap);
-	ImGui::Text("_collisionPoint.x: %.3f", _collisionInfo._collisionPoint.x);
-	ImGui::Text("_collisionPoint.y: %.3f", _collisionInfo._collisionPoint.y);
-	ImGui::Text("_collisionPoint.z: %.3f", _collisionInfo._collisionPoint.z);
 }

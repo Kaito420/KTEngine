@@ -20,14 +20,22 @@ public:
 	float d;		//平面オフセット
 };
 
+struct ContactPoint {
+	KTVECTOR3 position; // 接触点の位置
+	float penetration; // 浸入深度
+};
+
+struct CollisionManifold {
+	Collider* a;	// コリジョンA
+	Collider* b;	// コリジョンB
+	KTVECTOR3 normal; // 衝突法線
+	float penetrationDepth = 0.0f;
+	std::vector<ContactPoint> contacts; // 接触点のリスト
+	bool hasCollision = false; // 衝突が発生しているかどうか
+};
+
 class Collider : public Component
 {
-	struct CollisionInfo {
-		Collider* _other;			//衝突相手
-		KTVECTOR3 _collisionPoint;	//衝突座標
-		KTVECTOR3 _collisionNormal;	//衝突法線
-		float _penetrationDepth;	//深度
-	};
 
 protected:
 	KTVECTOR3 _center;
@@ -37,7 +45,6 @@ public:
 	bool _isOverlap;
 	bool _wasOverlap;
 
-	CollisionInfo _collisionInfo;
 
 	/// <summary>
 	/// 現在フレームで当たっているコリジョン
@@ -58,8 +65,10 @@ public:
 
 		_previousOverlaps = _currentOverlaps;
 	}
-	virtual bool IsOverlap(Collider* other) = 0;
-	virtual bool IsOverlapWith(ColliderBox* other) = 0;
+
+	virtual CollisionManifold Collide(Collider* other) = 0;
+	virtual CollisionManifold CollideWith(ColliderBox* other) = 0;
+
 	std::string GetComponentName() { return "Collider"; }
 
 };
@@ -79,15 +88,16 @@ public:
 
 	void Render()const override;
 
-	bool IsOverlap(Collider* other) {
-		return other->IsOverlapWith(this);
+
+	CollisionManifold Collide(Collider* other) {
+		return other->CollideWith(this);
 	}
 
-	bool IsOverlapWith(ColliderBox* other) {
+	CollisionManifold CollideWith(ColliderBox* other) {
 		return CheckVSOBB(other);
 	}
 
-	bool CheckVSOBB(ColliderBox* other);
+	CollisionManifold CheckVSOBB(ColliderBox* other);
 
 	bool OverlapOnAxis(const ColliderBox* other, const KTVECTOR3& axis)const;
 
