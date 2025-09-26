@@ -10,13 +10,6 @@ void PhysicsSystem::Update() {
 
 	if (_colliders.size() < 2) return; //衝突判定するものが2つ未満ならスキップ
 
-	//剛体運動
-	for (auto* col : _colliders) {
-		auto* rb = col->GetOwner()->GetComponent<RigidBody>();
-		if (rb && rb->GetActive()) {
-			rb->Integrate();
-		}
-	}
 
 	//各Colliderの現在フレームの情報をリセット
 	for (auto* col : _colliders) {
@@ -112,8 +105,11 @@ void PhysicsSystem::Update() {
 				KTVECTOR3 rB = contact.position - colB->GetOwner()->_transform._position;
 
 				//速度修正
-				KTVECTOR3 vA = rbA ? rbA->_velocity + Cross(tempAngA, rA) : KTVECTOR3(0.0f, 0.0f, 0.0f);
-				KTVECTOR3 vB = rbB ? rbB->_velocity + Cross(tempAngB, rB) : KTVECTOR3(0.0f, 0.0f, 0.0f);
+				KTVECTOR3 vA = rbA ? rbA->_velocity + Cross(rbA->_angularVelocity, rA) : KTVECTOR3(0.0f, 0.0f, 0.0f);
+				KTVECTOR3 vB = rbB ? rbB->_velocity + Cross(rbB->_angularVelocity, rB) : KTVECTOR3(0.0f, 0.0f, 0.0f);
+
+				//KTVECTOR3 vA = rbA ? rbA->_velocity + Cross(tempAngA, rA) : KTVECTOR3(0.0f, 0.0f, 0.0f);
+				//KTVECTOR3 vB = rbB ? rbB->_velocity + Cross(tempAngB, rB) : KTVECTOR3(0.0f, 0.0f, 0.0f);
 
 
 				//相対速度
@@ -150,17 +146,22 @@ void PhysicsSystem::Update() {
 					if (rbA) {
 						rbA->_velocity -= (impulse * invMassA);
 						rbA->_angularVelocity -= rbA->_inertiaTensorWorldInv * Cross(rA, impulse);
+						//角速度加わるのやめてほしい
+						if (rbA->_angularVelocity.Absolute() < 1e-1f) rbA->_angularVelocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
 					}
 					if (rbB) {
 						rbB->_velocity += (impulse * invMassB);
 						rbB->_angularVelocity += rbB->_inertiaTensorWorldInv * Cross(rB, impulse);
+						if (rbB->_angularVelocity.Absolute() < 1e-1f) rbB->_angularVelocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
 					}
 
 					// 再計算
-					vA = rbA ? rbA->_velocity + Cross(tempAngA, rA) : KTVECTOR3(0.0f, 0.0f, 0.0f);
-					vB = rbB ? rbB->_velocity + Cross(tempAngB, rB) : KTVECTOR3(0.0f, 0.0f, 0.0f);
-					rV = vB - vA;
+					//vA = rbA ? rbA->_velocity + Cross(tempAngA, rA) : KTVECTOR3(0.0f, 0.0f, 0.0f);
+					//vB = rbB ? rbB->_velocity + Cross(tempAngB, rB) : KTVECTOR3(0.0f, 0.0f, 0.0f);
 
+					vA = rbA ? rbA->_velocity + Cross(rbA->_angularVelocity, rA) : KTVECTOR3(0.0f, 0.0f, 0.0f);
+					vB = rbB ? rbB->_velocity + Cross(rbB->_angularVelocity, rB) : KTVECTOR3(0.0f, 0.0f, 0.0f);
+					rV = vB - vA;
 
 					// 摩擦力の計算（接線方向）
 					KTVECTOR3 tangent = rV - Dot(rV, manifold.normal) * manifold.normal;
@@ -219,11 +220,21 @@ void PhysicsSystem::Update() {
 		}
 	}
 
+	//剛体運動
+	for (auto* col : _colliders) {
+		auto* rb = col->GetOwner()->GetComponent<RigidBody>();
+		if (rb && rb->GetActive()) {
+			rb->Integrate();
+		}
+	}
+
 
 	//状態更新
 	for (auto* col : _colliders) {
 		col->EndFrame();
 	}
+
+
 
 
 }
