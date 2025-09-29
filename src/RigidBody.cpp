@@ -35,12 +35,21 @@ void RigidBody::Integrate(){
 	//平行移動の計算
 	if (_invMass <= 0.0f)return;//静的な場合は無視
 
+	if (_useGravity)
+		_velocity.y += _gravity * _gravityScale * DT;
+	else
+		_velocity.y = 0.0f;
+
 	//加速度の計算 = F/m
 	KTVECTOR3 acceleration = _forceAccum * _invMass; // F=ma → a=F/m
 	//速度の更新
 	_velocity += acceleration * DT;
 	//速度の減衰
 	_velocity *= _linearDamping;
+
+	//速度が微小の場合
+	if (fabs(_velocity.x) < 1e-2f && fabs(_velocity.y) < 1e-2f && fabs(_velocity.z) < 1e-2f)
+		_velocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
 
 	//位置の更新
 	_owner->_transform._position += _velocity * DT;
@@ -49,7 +58,7 @@ void RigidBody::Integrate(){
 
 	//ワールド空間の慣性テンソルに変換
 	KTMATRIX3 R = _orientation.ToMatrix().ToMatrix3();//回転行列
-	_inertiaTensorWorldInv = R * _inertiaTensorBodyInv * R.Transposed();
+	_inertiaTensorWorldInv = R.Transpose() * _inertiaTensorBodyInv * R;
 
 	//角加速度の計算 = Inverse * トルク
 	KTVECTOR3 angularAcceleration = _inertiaTensorWorldInv * _torqueAccum;
@@ -58,8 +67,7 @@ void RigidBody::Integrate(){
 
 	//角速度の減衰
 	_angularVelocity *= _angularDamping;
-	if (fabs(_angularVelocity.x) < 1e-2f || fabs(_angularVelocity.y) < 1e-2f || fabs(_angularVelocity.z) < 1e-2f)
-		//if (_angularVelocity.Absolute() < 0.20f)
+	if (fabs(_angularVelocity.x) < 1e-2f && fabs(_angularVelocity.y) < 1e-2f && fabs(_angularVelocity.z) < 1e-2f)
 		_angularVelocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
 
 	//姿勢の更新
@@ -95,10 +103,7 @@ void RigidBody::Awake(){
 
 void RigidBody::Update() {
 	_invMass = (_mass != 0.0f) ? 1.0f / _mass : 0.0f; // 逆質量
-	if (_useGravity)
-		_velocity.y += _gravity * _gravityScale * DT;
-	else
-		_velocity.y = 0.0f;
+
 
 	auto* colBox = _owner->GetComponent<ColliderBox>();
 	if (colBox) {//0質量にしたときにエラーになるので対処を考える

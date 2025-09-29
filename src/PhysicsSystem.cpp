@@ -97,126 +97,111 @@ void PhysicsSystem::Update() {
 				colB->GetOwner()->_transform._position -= totalCorrection * invMassB;
 			}
 
-			KTVECTOR3 tempAngA = rbA ? rbA->_angularVelocity : KTVECTOR3(0.0f, 0.0f, 0.0f);
-			KTVECTOR3 tempAngB = rbB ? rbB->_angularVelocity : KTVECTOR3(0.0f, 0.0f, 0.0f);
+			for (int iter = 0; iter < 20; iter++) {
+				for (const auto& contact : manifold.contacts) {
+					KTVECTOR3 rA = contact.position - colA->GetOwner()->_transform._position;
+					KTVECTOR3 rB = contact.position - colB->GetOwner()->_transform._position;
 
-			for (const auto& contact : manifold.contacts) {
-				KTVECTOR3 rA = contact.position - colA->GetOwner()->_transform._position;
-				KTVECTOR3 rB = contact.position - colB->GetOwner()->_transform._position;
+					//‘¬“xC³
+					KTVECTOR3 vA = rbA ? rbA->_velocity + Cross(rbA->_angularVelocity, rA) : KTVECTOR3(0.0f, 0.0f, 0.0f);
+					KTVECTOR3 vB = rbB ? rbB->_velocity + Cross(rbB->_angularVelocity, rB) : KTVECTOR3(0.0f, 0.0f, 0.0f);
+					//‘Š‘Î‘¬“x
+					KTVECTOR3 rV = vB - vA;
+					float relVelAlongNormal = Dot(rV, manifold.normal);
+					float joule = 0.0f;
+					if (relVelAlongNormal > 0.0f) { // —£‚ê‚Ä‚¢‚­ê‡‚ÍƒXƒLƒbƒv
+						//–@ü•ûŒü
+						// ”½”­ŒW”
+						float e = 0.0f;
+						if (rbA && rbB)
+							e = (std::min)(rbA->_restitution, rbB->_restitution);
+						else if (rbA)
+							e = rbA->_restitution;
+						else if (rbB)
+							e = rbB->_restitution;
 
-				//‘¬“xC³
-				KTVECTOR3 vA = rbA ? rbA->_velocity + Cross(rbA->_angularVelocity, rA) : KTVECTOR3(0.0f, 0.0f, 0.0f);
-				KTVECTOR3 vB = rbB ? rbB->_velocity + Cross(rbB->_angularVelocity, rB) : KTVECTOR3(0.0f, 0.0f, 0.0f);
+						//—LŒøŽ¿—Ê
+						KTVECTOR3 rnA = rbA ? Cross(rA, manifold.normal) : KTVECTOR3(0.0f, 0.0f, 0.0f);
+						KTVECTOR3 rnB = rbB ? Cross(rB, manifold.normal) : KTVECTOR3(0.0f, 0.0f, 0.0f);
 
-				//KTVECTOR3 vA = rbA ? rbA->_velocity + Cross(tempAngA, rA) : KTVECTOR3(0.0f, 0.0f, 0.0f);
-				//KTVECTOR3 vB = rbB ? rbB->_velocity + Cross(tempAngB, rB) : KTVECTOR3(0.0f, 0.0f, 0.0f);
+						float angA = rbA ? Dot(rbA->_inertiaTensorWorldInv * rnA, rnA) : 0.0f;
+						float angB = rbB ? Dot(rbB->_inertiaTensorWorldInv * rnB, rnB) : 0.0f;
+						invMassSum = invMassA + invMassB + angA + angB;
 
+						if (invMassSum <= 0.0f) continue;
 
-				//‘Š‘Î‘¬“x
-				KTVECTOR3 rV = vB - vA;
-				float relVelAlongNormal = Dot(rV, manifold.normal);
+						// Õ“ËƒCƒ“ƒpƒ‹ƒX‚ÌŒvŽZ
+						joule = -(1.0f + e) * relVelAlongNormal;
+						joule /= invMassSum;
 
-				if (relVelAlongNormal >= 0.0f) { // —£‚ê‚Ä‚¢‚­ê‡‚ÍƒXƒLƒbƒv
-					//–@ü•ûŒü
-					// ”½”­ŒW”
-					float e = 0.0f;
-					if (rbA && rbB)
-						e = (std::min)(rbA->_restitution, rbB->_restitution);
-					else if (rbA)
-						e = rbA->_restitution;
-					else if (rbB)
-						e = rbB->_restitution;
-
-					//—LŒøŽ¿—Ê
-					KTVECTOR3 rnA = rbA ? Cross(rA, manifold.normal) : KTVECTOR3(0.0f, 0.0f, 0.0f);
-					KTVECTOR3 rnB = rbB ? Cross(rB, manifold.normal) : KTVECTOR3(0.0f, 0.0f, 0.0f);
-
-					float angA = rbA ? Dot(rbA->_inertiaTensorWorldInv * rnA, rnA) : 0.0f;
-					float angB = rbB ? Dot(rbB->_inertiaTensorWorldInv * rnB, rnB) : 0.0f;
-					invMassSum = invMassA + invMassB + angA + angB;
-
-					if (invMassSum <= 0.0f) continue;
-
-					// Õ“ËƒCƒ“ƒpƒ‹ƒX‚ÌŒvŽZ
-					float j = -(1.0f + e) * relVelAlongNormal;
-					j /= invMassSum;
-
-					KTVECTOR3 impulse = j * manifold.normal;
-
-					if (rbA) {
-						rbA->_velocity -= (impulse * invMassA);
-						rbA->_angularVelocity -= rbA->_inertiaTensorWorldInv * Cross(rA, impulse);
-						//Šp‘¬“x‰Á‚í‚é‚Ì‚â‚ß‚Ä‚Ù‚µ‚¢
-						if (rbA->_angularVelocity.Absolute() < 1e-1f) rbA->_angularVelocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
-					}
-					if (rbB) {
-						rbB->_velocity += (impulse * invMassB);
-						rbB->_angularVelocity += rbB->_inertiaTensorWorldInv * Cross(rB, impulse);
-						if (rbB->_angularVelocity.Absolute() < 1e-1f) rbB->_angularVelocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
-					}
-
-					// ÄŒvŽZ
-					//vA = rbA ? rbA->_velocity + Cross(tempAngA, rA) : KTVECTOR3(0.0f, 0.0f, 0.0f);
-					//vB = rbB ? rbB->_velocity + Cross(tempAngB, rB) : KTVECTOR3(0.0f, 0.0f, 0.0f);
-
-					vA = rbA ? rbA->_velocity + Cross(rbA->_angularVelocity, rA) : KTVECTOR3(0.0f, 0.0f, 0.0f);
-					vB = rbB ? rbB->_velocity + Cross(rbB->_angularVelocity, rB) : KTVECTOR3(0.0f, 0.0f, 0.0f);
-					rV = vB - vA;
-
-					// –€ŽC—Í‚ÌŒvŽZiÚü•ûŒüj
-					KTVECTOR3 tangent = rV - Dot(rV, manifold.normal) * manifold.normal;
-					if (tangent.Absolute() > 1e-3f) {
-						tangent = tangent.Normalize();
-
-						// Úü•ûŒü‚Ì—LŒøŽ¿—Êi‰ñ“]Šñ—^‚ðŠÜ‚ß‚éj
-						KTVECTOR3 rtA = rbA ? Cross(rA, tangent) : KTVECTOR3(0, 0, 0);
-						KTVECTOR3 rtB = rbB ? Cross(rB, tangent) : KTVECTOR3(0, 0, 0);
-
-						float tanAngA = rbA ? Dot(rbA->_inertiaTensorWorldInv * rtA, rtA) : 0.0f;
-						float tanAngB = rbB ? Dot(rbB->_inertiaTensorWorldInv * rtB, rtB) : 0.0f;
-
-						float denomTangent = invMassA + invMassB + tanAngA + tanAngB;
-						if (denomTangent <= 0.0f) continue;
-
-						float jt = -Dot(rV, tangent);
-						jt /= denomTangent;
-
-						// ÃŽ~–€ŽC‚Æ“®–€ŽC‚ÌŒˆ’è
-						float mu_s = 0.0f;
-						float mu_d = 0.0f;
-						if (rbA && rbB) {
-							mu_s = (std::max)(rbA->_staticFriction, rbB->_staticFriction);
-							mu_d = (std::max)(rbA->_dynamicFriction, rbB->_dynamicFriction);
-						}
-						else if (rbA) {
-							mu_s = rbA->_staticFriction;
-							mu_d = rbA->_dynamicFriction;
-						}
-						else if (rbB) {
-							mu_s = rbB->_staticFriction;
-							mu_d = rbB->_dynamicFriction;
-						}
-
-						KTVECTOR3 frictionImpulse;
-						if (fabs(jt) < j * mu_s)
-							frictionImpulse = jt * tangent; // ÃŽ~–€ŽC
-						else
-							frictionImpulse = -j * mu_d * tangent; // “®–€ŽC
+						KTVECTOR3 impulse = joule * manifold.normal;
 
 						if (rbA) {
-							rbA->_velocity += (frictionImpulse * invMassA);
-							rbA->_angularVelocity += rbA->_inertiaTensorWorldInv * Cross(rA, frictionImpulse);
+							rbA->_velocity -= (impulse * invMassA);
+							rbA->_angularVelocity -= rbA->_inertiaTensorWorldInv * Cross(rA, impulse);
 						}
 						if (rbB) {
-							rbB->_velocity -= (frictionImpulse * invMassB);
-							rbB->_angularVelocity -= rbB->_inertiaTensorWorldInv * Cross(rB, frictionImpulse);
+							rbB->_velocity += (impulse * invMassB);
+							rbB->_angularVelocity += rbB->_inertiaTensorWorldInv * Cross(rB, impulse);
 						}
 					}
+
+					//// ÄŒvŽZ
+					//vA = rbA ? rbA->_velocity + Cross(rbA->_angularVelocity, rA) : KTVECTOR3(0.0f, 0.0f, 0.0f);
+					//vB = rbB ? rbB->_velocity + Cross(rbB->_angularVelocity, rB) : KTVECTOR3(0.0f, 0.0f, 0.0f);
+					//rV = vB - vA;
+
+					//// –€ŽC—Í‚ÌŒvŽZiÚü•ûŒüj
+					//KTVECTOR3 tangent = rV - Dot(rV, manifold.normal) * manifold.normal;
+					//if (tangent.Absolute() > 1e-3f) {
+					//	tangent = tangent.Normalize();
+
+					//	// Úü•ûŒü‚Ì—LŒøŽ¿—Êi‰ñ“]Šñ—^‚ðŠÜ‚ß‚éj
+					//	KTVECTOR3 rtA = rbA ? Cross(rA, tangent) : KTVECTOR3(0, 0, 0);
+					//	KTVECTOR3 rtB = rbB ? Cross(rB, tangent) : KTVECTOR3(0, 0, 0);
+
+					//	float tanAngA = rbA ? Dot(rbA->_inertiaTensorWorldInv * rtA, rtA) : 0.0f;
+					//	float tanAngB = rbB ? Dot(rbB->_inertiaTensorWorldInv * rtB, rtB) : 0.0f;
+
+					//	float denomTangent = invMassA + invMassB + tanAngA + tanAngB;
+					//	if (denomTangent <= 0.0f) continue;
+
+					//	float jt = -Dot(rV, tangent);
+					//	jt /= denomTangent;
+
+					//	// ÃŽ~–€ŽC‚Æ“®–€ŽC‚ÌŒˆ’è
+					//	float mu_s = 0.0f;
+					//	float mu_d = 0.0f;
+					//	if (rbA && rbB) {
+					//		mu_s = (std::max)(rbA->_staticFriction, rbB->_staticFriction);
+					//		mu_d = (std::max)(rbA->_dynamicFriction, rbB->_dynamicFriction);
+					//	}
+					//	else if (rbA) {
+					//		mu_s = rbA->_staticFriction;
+					//		mu_d = rbA->_dynamicFriction;
+					//	}
+					//	else if (rbB) {
+					//		mu_s = rbB->_staticFriction;
+					//		mu_d = rbB->_dynamicFriction;
+					//	}
+
+					//	KTVECTOR3 frictionImpulse;
+					//	if (fabs(jt) < fabs(joule) * mu_s)
+					//		frictionImpulse = -jt * tangent; // ÃŽ~–€ŽC
+					//	else
+					//		frictionImpulse = -joule * mu_d * tangent; // “®–€ŽC
+
+					//	if (rbA) {
+					//		rbA->_velocity += (frictionImpulse * invMassA);
+					//		rbA->_angularVelocity += rbA->_inertiaTensorWorldInv * Cross(rA, frictionImpulse);
+					//	}
+					//	if (rbB) {
+					//		rbB->_velocity -= (frictionImpulse * invMassB);
+					//		rbB->_angularVelocity -= rbB->_inertiaTensorWorldInv * Cross(rB, frictionImpulse);
+					//	}
+					//}
 				}
-
 			}
-
-			
 		}
 	}
 
