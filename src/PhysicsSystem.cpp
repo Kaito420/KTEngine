@@ -147,59 +147,59 @@ void PhysicsSystem::Update() {
 					}
 
 					//// ÄŒvŽZ
-					//vA = rbA ? rbA->_velocity + Cross(rbA->_angularVelocity, rA) : KTVECTOR3(0.0f, 0.0f, 0.0f);
-					//vB = rbB ? rbB->_velocity + Cross(rbB->_angularVelocity, rB) : KTVECTOR3(0.0f, 0.0f, 0.0f);
-					//rV = vB - vA;
+					vA = rbA ? rbA->_velocity + Cross(rbA->_angularVelocity, rA) : KTVECTOR3(0.0f, 0.0f, 0.0f);
+					vB = rbB ? rbB->_velocity + Cross(rbB->_angularVelocity, rB) : KTVECTOR3(0.0f, 0.0f, 0.0f);
+					rV = vB - vA;
 
-					//// –€ŽC—Í‚ÌŒvŽZiÚü•ûŒüj
-					//KTVECTOR3 tangent = rV - Dot(rV, manifold.normal) * manifold.normal;
-					//if (tangent.Absolute() > 1e-3f) {
-					//	tangent = tangent.Normalize();
+					// –€ŽC—Í‚ÌŒvŽZiÚü•ûŒüj
+					KTVECTOR3 tangent = rV - Dot(rV, manifold.normal) * manifold.normal;
+					if (tangent.Absolute() > 1e-3f) {
+						tangent = tangent.Normalize();
 
-					//	// Úü•ûŒü‚Ì—LŒøŽ¿—Êi‰ñ“]Šñ—^‚ðŠÜ‚ß‚éj
-					//	KTVECTOR3 rtA = rbA ? Cross(rA, tangent) : KTVECTOR3(0, 0, 0);
-					//	KTVECTOR3 rtB = rbB ? Cross(rB, tangent) : KTVECTOR3(0, 0, 0);
+						// Úü•ûŒü‚Ì—LŒøŽ¿—Êi‰ñ“]Šñ—^‚ðŠÜ‚ß‚éj
+						KTVECTOR3 rtA = rbA ? Cross(rA, tangent) : KTVECTOR3(0, 0, 0);
+						KTVECTOR3 rtB = rbB ? Cross(rB, tangent) : KTVECTOR3(0, 0, 0);
 
-					//	float tanAngA = rbA ? Dot(rbA->_inertiaTensorWorldInv * rtA, rtA) : 0.0f;
-					//	float tanAngB = rbB ? Dot(rbB->_inertiaTensorWorldInv * rtB, rtB) : 0.0f;
+						float tanAngA = rbA ? Dot(rbA->_inertiaTensorWorldInv * rtA, rtA) : 0.0f;
+						float tanAngB = rbB ? Dot(rbB->_inertiaTensorWorldInv * rtB, rtB) : 0.0f;
 
-					//	float denomTangent = invMassA + invMassB + tanAngA + tanAngB;
-					//	if (denomTangent <= 0.0f) continue;
+						float denomTangent = invMassA + invMassB + tanAngA + tanAngB;
+						if (denomTangent <= 0.0f) continue;
 
-					//	float jt = -Dot(rV, tangent);
-					//	jt /= denomTangent;
+						float jt = -Dot(rV, tangent);
+						jt /= denomTangent;
 
-					//	// ÃŽ~–€ŽC‚Æ“®–€ŽC‚ÌŒˆ’è
-					//	float mu_s = 0.0f;
-					//	float mu_d = 0.0f;
-					//	if (rbA && rbB) {
-					//		mu_s = (std::max)(rbA->_staticFriction, rbB->_staticFriction);
-					//		mu_d = (std::max)(rbA->_dynamicFriction, rbB->_dynamicFriction);
-					//	}
-					//	else if (rbA) {
-					//		mu_s = rbA->_staticFriction;
-					//		mu_d = rbA->_dynamicFriction;
-					//	}
-					//	else if (rbB) {
-					//		mu_s = rbB->_staticFriction;
-					//		mu_d = rbB->_dynamicFriction;
-					//	}
+						// ÃŽ~–€ŽC‚Æ“®–€ŽC‚ÌŒˆ’è
+						float mu_s = 0.0f;
+						float mu_d = 0.0f;
+						if (rbA && rbB) {
+							mu_s = (std::max)(rbA->_staticFriction, rbB->_staticFriction);
+							mu_d = (std::max)(rbA->_dynamicFriction, rbB->_dynamicFriction);
+						}
+						else if (rbA) {
+							mu_s = rbA->_staticFriction;
+							mu_d = rbA->_dynamicFriction;
+						}
+						else if (rbB) {
+							mu_s = rbB->_staticFriction;
+							mu_d = rbB->_dynamicFriction;
+						}
 
-					//	KTVECTOR3 frictionImpulse;
-					//	if (fabs(jt) < fabs(joule) * mu_s)
-					//		frictionImpulse = -jt * tangent; // ÃŽ~–€ŽC
-					//	else
-					//		frictionImpulse = -joule * mu_d * tangent; // “®–€ŽC
+						KTVECTOR3 frictionImpulse;
+						if (fabs(jt) < fabs(joule) * mu_s)
+							frictionImpulse = -jt * tangent; // ÃŽ~–€ŽC
+						else
+							frictionImpulse = -joule * mu_d * tangent; // “®–€ŽC
 
-					//	if (rbA) {
-					//		rbA->_velocity += (frictionImpulse * invMassA);
-					//		rbA->_angularVelocity += rbA->_inertiaTensorWorldInv * Cross(rA, frictionImpulse);
-					//	}
-					//	if (rbB) {
-					//		rbB->_velocity -= (frictionImpulse * invMassB);
-					//		rbB->_angularVelocity -= rbB->_inertiaTensorWorldInv * Cross(rB, frictionImpulse);
-					//	}
-					//}
+						if (rbA) {
+							rbA->_velocity += (frictionImpulse * invMassA);
+							rbA->_angularVelocity += rbA->_inertiaTensorWorldInv * Cross(rA, frictionImpulse);
+						}
+						if (rbB) {
+							rbB->_velocity -= (frictionImpulse * invMassB);
+							rbB->_angularVelocity -= rbB->_inertiaTensorWorldInv * Cross(rB, frictionImpulse);
+						}
+					}
 				}
 			}
 		}
