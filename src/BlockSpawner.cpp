@@ -33,9 +33,10 @@ void BlockSpawner::Update()
 	if(Input::IsKeyPressed(VK_SPACE)){
 		GameObject* block = Manager::GetCurrentScene()->AddGameObject<Block>();
 		block->_transform._position = _owner->_transform._position + KTVECTOR3(0,-2.0f,0);
-		block->_transform._rotation = KTVECTOR3(rand() % 45, rand() % 45, rand() % 45);
+		//block->_transform._rotation = KTVECTOR3(0, 0, 45);
 		block->_transform._quaternion = KTQUATERNION::FromEulerAngles(block->_transform._rotation.y, block->_transform._rotation.z, block->_transform._rotation.x);
 		block->GetComponent<RigidBody>()->_useGravity = true;
+		block->GetComponent<RigidBody>()->_restitution = 0.5f;
 		_owner->_transform._position.y += 0.5f;
 	}
 }

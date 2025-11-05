@@ -271,14 +271,15 @@ struct KTMATRIX3 {
 	}
 
     KTMATRIX3 Transposed() {
-		return Transpose(*this);
+		*this = Transpose();
+		return *this;
     }
 
-    KTMATRIX3 Transpose(const KTMATRIX3& mat) {
+    KTMATRIX3 Transpose() {
         return KTMATRIX3(
-            mat.m[0][0], mat.m[1][0], mat.m[2][0],
-            mat.m[0][1], mat.m[1][1], mat.m[2][1],
-            mat.m[0][2], mat.m[1][2], mat.m[2][2]
+            m[0][0], m[1][0], m[2][0],
+            m[0][1], m[1][1], m[2][1],
+            m[0][2], m[1][2], m[2][2]
         );
     }
 
@@ -287,7 +288,7 @@ struct KTMATRIX3 {
         float det = a.m[0][0] * (a.m[1][1] * a.m[2][2] - a.m[1][2] * a.m[2][1]) -
                     a.m[0][1] * (a.m[1][0] * a.m[2][2] - a.m[1][2] * a.m[2][0]) +
                     a.m[0][2] * (a.m[1][0] * a.m[2][1] - a.m[1][1] * a.m[2][0]);
-        if (det == 0.0f) throw std::runtime_error("Matrix is singular and cannot be inverted.");
+        //if (det == 0.0f) throw std::runtime_error("Matrix is singular and cannot be inverted.");
         float invDet = 1.0f / det;
         KTMATRIX3 inv;
         inv.m[0][0] =  (a.m[1][1] * a.m[2][2] - a.m[1][2] * a.m[2][1]) * invDet;
@@ -603,12 +604,14 @@ struct KTQUATERNION {
         float sp = sinf(pitch * 0.5f * (3.14159265359f / 180.0f));
         float cr = cosf(roll * 0.5f * (3.14159265359f / 180.0f));
         float sr = sinf(roll * 0.5f * (3.14159265359f / 180.0f));
-        return KTQUATERNION(
+        KTQUATERNION ret = 
+        KTQUATERNION(
             sr * cp * cy - cr * sp * sy,
             cr * sp * cy + sr * cp * sy,
             cr * cp * sy - sr * sp * cy,
             cr * cp * cy + sr * sp * sy
         );
+		return ret.Normalize();
 	}
 
 	/// <summary>
@@ -647,9 +650,9 @@ struct KTQUATERNION {
         float wy = q.w * q.y;
         float wz = q.w * q.z;
         return KTMATRIX4(
-            1.0f - 2.0f * (yy + zz), 2.0f * (xy - wz),       2.0f * (xz + wy),       0.0f,
-            2.0f * (xy + wz),       1.0f - 2.0f * (xx + zz), 2.0f * (yz - wx),       0.0f,
-            2.0f * (xz - wy),       2.0f * (yz + wx),       1.0f - 2.0f * (xx + yy), 0.0f,
+            1.0f - 2.0f * (yy + zz), 2.0f * (xy + wz),       2.0f * (xz - wy),       0.0f,
+            2.0f * (xy - wz),       1.0f - 2.0f * (xx + zz), 2.0f * (yz + wx),       0.0f,
+            2.0f * (xz + wy),       2.0f * (yz - wx),       1.0f - 2.0f * (xx + yy), 0.0f,
             0.0f,                   0.0f,                   0.0f,                   1.0f
 		);
     }

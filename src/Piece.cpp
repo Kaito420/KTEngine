@@ -8,7 +8,7 @@
 void Piece::OnCollisionEnter(Collider* other)
 {
 	if (other->GetOwner()->GetComponent<Piece>()) {
-		GameObject* explosion = Manager::GetCurrentScene()->AddGameObject<Explosion>();
-		explosion->_transform._position = other->_collisionInfo._collisionPoint + KTVECTOR3(0, 0, -0.5f);
+		//GameObject* explosion = Manager::GetCurrentScene()->AddGameObject<Explosion>();
+		//explosion->_transform._position = other->_collisionInfo._collisionPoint + KTVECTOR3(0, 0, -0.5f);
 	}
 }
