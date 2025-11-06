@@ -36,7 +36,7 @@ void BlockSpawner::Update()
 		//block->_transform._rotation = KTVECTOR3(0, 0, 45);
 		block->_transform._quaternion = KTQUATERNION::FromEulerAngles(block->_transform._rotation.y, block->_transform._rotation.z, block->_transform._rotation.x);
 		block->GetComponent<RigidBody>()->_useGravity = true;
-		block->GetComponent<RigidBody>()->_restitution = 0.5f;
+		//block->GetComponent<RigidBody>()->_restitution = 0.0f;
 		_owner->_transform._position.y += 0.5f;
 	}
 }

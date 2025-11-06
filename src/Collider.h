@@ -90,7 +90,7 @@ public:
 
 
 	CollisionManifold Collide(Collider* other) {
-		return other->CollideWith(this);
+		return other->CollideWith(this);	//‚±‚±‚Å©g‚Æ‘Šè‚ª“ü‚ê‘Ö‚í‚é
 	}
 
 	CollisionManifold CollideWith(ColliderBox* other) {

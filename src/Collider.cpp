@@ -40,8 +40,8 @@ void ColliderBox::Render()const {
 
 CollisionManifold ColliderBox::CheckVSOBB(ColliderBox* other) {
 	CollisionManifold manifold;
-	manifold.a = this;
-	manifold.b = other;
+	manifold.a = other;
+	manifold.b = this;
 
 	float minOverlap = FLT_MAX;	//Å¬‚Ìd‚È‚è—Ê
 	KTVECTOR3 bestAxis;			//Å¬‚Ìd‚È‚è²
