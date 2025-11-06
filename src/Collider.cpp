@@ -8,7 +8,10 @@
 #include "GameObject.h"
 #include "Manager.h"
 #include "Scene.h"
+#include "RendererDX11.h"
 
+ComPtr<ID3D11Buffer> _vertexBuffer;
+ComPtr<ID3D11Buffer> _indexBuffer;
 
 void ColliderBox::Awake() {
 	Manager::GetCurrentScene()->GetPhysicsSystem()->RegisterCollider(this);
@@ -18,6 +21,20 @@ void ColliderBox::Awake() {
 	_axis[2] = _owner->GetForward();
 
 	_extents = _owner->_transform._scale * 0.5f;
+
+	//デバッグ用ワイヤーフレーム頂点バッファ生成
+	Vertex v[8] =
+	{
+		{{_center.x - _extents.x, _center.y + _extents.y, _center.z + _extents.z},{0,0,0},{0,1,0,1},{0,0}},	//0　上段左上
+		{{_center.x + _extents.x, _center.y + _extents.y, _center.z + _extents.z},{0,0,0},{0,1,0,1},{0,0}},	//1　上段右上
+		{{_center.x + _extents.x, _center.y + _extents.y, _center.z - _extents.z},{0,0,0},{0,1,0,1},{0,0}},	//2　上段右下
+		{{_center.x - _extents.x, _center.y + _extents.y, _center.z - _extents.z},{0,0,0},{0,1,0,1},{0,0}},	//3　上段左下
+
+		{{_center.x - _extents.x, _center.y - _extents.y, _center.z + _extents.z},{0,0,0},{0,1,0,1},{0,0}},	//4　下段左上
+		{{_center.x + _extents.x, _center.y - _extents.y, _center.z + _extents.z},{0,0,0},{0,1,0,1},{0,0}},	//5　下段右上
+		{{_center.x + _extents.x, _center.y - _extents.y, _center.z - _extents.z},{0,0,0},{0,1,0,1},{0,0}},	//6　下段右下
+		{{_center.x - _extents.x, _center.y - _extents.y, _center.z - _extents.z},{0,0,0},{0,1,0,1},{0,0}}	//7　下段左下
+	};
 }
 
 void ColliderBox::OnDestroy()
