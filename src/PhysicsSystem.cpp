@@ -153,7 +153,7 @@ void PhysicsSystem::Update() {
 
 					// 摩擦力の計算（接線方向）
 					KTVECTOR3 tangent = rV - Dot(rV, manifold.normal) * manifold.normal;
-					if (tangent.Absolute() > 1e-3f) {
+					if (tangent.Magnitude() > 1e-3f) {
 						tangent = tangent.Normalize();
 
 						// 接線方向の有効質量（回転寄与を含める）
