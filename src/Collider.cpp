@@ -40,8 +40,8 @@ void ColliderBox::Render()const {
 
 CollisionManifold ColliderBox::CheckVSOBB(ColliderBox* other) {
 	CollisionManifold manifold;
-	manifold.a = this;
-	manifold.b = other;
+	manifold.a = other;
+	manifold.b = this;
 
 	float minOverlap = FLT_MAX;	//最小の重なり量
 	KTVECTOR3 bestAxis;			//最小の重なり軸
@@ -67,7 +67,7 @@ CollisionManifold ColliderBox::CheckVSOBB(ColliderBox* other) {
 	for (int i = 0; i < 3; i++) {
 		for (int j = 0; j < 3; j++) {
 			KTVECTOR3 axis = Cross(_axis[i], other->_axis[j]);
-			if (axis.Absolute() < DBL_EPSILON) continue;
+			if (axis.Magnitude() < DBL_EPSILON) continue;
 
 			float overlap = 0.0f;
 			if (!OverlapOnAxis(other, axis.Normalize(), overlap)) return manifold;
@@ -114,7 +114,7 @@ CollisionManifold ColliderBox::CheckVSOBB(ColliderBox* other) {
 
 bool ColliderBox::OverlapOnAxis(const ColliderBox* other, const KTVECTOR3& axis) const{
 
-	if (axis.Absolute() < 1e-6f) return true;
+	if (axis.Magnitude() < 1e-6f) return true;
 
 	KTVECTOR3 L = axis.Normalize();
 
@@ -140,7 +140,7 @@ bool ColliderBox::OverlapOnAxis(const ColliderBox* other, const KTVECTOR3& axis)
 
 bool ColliderBox::OverlapOnAxis(const ColliderBox* other, const KTVECTOR3& axis, float& outOverlap) const
 {
-	if (axis.Absolute() < 1e-6f) {
+	if (axis.Magnitude() < 1e-6f) {
 		outOverlap = FLT_MAX;
 		return true;
 	}
@@ -284,7 +284,7 @@ KTVECTOR3 ColliderBox::ComputePolygonCentroid(const std::vector<KTVECTOR3>& poly
 		KTVECTOR3 a = polygon[i] - v0;
 		KTVECTOR3 b = polygon[i + 1] - v0;
 		KTVECTOR3 cross = Cross(a, b);
-		double triArea = 0.5 * (double)cross.Absolute(); // 面積
+		double triArea = 0.5 * (double)cross.Magnitude(); // 面積
 		if (triArea <= 1e-12) continue;
 		// 三角形の重心
 		KTVECTOR3 triCentroid = (v0 + polygon[i] + polygon[i + 1]) * (1.0f / 3.0f);

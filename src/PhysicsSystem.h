@@ -27,6 +27,10 @@ public:
 	}
 
 	void Update();
+
+	void ResolveCollision(CollisionManifold manifold);
+
+	void ResolveInpulse(CollisionManifold manifold);
 };
 
 #endif // !_PHYSICSSYSTEM_H_

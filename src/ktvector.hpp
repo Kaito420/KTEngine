@@ -67,12 +67,12 @@ public:
         return *this;
     }
 
-    float Absolute()const{ //ベクトルの大きさ
+    float Magnitude()const{ //ベクトルの大きさ
         return sqrtf( x * x + y * y);
     }
 
     KTVECTOR2 Normalize()const{ //ベクトルの正規化
-        float len = Absolute();
+        float len = Magnitude();
         return len == 0.0f ? KTVECTOR2(0.0f, 0.0f) : *this / len;
     }
 
@@ -145,12 +145,12 @@ public:
     }
 
 
-    float Absolute()const{  //ベクトルの大きさを求める
+    float Magnitude()const{  //ベクトルの大きさを求める
         return sqrtf(x * x + y * y + z * z);  
     }
 
     KTVECTOR3 Normalize()const{ //ベクトルの正規化
-        float len = Absolute();
+        float len = Magnitude();
         return len == 0.0f ? KTVECTOR3( 0.0f, 0.0f, 0.0f) : *this / len;
     }
 
@@ -235,12 +235,12 @@ public:
         return *this;
     }
 
-    float Absolute() const {
+    float Magnitude() const {
         return sqrtf(x * x + y * y + z * z + w * w);
     }
 
     KTVECTOR4 Normalize() const {
-        float len = Absolute();
+        float len = Magnitude();
         return len == 0.0f ? KTVECTOR4(0, 0, 0, 0) : *this / len;
     }
 

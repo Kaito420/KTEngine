@@ -51,6 +51,14 @@ void PhysicsSystem::Update() {
 		}
 	}
 
+	//„‘Ì‰^“®
+	for (auto* col : _colliders) {
+		auto* rb = col->GetOwner()->GetComponent<RigidBody>();
+		if (rb && rb->GetActive()) {
+			rb->Integrate();
+		}
+	}
+
 	//=====================================================================
 	//•¨—‰‰ŽZ
 	//=====================================================================
@@ -64,162 +72,176 @@ void PhysicsSystem::Update() {
 
 			if (!manifold.hasCollision) continue; // Õ“Ë‚µ‚Ä‚¢‚È‚¢
 
-			// RigidBody ‚ðŽ‚Â‚©‚Ç‚¤‚©
-			auto* rbA = colA->GetOwner()->GetComponent<RigidBody>();
-			auto* rbB = colB->GetOwner()->GetComponent<RigidBody>();
-			if (!rbA && !rbB) continue; // —¼•ûÃ“I‚È‚çƒXƒLƒbƒv
-
-
-			// ¬‚³‚ÈŒ„ŠÔislopj‚ðŽc‚µ‚Ä‰ßè•â³‚ð–h‚®
-			float slop = 0.05f;
-			float percent = 0.8f; // 0.2`0.8‚Ì”ÍˆÍ‚Å’²®‰Â”\
-			float correctionDepth = (std::max)(0.0f, manifold.penetrationDepth - slop);
-
-			//—LŒøŽ¿—Ê‚ÌŒvŽZ
-			float invMassA = (rbA) ? rbA->_invMass : 0.0f;
-			float invMassB = (rbB) ? rbB->_invMass : 0.0f;
-			float invMassSum = invMassA + invMassB;
-
-
-			if (invMassSum <= 0.0f) continue;
-
-			// ‰Ÿ‚µ–ß‚µ—Ê
-			KTVECTOR3 correction = manifold.normal * (correctionDepth / invMassSum) * percent;
-			KTVECTOR3 totalCorrection = KTVECTOR3(0.0f, 0.0f, 0.0f);
-			for(const auto& contact : manifold.contacts) {
-				totalCorrection += manifold.normal * (contact.penetration / invMassSum) * percent;
-			}
-			totalCorrection = totalCorrection / (float)manifold.contacts.size();
-			if (rbA) {
-				colA->GetOwner()->_transform._position += totalCorrection * invMassA;
-			}
-			if (rbB) {
-				colB->GetOwner()->_transform._position -= totalCorrection * invMassB;
-			}
-
 			for (int iter = 0; iter < 20; iter++) {
-				for (const auto& contact : manifold.contacts) {
-					KTVECTOR3 rA = contact.position - colA->GetOwner()->_transform._position;
-					KTVECTOR3 rB = contact.position - colB->GetOwner()->_transform._position;
-
-					//‘¬“xC³
-					KTVECTOR3 vA = rbA ? rbA->_velocity + Cross(rbA->_angularVelocity, rA) : KTVECTOR3(0.0f, 0.0f, 0.0f);
-					KTVECTOR3 vB = rbB ? rbB->_velocity + Cross(rbB->_angularVelocity, rB) : KTVECTOR3(0.0f, 0.0f, 0.0f);
-					//‘Š‘Î‘¬“x
-					KTVECTOR3 rV = vB - vA;
-					float relVelAlongNormal = Dot(rV, manifold.normal);
-					float joule = 0.0f;
-					if (relVelAlongNormal > 0.0f) { // —£‚ê‚Ä‚¢‚­ê‡‚ÍƒXƒLƒbƒv
-						//–@ü•ûŒü
-						// ”½”­ŒW”
-						float e = 0.0f;
-						if (rbA && rbB)
-							e = (std::min)(rbA->_restitution, rbB->_restitution);
-						else if (rbA)
-							e = rbA->_restitution;
-						else if (rbB)
-							e = rbB->_restitution;
-
-						//—LŒøŽ¿—Ê
-						KTVECTOR3 rnA = rbA ? Cross(rA, manifold.normal) : KTVECTOR3(0.0f, 0.0f, 0.0f);
-						KTVECTOR3 rnB = rbB ? Cross(rB, manifold.normal) : KTVECTOR3(0.0f, 0.0f, 0.0f);
-
-						float angA = rbA ? Dot(rbA->_inertiaTensorWorldInv * rnA, rnA) : 0.0f;
-						float angB = rbB ? Dot(rbB->_inertiaTensorWorldInv * rnB, rnB) : 0.0f;
-						invMassSum = invMassA + invMassB + angA + angB;
-
-						if (invMassSum <= 0.0f) continue;
-
-						// Õ“ËƒCƒ“ƒpƒ‹ƒX‚ÌŒvŽZ
-						joule = -(1.0f + e) * relVelAlongNormal;
-						joule /= invMassSum;
-
-						KTVECTOR3 impulse = joule * manifold.normal;
-
-						if (rbA) {
-							rbA->_velocity -= (impulse * invMassA);
-							rbA->_angularVelocity -= rbA->_inertiaTensorWorldInv * Cross(rA, impulse);
-						}
-						if (rbB) {
-							rbB->_velocity += (impulse * invMassB);
-							rbB->_angularVelocity += rbB->_inertiaTensorWorldInv * Cross(rB, impulse);
-						}
-					}
-
-					//// ÄŒvŽZ
-					vA = rbA ? rbA->_velocity + Cross(rbA->_angularVelocity, rA) : KTVECTOR3(0.0f, 0.0f, 0.0f);
-					vB = rbB ? rbB->_velocity + Cross(rbB->_angularVelocity, rB) : KTVECTOR3(0.0f, 0.0f, 0.0f);
-					rV = vB - vA;
-
-					// –€ŽC—Í‚ÌŒvŽZiÚü•ûŒüj
-					KTVECTOR3 tangent = rV - Dot(rV, manifold.normal) * manifold.normal;
-					if (tangent.Absolute() > 1e-3f) {
-						tangent = tangent.Normalize();
-
-						// Úü•ûŒü‚Ì—LŒøŽ¿—Êi‰ñ“]Šñ—^‚ðŠÜ‚ß‚éj
-						KTVECTOR3 rtA = rbA ? Cross(rA, tangent) : KTVECTOR3(0, 0, 0);
-						KTVECTOR3 rtB = rbB ? Cross(rB, tangent) : KTVECTOR3(0, 0, 0);
-
-						float tanAngA = rbA ? Dot(rbA->_inertiaTensorWorldInv * rtA, rtA) : 0.0f;
-						float tanAngB = rbB ? Dot(rbB->_inertiaTensorWorldInv * rtB, rtB) : 0.0f;
-
-						float denomTangent = invMassA + invMassB + tanAngA + tanAngB;
-						if (denomTangent <= 0.0f) continue;
-
-						float jt = -Dot(rV, tangent);
-						jt /= denomTangent;
-
-						// ÃŽ~–€ŽC‚Æ“®–€ŽC‚ÌŒˆ’è
-						float mu_s = 0.0f;
-						float mu_d = 0.0f;
-						if (rbA && rbB) {
-							mu_s = (std::max)(rbA->_staticFriction, rbB->_staticFriction);
-							mu_d = (std::max)(rbA->_dynamicFriction, rbB->_dynamicFriction);
-						}
-						else if (rbA) {
-							mu_s = rbA->_staticFriction;
-							mu_d = rbA->_dynamicFriction;
-						}
-						else if (rbB) {
-							mu_s = rbB->_staticFriction;
-							mu_d = rbB->_dynamicFriction;
-						}
-
-						KTVECTOR3 frictionImpulse;
-						if (fabs(jt) < fabs(joule) * mu_s)
-							frictionImpulse = -jt * tangent; // ÃŽ~–€ŽC
-						else
-							frictionImpulse = -joule * mu_d * tangent; // “®–€ŽC
-
-						if (rbA) {
-							rbA->_velocity += (frictionImpulse * invMassA);
-							rbA->_angularVelocity += rbA->_inertiaTensorWorldInv * Cross(rA, frictionImpulse);
-						}
-						if (rbB) {
-							rbB->_velocity -= (frictionImpulse * invMassB);
-							rbB->_angularVelocity -= rbB->_inertiaTensorWorldInv * Cross(rB, frictionImpulse);
-						}
-					}
-				}
+				ResolveInpulse(manifold);
 			}
+
+			ResolveCollision(manifold);
 		}
 	}
-
-	//„‘Ì‰^“®
-	for (auto* col : _colliders) {
-		auto* rb = col->GetOwner()->GetComponent<RigidBody>();
-		if (rb && rb->GetActive()) {
-			rb->Integrate();
-		}
-	}
-
 
 	//ó‘ÔXV
 	for (auto* col : _colliders) {
 		col->EndFrame();
 	}
 
+}
+
+void PhysicsSystem::ResolveCollision(CollisionManifold manifold)
+{
+	RigidBody* rbA = manifold.a->GetOwner()->GetComponent<RigidBody>();
+	RigidBody* rbB = manifold.b->GetOwner()->GetComponent<RigidBody>();
+	if (!rbA && !rbB) return; // —¼•ûÃ“I‚È‚çƒXƒLƒbƒv
+
+	// ¬‚³‚ÈŒ„ŠÔislopj‚ðŽc‚µ‚Ä‰ßè•â³‚ð–h‚®
+	float slop = 0.05f;
+	float percent = 0.8f; // 0.2`0.8‚Ì”ÍˆÍ‚Å’²®‰Â”\
+	float correctionDepth = (std::max)(0.0f, manifold.penetrationDepth - slop);
+
+	//—LŒøŽ¿—Ê‚ÌŒvŽZ
+	float invMassA = (rbA) ? rbA->_invMass : 0.0f;
+	float invMassB = (rbB) ? rbB->_invMass : 0.0f;
+	float invMassSum = invMassA + invMassB;
 
 
+	if (invMassSum <= 0.0f) return;
 
+	// ‰Ÿ‚µ–ß‚µ—Ê
+	KTVECTOR3 correction = manifold.normal * (correctionDepth / invMassSum) * percent;
+	KTVECTOR3 totalCorrection = KTVECTOR3(0.0f, 0.0f, 0.0f);
+	for (const auto& contact : manifold.contacts) {
+		totalCorrection += manifold.normal * (contact.penetration / invMassSum) * percent;
+	}
+	totalCorrection = totalCorrection / (float)manifold.contacts.size();
+	if (rbA) {
+		manifold.a->GetOwner()->_transform._position += totalCorrection * invMassA;
+	}
+	if (rbB) {
+		manifold.b->GetOwner()->_transform._position -= totalCorrection * invMassB;
+	}
+}
+
+void PhysicsSystem::ResolveInpulse(CollisionManifold manifold)
+{
+	RigidBody* rbA = manifold.a->GetOwner()->GetComponent<RigidBody>();
+	RigidBody* rbB = manifold.b->GetOwner()->GetComponent<RigidBody>();
+	if (!rbA && !rbB) return; // —¼•ûÃ“I‚È‚çƒXƒLƒbƒv
+
+	//—LŒøŽ¿—Ê‚ÌŒvŽZ
+	float invMassA = (rbA) ? rbA->_invMass : 0.0f;
+	float invMassB = (rbB) ? rbB->_invMass : 0.0f;
+	float invMassSum = invMassA + invMassB;
+	float joule = 0.0f;
+
+	for (const auto& contact : manifold.contacts) {
+
+
+		KTVECTOR3 rA = contact.position - manifold.a->GetOwner()->_transform._position;
+		KTVECTOR3 rB = contact.position - manifold.b->GetOwner()->_transform._position;
+
+		//‘¬“xC³
+		KTVECTOR3 vA = rbA ? rbA->_velocity + Cross(rbA->_angularVelocity, rA) : KTVECTOR3(0.0f, 0.0f, 0.0f);
+		KTVECTOR3 vB = rbB ? rbB->_velocity + Cross(rbB->_angularVelocity, rB) : KTVECTOR3(0.0f, 0.0f, 0.0f);
+		//‘Š‘Î‘¬“x
+		KTVECTOR3 rV = vB - vA;
+		float relVelAlongNormal = Dot(rV, manifold.normal);
+		if (relVelAlongNormal > 0.0f) { // —£‚ê‚Ä‚¢‚­ê‡‚ÍƒXƒLƒbƒv
+			//–@ü•ûŒü
+			// ”½”­ŒW”
+			float e = 0.0f;
+			if (rbA && rbB)
+				e = (std::min)(rbA->_restitution, rbB->_restitution);
+			else if (rbA)
+				e = rbA->_restitution;
+			else if (rbB)
+				e = rbB->_restitution;
+
+			//—LŒøŽ¿—Ê
+			KTVECTOR3 rnA = rbA ? Cross(rA, manifold.normal) : KTVECTOR3(0.0f, 0.0f, 0.0f);
+			KTVECTOR3 rnB = rbB ? Cross(rB, manifold.normal) : KTVECTOR3(0.0f, 0.0f, 0.0f);
+
+			float angA = rbA ? Dot(rbA->_inertiaTensorWorldInv * rnA, rnA) : 0.0f;
+			float angB = rbB ? Dot(rbB->_inertiaTensorWorldInv * rnB, rnB) : 0.0f;
+			invMassSum = invMassA + invMassB + angA + angB;
+
+			if (invMassSum <= 0.0f) continue;
+
+			// Õ“ËƒCƒ“ƒpƒ‹ƒX‚ÌŒvŽZ
+			joule = -(1.0f + e) * relVelAlongNormal;
+			joule /= invMassSum;
+
+			KTVECTOR3 impulse = joule * manifold.normal;
+
+			if (rbA) {
+				rbA->_velocity -= (impulse * invMassA);
+				rbA->_angularVelocity -= rbA->_inertiaTensorWorldInv * Cross(rA, impulse);
+			}
+			if (rbB) {
+				rbB->_velocity += (impulse * invMassB);
+				rbB->_angularVelocity += rbB->_inertiaTensorWorldInv * Cross(rB, impulse);
+			}
+		}
+	}
+	
+	for (const auto& contact : manifold.contacts) {
+		//// ÄŒvŽZ
+		KTVECTOR3 rA = contact.position - manifold.a->GetOwner()->_transform._position;
+		KTVECTOR3 rB = contact.position - manifold.b->GetOwner()->_transform._position;
+
+		//‘¬“xC³
+		KTVECTOR3 vA = rbA ? rbA->_velocity + Cross(rbA->_angularVelocity, rA) : KTVECTOR3(0.0f, 0.0f, 0.0f);
+		KTVECTOR3 vB = rbB ? rbB->_velocity + Cross(rbB->_angularVelocity, rB) : KTVECTOR3(0.0f, 0.0f, 0.0f);
+		//‘Š‘Î‘¬“x
+		KTVECTOR3 rV = vB - vA;
+
+		// –€ŽC—Í‚ÌŒvŽZiÚü•ûŒüj
+		KTVECTOR3 tangent = rV - Dot(rV, manifold.normal) * manifold.normal;
+		if (tangent.Magnitude() > 1e-3f) {
+			tangent = tangent.Normalize();
+
+			// Úü•ûŒü‚Ì—LŒøŽ¿—Êi‰ñ“]Šñ—^‚ðŠÜ‚ß‚éj
+			KTVECTOR3 rtA = rbA ? Cross(rA, tangent) : KTVECTOR3(0, 0, 0);
+			KTVECTOR3 rtB = rbB ? Cross(rB, tangent) : KTVECTOR3(0, 0, 0);
+
+			float tanAngA = rbA ? Dot(rbA->_inertiaTensorWorldInv * rtA, rtA) : 0.0f;
+			float tanAngB = rbB ? Dot(rbB->_inertiaTensorWorldInv * rtB, rtB) : 0.0f;
+
+			float denomTangent = invMassA + invMassB + tanAngA + tanAngB;
+			if (denomTangent <= 0.0f) continue;
+
+			float jt = -Dot(rV, tangent);
+			jt /= denomTangent;
+
+			// ÃŽ~–€ŽC‚Æ“®–€ŽC‚ÌŒˆ’è
+			float mu_s = 0.0f;
+			float mu_d = 0.0f;
+			if (rbA && rbB) {
+				mu_s = (std::max)(rbA->_staticFriction, rbB->_staticFriction);
+				mu_d = (std::max)(rbA->_dynamicFriction, rbB->_dynamicFriction);
+			}
+			else if (rbA) {
+				mu_s = rbA->_staticFriction;
+				mu_d = rbA->_dynamicFriction;
+			}
+			else if (rbB) {
+				mu_s = rbB->_staticFriction;
+				mu_d = rbB->_dynamicFriction;
+			}
+
+			KTVECTOR3 frictionImpulse;
+			if (fabs(jt) < fabs(joule) * mu_s)
+				frictionImpulse = -jt * tangent; // ÃŽ~–€ŽC
+			else
+				frictionImpulse = -joule * mu_d * tangent; // “®–€ŽC
+
+			if (rbA) {
+				rbA->_velocity += (frictionImpulse * invMassA);
+				rbA->_angularVelocity += rbA->_inertiaTensorWorldInv * Cross(rA, frictionImpulse);
+			}
+			if (rbB) {
+				rbB->_velocity -= (frictionImpulse * invMassB);
+				rbB->_angularVelocity -= rbB->_inertiaTensorWorldInv * Cross(rB, frictionImpulse);
+			}
+		}
+	}
 }
