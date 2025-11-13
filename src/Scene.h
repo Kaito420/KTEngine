@@ -33,7 +33,7 @@ public:
 
 	virtual PhysicsSystem* GetPhysicsSystem() { return _physicsSystem; }
 
-	virtual std::shared_ptr<Scene> Clone() { return nullptr; }
+	virtual std::shared_ptr<Scene> Clone()const;
 
 	/// <summary>
 	/// ゲームオブジェクトを追加する

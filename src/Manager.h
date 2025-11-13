@@ -17,7 +17,6 @@ class Manager {
 private:
 	static std::shared_ptr<Scene> _currentScene;
 	static std::shared_ptr<Scene> _nextScene;
-
 public:
 	static void Initialize();
 	static void Finalize();

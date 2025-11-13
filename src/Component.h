@@ -64,6 +64,11 @@ public:
 	/// </summary>
 	virtual void OnDestroy() {}
 
+	virtual std::shared_ptr<Component> Clone()const {
+		auto newComp = std::make_shared<Component>(*this);
+		return newComp;
+	}
+
 	/// <summary>
 	/// コンポーネントの情報をインスペクター上に表示
 	/// </summary>
