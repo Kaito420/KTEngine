@@ -11,6 +11,7 @@
 #include "ktvector.hpp"
 #include <unordered_set>
 #include <vector>
+#include "RendererDX11.h"
 
 class ColliderBox;
 
@@ -40,6 +41,8 @@ class Collider : public Component
 protected:
 	KTVECTOR3 _center;
 
+	ComPtr<ID3D11Buffer> _vertexBuffer;
+	ComPtr<ID3D11Buffer> _indexBuffer;
 
 public:
 	bool _isOverlap;
