@@ -40,8 +40,12 @@ bool RendererDX11::Init(HWND hwnd) {
     //スワップチェーン生成
     DXGI_SWAP_CHAIN_DESC scd = {};
     scd.BufferCount = 1;
-    scd.BufferDesc.Width = 1280;
-    scd.BufferDesc.Height = 720;
+    RECT rect;
+    GetClientRect(hwnd, &rect);
+    UINT width = rect.right - rect.left;
+    UINT height = rect.bottom - rect.top;
+    scd.BufferDesc.Width = (float)width;
+    scd.BufferDesc.Height = (float)height;
     scd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
     scd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
     scd.OutputWindow = hwnd;

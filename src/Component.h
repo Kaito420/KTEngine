@@ -10,6 +10,7 @@
 #include <memory>
 #include <string>
 #include <imgui.h>
+#include "Clonable.h"
 
 class GameObject;
 class Collider;
@@ -64,8 +65,12 @@ public:
 	/// </summary>
 	virtual void OnDestroy() {}
 
+	/// <summary>
+	/// 自分のクローンを生成する関数
+	/// </summary>
+	/// <returns>自分のコピー</returns>
 	virtual std::shared_ptr<Component> Clone()const {
-		auto newComp = std::make_shared<Component>(*this);
+		auto newComp = std::make_shared<Component>(*this);//Component型になってしまっているのは問題
 		return newComp;
 	}
 

@@ -30,6 +30,7 @@ public:
 	virtual void Render()const;
 	virtual void RenderHierarchy();
 	virtual void RenderInspector();
+	virtual void RenderButton();
 
 	virtual PhysicsSystem* GetPhysicsSystem() { return _physicsSystem; }
 

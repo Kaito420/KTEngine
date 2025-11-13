@@ -58,7 +58,7 @@ void Fade::OnDestroy()
 {
 	auto scene = Manager::GetCurrentScene();
 
-	if (auto title = std::dynamic_pointer_cast<SceneTitle>(scene))
+	if (auto title = std::dynamic_pointer_cast<Scene>(scene))
 		Manager::ChangeScene<SceneGame>();
 	else if (auto result = std::dynamic_pointer_cast<SceneResult>(scene))
 		Manager::ChangeScene<SceneTitle>();

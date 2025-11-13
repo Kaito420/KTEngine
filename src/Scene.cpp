@@ -6,13 +6,7 @@
 
 #include "Scene.h"
 #include <imgui.h>
-
-#include "Camera.h"
-#include "Square.h"
-#include "Sphere.h"
-#include "Cube.h"
-#include "Collider.h"
-#include "RigidBody.h"
+#include "Manager.h"
 
 void Scene::Initialize(){
 	//テスト用
@@ -193,10 +187,26 @@ void Scene::RenderInspector()
 	ImGui::End();
 }
 
+void Scene::RenderButton(){
+	ImGui::SetNextWindowSize({ 720,50 });
+	ImGui::SetWindowPos({ SCREEN_WIDTH / 2, -10 });
+	ImGui::Begin("mode###MainButtonsBar", nullptr, ImGuiWindowFlags_NoMove);
+	{
+		if (ImGui::Button("Play")) {
+			Manager::Play();
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Stop")) {
+			Manager::Stop();
+		}
+	}
+	ImGui::End();
+}
+
 std::shared_ptr<Scene> Scene::Clone()const
 {
 	auto newScene = std::make_shared<Scene>();
-
+	newScene->_physicsSystem = new PhysicsSystem();
 	//GameObjectのコピー
 	for (auto& gameObject : _gameObjects) {
 		newScene->_gameObjects.push_back(gameObject);
