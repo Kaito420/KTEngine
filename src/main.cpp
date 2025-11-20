@@ -43,7 +43,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
                       "DX11WindowClass", NULL };
     RegisterClassEx(&wc);
     hwnd = CreateWindow(wc.lpszClassName, "Engine",
-        WS_OVERLAPPEDWINDOW, 100, 100, 1280, 800,
+        WS_OVERLAPPEDWINDOW, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT,
         NULL, NULL, wc.hInstance, NULL);
 
     ShowWindow(hwnd, nCmdShow);
@@ -96,6 +96,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
         {
             Manager::GetCurrentScene()->RenderHierarchy();
             Manager::GetCurrentScene()->RenderInspector();
+            Manager::GetCurrentScene()->RenderButton();
         }
         ImGuiLayer::End();
 

@@ -78,6 +78,7 @@
     <ClInclude Include="src\Block.h" />
     <ClInclude Include="src\BlockSpawner.h" />
     <ClInclude Include="src\Camera.h" />
+    <ClInclude Include="src\Clonable.h" />
     <ClInclude Include="src\Collider.h" />
     <ClInclude Include="src\Component.h" />
     <ClInclude Include="src\Cube.h" />

@@ -24,6 +24,9 @@ using namespace DirectX;
 #pragma comment(lib,"DirectXTex_Release.lib")
 #endif
 
+#define SCREEN_WIDTH (1920)
+#define SCREEN_HEIGHT (1080)
+
 // í∏ì_ç\ë¢ëÃ
 struct Vertex {
     XMFLOAT3 position;
@@ -40,7 +43,7 @@ struct MATERIAL
     XMFLOAT4	Specular;
     XMFLOAT4	Emission;
     float		Shininess;
-    BOOL         TextureEnable;
+    BOOL        TextureEnable;
     float		Dummy[2];
 };
 

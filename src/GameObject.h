@@ -27,7 +27,7 @@ public:
 	uint32_t _id;
 	std::string _name = "gameObject";
 	bool _active = true; //アクティブ状態（true:有効, false:無効）
-	std::list<std::unique_ptr<Component>> _components; //このGameObjectにアタッチされているコンポーネントのリスト
+	std::list<std::shared_ptr<Component>> _components; //このGameObjectにアタッチされているコンポーネントのリスト
 
 	struct Transform {
 		KTVECTOR3 _position = { 0.0f, 0.0f, 0.0f };
@@ -118,21 +118,33 @@ public:
 	/// </summary>
 	virtual void OnDestroy() {}
 
+	std::shared_ptr<GameObject> Clone()const {
+		auto newObj = std::make_shared<GameObject>(*this);
+
+		//コンポーネントのコピー
+		newObj->_components.clear();
+		for (auto& comp : _components) {
+			auto newComp = comp->Clone();
+			newComp->_owner = newObj.get();	//_ownerはクローンしたGameObjectになるので設定
+			newObj->_components.push_back(newComp);
+		}
+		return newObj;
+	}
+
 	/// <summary>
 	/// コンポーネントを追加する
 	/// </summary>
 	template <typename T, typename... Args>
 	T* AddComponent(Args&&... args) {
 		static_assert(std::is_base_of<Component, T>::value, "T must be derived from Component");
-		auto component = std::make_unique<T>(std::forward<Args>(args)...);
+		auto component = std::make_shared<T>(std::forward<Args>(args)...);
 		component->_owner = this; //コンポーネントにこのGameObjectのポインタを設定
 		component->Active(true); //追加したコンポーネントを有効化
 		component->Awake();
 		component->Awakened();
 
-		T* rawPtr = component.get();
-		_components.push_back(std::move(component));
-		return rawPtr;
+		_components.push_back(component);
+		return component.get();
 	}
 
 	/// <summary>
