@@ -191,9 +191,9 @@ void Scene::RenderInspector()
 						ImGui::PopID();
 					}
 					if (changed) {
-						gameObject->_transform._quaternion = KTQUATERNION::FromEulerAngles(gameObject->_transform._rotation.y, gameObject->_transform._rotation.z, gameObject->_transform._rotation.x);
+						gameObject->_transform._quaternion = KTQUATERNION::FromEulerAngles(gameObject->_transform._rotation.x, gameObject->_transform._rotation.y, gameObject->_transform._rotation.z);
 						if (gameObject->GetComponent<RigidBody>()) {
-							gameObject->GetComponent<RigidBody>()->_orientation = KTQUATERNION::FromEulerAngles(gameObject->_transform._rotation.y, gameObject->_transform._rotation.z, gameObject->_transform._rotation.x);
+							gameObject->GetComponent<RigidBody>()->_orientation = KTQUATERNION::FromEulerAngles(gameObject->_transform._rotation.x, gameObject->_transform._rotation.y, gameObject->_transform._rotation.z);
 							gameObject->GetComponent<RigidBody>()->_angularVelocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
 						}
 					}
