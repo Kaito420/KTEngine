@@ -71,7 +71,7 @@ void PhysicsSystem::Update() {
 			CollisionManifold manifold = colA->Collide(colB);
 
 			if (!manifold.hasCollision) continue; // è’ìÀÇµÇƒÇ¢Ç»Ç¢
-
+			manifold.Render();	//ã@î\ÇµÇ»Ç¢
 			for (int iter = 0; iter < 20; iter++) {
 				ResolveInpulse(manifold);
 			}
@@ -114,10 +114,12 @@ void PhysicsSystem::ResolveCollision(CollisionManifold manifold)
 	}
 	totalCorrection = totalCorrection / (float)manifold.contacts.size();
 	if (rbA) {
-		manifold.a->GetOwner()->_transform._position += totalCorrection * invMassA;
+		//manifold.a->GetOwner()->_transform._position += totalCorrection * invMassA;
+		manifold.a->GetOwner()->_transform._position += correction * invMassA;
 	}
 	if (rbB) {
-		manifold.b->GetOwner()->_transform._position -= totalCorrection * invMassB;
+		//manifold.b->GetOwner()->_transform._position -= totalCorrection * invMassB;
+		manifold.b->GetOwner()->_transform._position -= correction * invMassB;
 	}
 }
 
@@ -172,14 +174,14 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold manifold)
 
 			KTVECTOR3 impulse = joule * manifold.normal;
 
-			if (rbA) {
-				rbA->_velocity -= (impulse * invMassA);
-				rbA->_angularVelocity -= rbA->_inertiaTensorWorldInv * Cross(rA, impulse);
-			}
-			if (rbB) {
-				rbB->_velocity += (impulse * invMassB);
-				rbB->_angularVelocity += rbB->_inertiaTensorWorldInv * Cross(rB, impulse);
-			}
+			//if (rbA) {
+			//	rbA->_velocity -= (impulse * invMassA);
+			//	rbA->_angularVelocity -= rbA->_inertiaTensorWorldInv * Cross(rA, impulse);
+			//}
+			//if (rbB) {
+			//	rbB->_velocity += (impulse * invMassB);
+			//	rbB->_angularVelocity += rbB->_inertiaTensorWorldInv * Cross(rB, impulse);
+			//}
 		}
 	}
 	
@@ -234,14 +236,14 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold manifold)
 			else
 				frictionImpulse = -joule * mu_d * tangent; // ìÆñÄéC
 
-			if (rbA) {
-				rbA->_velocity += (frictionImpulse * invMassA);
-				rbA->_angularVelocity += rbA->_inertiaTensorWorldInv * Cross(rA, frictionImpulse);
-			}
-			if (rbB) {
-				rbB->_velocity -= (frictionImpulse * invMassB);
-				rbB->_angularVelocity -= rbB->_inertiaTensorWorldInv * Cross(rB, frictionImpulse);
-			}
+			//if (rbA) {
+			//	rbA->_velocity += (frictionImpulse * invMassA);
+			//	rbA->_angularVelocity += rbA->_inertiaTensorWorldInv * Cross(rA, frictionImpulse);
+			//}
+			//if (rbB) {
+			//	rbB->_velocity -= (frictionImpulse * invMassB);
+			//	rbB->_angularVelocity -= rbB->_inertiaTensorWorldInv * Cross(rB, frictionImpulse);
+			//}
 		}
 	}
 }

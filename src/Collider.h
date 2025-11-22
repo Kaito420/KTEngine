@@ -33,6 +33,17 @@ struct CollisionManifold {
 	float penetrationDepth = 0.0f;
 	std::vector<ContactPoint> contacts; // 接触点のリスト
 	bool hasCollision = false; // 衝突が発生しているかどうか
+	
+	//======================
+	// debug用接触点リストの描画
+	//======================
+	ComPtr<ID3D11Buffer> _vertexBuffer;
+	ComPtr<ID3D11Buffer> _indexBuffer;
+	int _indexCount = 0;
+	CollisionManifold();
+	void CreateSphereMesh(float radius, int sliceCount, int stackCount, std::vector<Vertex>& vertices, std::vector<UINT>& indices);
+	void Render()const;
+
 };
 
 class Collider : public Component

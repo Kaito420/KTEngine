@@ -634,22 +634,24 @@ struct KTQUATERNION {
     KTVECTOR3 ToEulerAngles()const {
         //クォータニオンからEuler角へ変換
         KTVECTOR3 euler;
+        KTQUATERNION nq = this->Normalize();
         // ピッチ (x軸回りの回転)
-        float sinp = 2.0f * (w * x + y * z);
-        float cosp = 1.0f - 2.0f * (x * x + y * y);
-        euler.x = atan2f(sinp, cosp) * (180.0f / 3.14159265359f);
-        // ヨー (y軸回りの回転)
-        float siny = 2.0f * (w * y - z * x);
-        if (fabs(siny) >= 1)
-            euler.y = copysignf(90.0f, siny); // 90度または-90度
+        float sinp = 2.0f * (nq.w * nq.x - nq.y * nq.z);
+        if (fabs(sinp) >= 1)
+            euler.x = copysignf(90.0f, sinp);
         else
-            euler.y = asinf(siny) * (180.0f / 3.14159265359f);
+            euler.x = asinf(sinp) * (180.0f / 3.14159265359f);
+        // ヨー (y軸回りの回転)
+        float siny = 2.0f * (nq.w * nq.y + nq.z * nq.x);
+        float cosy = 1.0f - 2.0f * (nq.x * nq.x + nq.y * nq.y);
+        euler.y = atan2f(siny, cosy) * (180.0f / 3.14159265359f);
         // ロール (z軸回りの回転)
-        float sinr = 2.0f * (w * z + x * y);
-        float cosr = 1.0f - 2.0f * (y * y + z * z);
+        float sinr = 2.0f * (nq.w * nq.z + nq.x * nq.y);
+        float cosr = 1.0f - 2.0f * (nq.x * nq.x + nq.z * nq.z);
         euler.z = atan2f(sinr, cosr) * (180.0f / 3.14159265359f);
         return euler;
     }
+
 
     KTMATRIX4 ToMatrix()const {
         KTQUATERNION q = Normalize();
