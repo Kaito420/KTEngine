@@ -140,44 +140,45 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold manifold)
 		KTVECTOR3 vA = rbA ? rbA->_velocity + Cross(rbA->_angularVelocity, rA) : KTVECTOR3(0.0f, 0.0f, 0.0f);
 		KTVECTOR3 vB = rbB ? rbB->_velocity + Cross(rbB->_angularVelocity, rB) : KTVECTOR3(0.0f, 0.0f, 0.0f);
 		//相対速度
-		KTVECTOR3 rV = vB - vA;
-		float relVelAlongNormal = Dot(rV, manifold.normal);
-		if (relVelAlongNormal > 0.0f) { // 離れていく場合はスキップ
-			//法線方向
-			// 反発係数
-			float e = 0.0f;
-			if (rbA && rbB)
-				e = (std::min)(rbA->_restitution, rbB->_restitution);
-			else if (rbA)
-				e = rbA->_restitution;
-			else if (rbB)
-				e = rbB->_restitution;
+		KTVECTOR3 rV = vB - vA;//A->Bの相対速度
+		float relVelAlongNormal = Dot(rV, manifold.normal);//manifold.normal => B->A方向のため離れていく時負になる
+		if (relVelAlongNormal <= 0.0f) continue;// 離れていく場合はスキップ
 
-			//有効質量
-			KTVECTOR3 rnA = rbA ? Cross(rA, manifold.normal) : KTVECTOR3(0.0f, 0.0f, 0.0f);
-			KTVECTOR3 rnB = rbB ? Cross(rB, manifold.normal) : KTVECTOR3(0.0f, 0.0f, 0.0f);
+		//法線方向
+		// 反発係数
+		float e = 0.0f;
+		if (rbA && rbB)
+			e = (std::min)(rbA->_restitution, rbB->_restitution);
+		else if (rbA)
+			e = rbA->_restitution;
+		else if (rbB)
+			e = rbB->_restitution;
 
-			float angA = rbA ? Dot(rbA->_inertiaTensorWorldInv * rnA, rnA) : 0.0f;
-			float angB = rbB ? Dot(rbB->_inertiaTensorWorldInv * rnB, rnB) : 0.0f;
-			invMassSum = invMassA + invMassB + angA + angB;
+		//有効質量
+		KTVECTOR3 rnA = rbA ? Cross(rA, manifold.normal) : KTVECTOR3(0.0f, 0.0f, 0.0f);
+		KTVECTOR3 rnB = rbB ? Cross(rB, manifold.normal) : KTVECTOR3(0.0f, 0.0f, 0.0f);
 
-			if (invMassSum <= 0.0f) continue;
+		float angA = rbA ? Dot(rbA->_inertiaTensorWorldInv * rnA, rnA) : 0.0f;
+		float angB = rbB ? Dot(rbB->_inertiaTensorWorldInv * rnB, rnB) : 0.0f;
+		invMassSum = invMassA + invMassB + angA + angB;
 
-			// 衝突インパルスの計算
-			joule = -(1.0f + e) * relVelAlongNormal;
-			joule /= invMassSum;
+		if (invMassSum <= 0.0f) continue;
 
-			KTVECTOR3 impulse = joule * manifold.normal;
+		// 衝突インパルスの計算
+		joule = -(1.0f + e) * relVelAlongNormal;
+		joule /= invMassSum;
 
-			if (rbA) {
-				rbA->_velocity -= (impulse * invMassA);
-				rbA->_angularVelocity -= rbA->_inertiaTensorWorldInv * Cross(rA, impulse);
-			}
-			if (rbB) {
-				rbB->_velocity += (impulse * invMassB);
-				rbB->_angularVelocity += rbB->_inertiaTensorWorldInv * Cross(rB, impulse);
-			}
+		KTVECTOR3 impulse = joule * manifold.normal;
+
+		if (rbA) {
+			rbA->_velocity -= (impulse * invMassA);
+			rbA->_angularVelocity -= rbA->_inertiaTensorWorldInv * Cross(rA, impulse);
 		}
+		if (rbB) {
+			rbB->_velocity += (impulse * invMassB);
+			rbB->_angularVelocity += rbB->_inertiaTensorWorldInv * Cross(rB, impulse);
+		}
+
 	}
 	
 	for (const auto& contact : manifold.contacts) {

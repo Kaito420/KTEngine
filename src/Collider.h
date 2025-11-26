@@ -29,7 +29,7 @@ struct ContactPoint {
 struct CollisionManifold {
 	Collider* a;	// コリジョンA
 	Collider* b;	// コリジョンB
-	KTVECTOR3 normal; // 衝突法線
+	KTVECTOR3 normal; // 衝突法線(B->A方向)
 	float penetrationDepth = 0.0f;
 	std::vector<ContactPoint> contacts; // 接触点のリスト
 	bool hasCollision = false; // 衝突が発生しているかどうか
