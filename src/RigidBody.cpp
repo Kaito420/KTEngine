@@ -58,7 +58,7 @@ void RigidBody::Integrate(){
 
 	//ワールド空間の慣性テンソルに変換
 	KTMATRIX3 R = _orientation.ToMatrix().ToMatrix3();//回転行列
-	_inertiaTensorWorldInv = R.Transpose() * _inertiaTensorBodyInv * R;
+	_inertiaTensorWorldInv = R * _inertiaTensorBodyInv * R.Transpose();
 
 	//角加速度の計算 = Inverse * トルク
 	KTVECTOR3 angularAcceleration = _inertiaTensorWorldInv * _torqueAccum;

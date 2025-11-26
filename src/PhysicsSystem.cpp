@@ -72,7 +72,7 @@ void PhysicsSystem::Update() {
 
 			if (!manifold.hasCollision) continue; // 衝突していない
 			manifold.Render();	//機能しない
-			for (int iter = 0; iter < 20; iter++) {
+			for (int iter = 0; iter < 10; iter++) {
 				ResolveInpulse(manifold);
 			}
 
@@ -95,31 +95,27 @@ void PhysicsSystem::ResolveCollision(CollisionManifold manifold)
 
 	// 小さな隙間（slop）を残して過剰補正を防ぐ
 	float slop = 0.05f;
-	float percent = 0.8f; // 0.2～0.8の範囲で調整可能
-	float correctionDepth = (std::max)(0.0f, manifold.penetrationDepth - slop);
+	float percent = 0.4f; // 0.2～0.8の範囲で調整可能
+	float depth = (std::max)(0.0f, manifold.penetrationDepth - slop);
 
 	//有効質量の計算
 	float invMassA = (rbA) ? rbA->_invMass : 0.0f;
 	float invMassB = (rbB) ? rbB->_invMass : 0.0f;
 	float invMassSum = invMassA + invMassB;
 
-
 	if (invMassSum <= 0.0f) return;
 
 	// 押し戻し量
-	KTVECTOR3 correction = manifold.normal * (correctionDepth / invMassSum) * percent;
-	KTVECTOR3 totalCorrection = KTVECTOR3(0.0f, 0.0f, 0.0f);
+	KTVECTOR3 correction = KTVECTOR3(0.0f, 0.0f, 0.0f);
 	for (const auto& contact : manifold.contacts) {
-		totalCorrection += manifold.normal * (contact.penetration / invMassSum) * percent;
+		correction += manifold.normal * (contact.penetration / invMassSum);
 	}
-	totalCorrection = totalCorrection / (float)manifold.contacts.size();
+	correction = correction / (float)manifold.contacts.size();
 	if (rbA) {
-		//manifold.a->GetOwner()->_transform._position += totalCorrection * invMassA;
-		manifold.a->GetOwner()->_transform._position += correction * invMassA;
+		manifold.a->GetOwner()->_transform._position += correction * invMassA * percent;
 	}
 	if (rbB) {
-		//manifold.b->GetOwner()->_transform._position -= totalCorrection * invMassB;
-		manifold.b->GetOwner()->_transform._position -= correction * invMassB;
+		manifold.b->GetOwner()->_transform._position -= correction * invMassB * percent;
 	}
 }
 
@@ -136,7 +132,6 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold manifold)
 	float joule = 0.0f;
 
 	for (const auto& contact : manifold.contacts) {
-
 
 		KTVECTOR3 rA = contact.position - manifold.a->GetOwner()->_transform._position;
 		KTVECTOR3 rB = contact.position - manifold.b->GetOwner()->_transform._position;
@@ -174,14 +169,14 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold manifold)
 
 			KTVECTOR3 impulse = joule * manifold.normal;
 
-			//if (rbA) {
-			//	rbA->_velocity -= (impulse * invMassA);
-			//	rbA->_angularVelocity -= rbA->_inertiaTensorWorldInv * Cross(rA, impulse);
-			//}
-			//if (rbB) {
-			//	rbB->_velocity += (impulse * invMassB);
-			//	rbB->_angularVelocity += rbB->_inertiaTensorWorldInv * Cross(rB, impulse);
-			//}
+			if (rbA) {
+				rbA->_velocity -= (impulse * invMassA);
+				rbA->_angularVelocity -= rbA->_inertiaTensorWorldInv * Cross(rA, impulse);
+			}
+			if (rbB) {
+				rbB->_velocity += (impulse * invMassB);
+				rbB->_angularVelocity += rbB->_inertiaTensorWorldInv * Cross(rB, impulse);
+			}
 		}
 	}
 	
@@ -236,14 +231,14 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold manifold)
 			else
 				frictionImpulse = -joule * mu_d * tangent; // 動摩擦
 
-			//if (rbA) {
-			//	rbA->_velocity += (frictionImpulse * invMassA);
-			//	rbA->_angularVelocity += rbA->_inertiaTensorWorldInv * Cross(rA, frictionImpulse);
-			//}
-			//if (rbB) {
-			//	rbB->_velocity -= (frictionImpulse * invMassB);
-			//	rbB->_angularVelocity -= rbB->_inertiaTensorWorldInv * Cross(rB, frictionImpulse);
-			//}
+			if (rbA) {
+				rbA->_velocity += (frictionImpulse * invMassA);
+				rbA->_angularVelocity += rbA->_inertiaTensorWorldInv * Cross(rA, frictionImpulse);
+			}
+			if (rbB) {
+				rbB->_velocity -= (frictionImpulse * invMassB);
+				rbB->_angularVelocity -= rbB->_inertiaTensorWorldInv * Cross(rB, frictionImpulse);
+			}
 		}
 	}
 }
