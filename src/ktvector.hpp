@@ -262,6 +262,14 @@ struct KTMATRIX3 {
         m[2][0] = m20; m[2][1] = m21; m[2][2] = m22;
     }
 
+    static KTMATRIX3 Zero() {
+        return KTMATRIX3(
+            0, 0, 0,
+            0, 0, 0,
+            0, 0, 0
+        );
+    }
+
     static KTMATRIX3 Identity() {
         return KTMATRIX3(
             1, 0, 0,
@@ -288,7 +296,7 @@ struct KTMATRIX3 {
         float det = a.m[0][0] * (a.m[1][1] * a.m[2][2] - a.m[1][2] * a.m[2][1]) -
             a.m[0][1] * (a.m[1][0] * a.m[2][2] - a.m[1][2] * a.m[2][0]) +
             a.m[0][2] * (a.m[1][0] * a.m[2][1] - a.m[1][1] * a.m[2][0]);
-        //if (det == 0.0f) throw std::runtime_error("Matrix is singular and cannot be inverted.");
+        if (det == 0.0f) throw std::runtime_error("Matrix is singular and cannot be inverted.");
         float invDet = 1.0f / det;
         KTMATRIX3 inv;
         inv.m[0][0] = (a.m[1][1] * a.m[2][2] - a.m[1][2] * a.m[2][1]) * invDet;
@@ -346,6 +354,15 @@ struct KTMATRIX4 {
         m[2][0] = m20; m[2][1] = m21; m[2][2] = m22; m[2][3] = m23;
         m[3][0] = m30; m[3][1] = m31; m[3][2] = m32; m[3][3] = m33;
 
+    }
+
+    static KTMATRIX4 Zero() {
+        return KTMATRIX4(
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0
+        );
     }
 
     static KTMATRIX4 Identity() {
@@ -564,18 +581,18 @@ struct KTQUATERNION {
     /// <param name="q"></param>
     /// <returns></returns>
     KTQUATERNION operator*(const KTQUATERNION& q)const {
-        //return KTQUATERNION(
-        //    w * q.x + x * q.w + y * q.z - z * q.y,
-        //    w * q.y - x * q.z + y * q.w + z * q.x,
-        //    w * q.z + x * q.y - y * q.x + z * q.w,
-        //    w * q.w - x * q.x - y * q.y - z * q.z
-        //);
         return KTQUATERNION(
-            q.w * x + q.x * w + q.y * z - q.z * y,
-            q.w * y - q.x * z + q.y * w + q.z * x,
-            q.w * z + q.x * y - q.y * x + q.z * w,
-            q.w * w - q.x * x - q.y * y - q.z * z
+            w * q.x + x * q.w + y * q.z - z * q.y,
+            w * q.y - x * q.z + y * q.w + z * q.x,
+            w * q.z + x * q.y - y * q.x + z * q.w,
+            w * q.w - x * q.x - y * q.y - z * q.z
         );
+        //return KTQUATERNION(
+        //    q.w * x + q.x * w + q.y * z - q.z * y,
+        //    q.w * y - q.x * z + q.y * w + q.z * x,
+        //    q.w * z + q.x * y - q.y * x + q.z * w,
+        //    q.w * w - q.x * x - q.y * y - q.z * z
+        //);
 
     }
 
