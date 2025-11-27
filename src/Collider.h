@@ -14,6 +14,7 @@
 #include "RendererDX11.h"
 
 class ColliderBox;
+class ColliderSphere;
 
 class Plane {
 public:
@@ -82,8 +83,41 @@ public:
 
 	virtual CollisionManifold Collide(Collider* other) = 0;
 	virtual CollisionManifold CollideWith(ColliderBox* other) = 0;
+	virtual CollisionManifold CollideWith(ColliderSphere* other) = 0;
 
 	std::string GetComponentName() { return "Collider"; }
+
+};
+
+class ColliderSphere : public Collider {
+public:
+	float _radius;
+
+	void Awake() override;
+
+	void OnDestroy() override;
+
+	// GameObject‚Ìî•ñ‚ÅXV‚·‚é
+	void Update() override;
+
+	void Render()const override;
+
+	CollisionManifold Collide(Collider* other) {
+		return other->CollideWith(this);	//‚±‚±‚Å©g‚Æ‘Šè‚ª“ü‚ê‘Ö‚í‚é
+	}
+
+	CollisionManifold CollideWith(ColliderBox* other) {
+		//return CheckVSOBB(other);
+		return CollisionManifold();
+	}
+
+	CollisionManifold CollideWith(ColliderSphere* other) {
+		return CollisionManifold();
+	}
+
+	CollisionManifold CheckVSSphere(ColliderSphere* other);
+
+	std::string GetComponentName() { return "ColliderSpherer"; }
 
 };
 
@@ -111,7 +145,12 @@ public:
 		return CheckVSOBB(other);
 	}
 
+	CollisionManifold CollideWith(ColliderSphere* other) {
+		return CollisionManifold();
+	}
+
 	CollisionManifold CheckVSOBB(ColliderBox* other);
+	CollisionManifold CheckVSSphere(ColliderSphere* other);
 
 	bool OverlapOnAxis(const ColliderBox* other, const KTVECTOR3& axis)const;
 
