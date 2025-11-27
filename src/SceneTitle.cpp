@@ -21,14 +21,21 @@ void SceneTitle::Initialize()
 	AddGameObject<GameObject>()->_name = "Cube1";
 	FindGameObjectByName<GameObject>("Cube1")->AddComponent<Cube>();
 	FindGameObjectByName<GameObject>("Cube1")->AddComponent<ColliderBox>();
-	FindGameObjectByName<GameObject>("Cube1")->AddComponent<RigidBody>();
-
+	RigidBody* rb1 = FindGameObjectByName<GameObject>("Cube1")->AddComponent<RigidBody>();
+	//rb1->_useGravity = false;
+	//rb1->_mass = 10000.0f;
 
 	AddGameObject<GameObject>()->_name = "Cube2";
 	FindGameObjectByName<GameObject>("Cube2")->_transform._position = { 0.0f,1.5f,0.0f };
 	FindGameObjectByName<GameObject>("Cube2")->AddComponent<Cube>();
 	FindGameObjectByName<GameObject>("Cube2")->AddComponent<ColliderBox>();
 	FindGameObjectByName<GameObject>("Cube2")->AddComponent<RigidBody>();
+
+	//AddGameObject<GameObject>()->_name = "Cube3";
+	//FindGameObjectByName<GameObject>("Cube3")->_transform._position = { 0.0f,2.5f,0.0f };
+	//FindGameObjectByName<GameObject>("Cube3")->AddComponent<Cube>();
+	//FindGameObjectByName<GameObject>("Cube3")->AddComponent<ColliderBox>();
+	//FindGameObjectByName<GameObject>("Cube3")->AddComponent<RigidBody>();
 
 	GameObject* title = AddGameObject<GameObject>();
 	title->_name = "Title";

@@ -14,6 +14,7 @@
 #include "RendererDX11.h"
 
 class ColliderBox;
+class ColliderSphere;
 
 class Plane {
 public:
@@ -29,10 +30,21 @@ struct ContactPoint {
 struct CollisionManifold {
 	Collider* a;	// コリジョンA
 	Collider* b;	// コリジョンB
-	KTVECTOR3 normal; // 衝突法線
+	KTVECTOR3 normal; // 衝突法線(B->A方向)
 	float penetrationDepth = 0.0f;
 	std::vector<ContactPoint> contacts; // 接触点のリスト
 	bool hasCollision = false; // 衝突が発生しているかどうか
+	
+	//======================
+	// debug用接触点リストの描画
+	//======================
+	ComPtr<ID3D11Buffer> _vertexBuffer;
+	ComPtr<ID3D11Buffer> _indexBuffer;
+	int _indexCount = 0;
+	CollisionManifold();
+	void CreateSphereMesh(float radius, int sliceCount, int stackCount, std::vector<Vertex>& vertices, std::vector<UINT>& indices);
+	void Render()const;
+
 };
 
 class Collider : public Component
@@ -71,8 +83,41 @@ public:
 
 	virtual CollisionManifold Collide(Collider* other) = 0;
 	virtual CollisionManifold CollideWith(ColliderBox* other) = 0;
+	virtual CollisionManifold CollideWith(ColliderSphere* other) = 0;
 
 	std::string GetComponentName() { return "Collider"; }
+
+};
+
+class ColliderSphere : public Collider {
+public:
+	float _radius;
+
+	void Awake() override;
+
+	void OnDestroy() override;
+
+	// GameObjectの情報で更新する
+	void Update() override;
+
+	void Render()const override;
+
+	CollisionManifold Collide(Collider* other) {
+		return other->CollideWith(this);	//ここで自身と相手が入れ替わる
+	}
+
+	CollisionManifold CollideWith(ColliderBox* other) {
+		//return CheckVSOBB(other);
+		return CollisionManifold();
+	}
+
+	CollisionManifold CollideWith(ColliderSphere* other) {
+		return CollisionManifold();
+	}
+
+	CollisionManifold CheckVSSphere(ColliderSphere* other);
+
+	std::string GetComponentName() { return "ColliderSpherer"; }
 
 };
 
@@ -100,7 +145,12 @@ public:
 		return CheckVSOBB(other);
 	}
 
+	CollisionManifold CollideWith(ColliderSphere* other) {
+		return CollisionManifold();
+	}
+
 	CollisionManifold CheckVSOBB(ColliderBox* other);
+	CollisionManifold CheckVSSphere(ColliderSphere* other);
 
 	bool OverlapOnAxis(const ColliderBox* other, const KTVECTOR3& axis)const;
 

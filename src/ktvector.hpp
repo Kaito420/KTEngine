@@ -262,6 +262,14 @@ struct KTMATRIX3 {
         m[2][0] = m20; m[2][1] = m21; m[2][2] = m22;
     }
 
+    static KTMATRIX3 Zero() {
+        return KTMATRIX3(
+            0, 0, 0,
+            0, 0, 0,
+            0, 0, 0
+        );
+    }
+
     static KTMATRIX3 Identity() {
         return KTMATRIX3(
             1, 0, 0,
@@ -288,7 +296,7 @@ struct KTMATRIX3 {
         float det = a.m[0][0] * (a.m[1][1] * a.m[2][2] - a.m[1][2] * a.m[2][1]) -
             a.m[0][1] * (a.m[1][0] * a.m[2][2] - a.m[1][2] * a.m[2][0]) +
             a.m[0][2] * (a.m[1][0] * a.m[2][1] - a.m[1][1] * a.m[2][0]);
-        //if (det == 0.0f) throw std::runtime_error("Matrix is singular and cannot be inverted.");
+        if (det == 0.0f) throw std::runtime_error("Matrix is singular and cannot be inverted.");
         float invDet = 1.0f / det;
         KTMATRIX3 inv;
         inv.m[0][0] = (a.m[1][1] * a.m[2][2] - a.m[1][2] * a.m[2][1]) * invDet;
@@ -346,6 +354,15 @@ struct KTMATRIX4 {
         m[2][0] = m20; m[2][1] = m21; m[2][2] = m22; m[2][3] = m23;
         m[3][0] = m30; m[3][1] = m31; m[3][2] = m32; m[3][3] = m33;
 
+    }
+
+    static KTMATRIX4 Zero() {
+        return KTMATRIX4(
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0
+        );
     }
 
     static KTMATRIX4 Identity() {
@@ -564,18 +581,18 @@ struct KTQUATERNION {
     /// <param name="q"></param>
     /// <returns></returns>
     KTQUATERNION operator*(const KTQUATERNION& q)const {
-        //return KTQUATERNION(
-        //    w * q.x + x * q.w + y * q.z - z * q.y,
-        //    w * q.y - x * q.z + y * q.w + z * q.x,
-        //    w * q.z + x * q.y - y * q.x + z * q.w,
-        //    w * q.w - x * q.x - y * q.y - z * q.z
-        //);
         return KTQUATERNION(
-            q.w * x + q.x * w + q.y * z - q.z * y,
-            q.w * y - q.x * z + q.y * w + q.z * x,
-            q.w * z + q.x * y - q.y * x + q.z * w,
-            q.w * w - q.x * x - q.y * y - q.z * z
+            w * q.x + x * q.w + y * q.z - z * q.y,
+            w * q.y - x * q.z + y * q.w + z * q.x,
+            w * q.z + x * q.y - y * q.x + z * q.w,
+            w * q.w - x * q.x - y * q.y - z * q.z
         );
+        //return KTQUATERNION(
+        //    q.w * x + q.x * w + q.y * z - q.z * y,
+        //    q.w * y - q.x * z + q.y * w + q.z * x,
+        //    q.w * z + q.x * y - q.y * x + q.z * w,
+        //    q.w * w - q.x * x - q.y * y - q.z * z
+        //);
 
     }
 
@@ -634,22 +651,24 @@ struct KTQUATERNION {
     KTVECTOR3 ToEulerAngles()const {
         //クォータニオンからEuler角へ変換
         KTVECTOR3 euler;
+        KTQUATERNION nq = this->Normalize();
         // ピッチ (x軸回りの回転)
-        float sinp = 2.0f * (w * x + y * z);
-        float cosp = 1.0f - 2.0f * (x * x + y * y);
-        euler.x = atan2f(sinp, cosp) * (180.0f / 3.14159265359f);
-        // ヨー (y軸回りの回転)
-        float siny = 2.0f * (w * y - z * x);
-        if (fabs(siny) >= 1)
-            euler.y = copysignf(90.0f, siny); // 90度または-90度
+        float sinp = 2.0f * (nq.w * nq.x - nq.y * nq.z);
+        if (fabs(sinp) >= 1)
+            euler.x = copysignf(90.0f, sinp);
         else
-            euler.y = asinf(siny) * (180.0f / 3.14159265359f);
+            euler.x = asinf(sinp) * (180.0f / 3.14159265359f);
+        // ヨー (y軸回りの回転)
+        float siny = 2.0f * (nq.w * nq.y + nq.z * nq.x);
+        float cosy = 1.0f - 2.0f * (nq.x * nq.x + nq.y * nq.y);
+        euler.y = atan2f(siny, cosy) * (180.0f / 3.14159265359f);
         // ロール (z軸回りの回転)
-        float sinr = 2.0f * (w * z + x * y);
-        float cosr = 1.0f - 2.0f * (y * y + z * z);
+        float sinr = 2.0f * (nq.w * nq.z + nq.x * nq.y);
+        float cosr = 1.0f - 2.0f * (nq.x * nq.x + nq.z * nq.z);
         euler.z = atan2f(sinr, cosr) * (180.0f / 3.14159265359f);
         return euler;
     }
+
 
     KTMATRIX4 ToMatrix()const {
         KTQUATERNION q = Normalize();

@@ -58,7 +58,7 @@ void RigidBody::Integrate(){
 
 	//ワールド空間の慣性テンソルに変換
 	KTMATRIX3 R = _orientation.ToMatrix().ToMatrix3();//回転行列
-	_inertiaTensorWorldInv = R.Transpose() * _inertiaTensorBodyInv * R;
+	_inertiaTensorWorldInv = R * _inertiaTensorBodyInv * R.Transpose();
 
 	//角加速度の計算 = Inverse * トルク
 	KTVECTOR3 angularAcceleration = _inertiaTensorWorldInv * _torqueAccum;
@@ -95,8 +95,14 @@ void RigidBody::Awake(){
 	
 	auto* colBox = _owner->GetComponent<ColliderBox>();//Box以外にも対応させる
 	if (colBox) {
-		_inertiaTensorBody = InertiaTensorBox(_mass, colBox->_extents);
-		_inertiaTensorBodyInv = _inertiaTensorBody.Inverse();
+		if (_mass > 0.0f) {
+			_inertiaTensorBody = InertiaTensorBox(_mass, colBox->_extents);
+			_inertiaTensorBodyInv = _inertiaTensorBody.Inverse();
+		}
+		else {
+			_inertiaTensorBody = KTMATRIX3::Zero();
+			_inertiaTensorBodyInv = KTMATRIX3::Zero();
+		}
 	}
 
 }
@@ -106,9 +112,15 @@ void RigidBody::Update() {
 
 
 	auto* colBox = _owner->GetComponent<ColliderBox>();
-	if (colBox) {//0質量にしたときにエラーになるので対処を考える
-		_inertiaTensorBody = InertiaTensorBox(_mass, colBox->_extents);
-		_inertiaTensorBodyInv = _inertiaTensorBody.Inverse();
+	if (colBox) {
+		if (_mass > 0.0f) {
+			_inertiaTensorBody = InertiaTensorBox(_mass, colBox->_extents);
+			_inertiaTensorBodyInv = _inertiaTensorBody.Inverse();
+		}
+		else {
+			_inertiaTensorBody = KTMATRIX3::Zero();
+			_inertiaTensorBodyInv = KTMATRIX3::Zero();
+		}
 	}
 }
 
@@ -148,6 +160,6 @@ void RigidBody::ShowUI() {
 
 		ImGui::EndTable();
 	}
-	ImGui::InputFloat("Mass", &_mass, 0.1f, 1.0f, "%.3f");
+	ImGui::InputFloat("Mass", &_mass);
 	ImGui::Checkbox("UseGravity", &_useGravity);
 }
