@@ -175,6 +175,10 @@ void ColliderSphere::Update()
 {
 }
 
+void ColliderSphere::Render() const
+{
+}
+
 bool ColliderSphere::CheckVSSphere(const ColliderSphere* other, CollisionManifold& outCollisionManifold) const
 {
 	outCollisionManifold.a = const_cast<ColliderSphere*>(other);
@@ -189,6 +193,19 @@ bool ColliderSphere::CheckVSSphere(const ColliderSphere* other, CollisionManifol
 		outCollisionManifold.penetrationDepth = sqrtf(radiusSumSqr) - sqrtf(distanceSqr);
 		outCollisionManifold.normal = (other->_owner->_transform._position -
 			this->_owner->_transform._position).Normalize();
+		KTVECTOR3 cpa;
+		cpa = other->_owner->_transform._position -
+			_radius * outCollisionManifold.normal;
+
+		KTVECTOR3 cpb;
+		cpb = this->_owner->_transform._position +
+			_radius * outCollisionManifold.normal;
+
+		ContactPoint cp;
+		cp.position = (cpa + cpb) / 2.0f;
+		cp.penetration = outCollisionManifold.penetrationDepth;
+		outCollisionManifold.contacts.push_back(cp);
+
 		return true;
 	}
 	else
@@ -202,6 +219,10 @@ KTMATRIX3 ColliderSphere::ComputeLocalInertiaTensor(float mass){
 		0.0f, v, 0.0f,
 		0.0f, 0.0f, v
 	);
+}
+
+void ColliderSphere::ShowUI(){
+	ImGui::Checkbox("_wasOverlap", &_wasOverlap);
 }
 
 
@@ -599,7 +620,7 @@ KTVECTOR3 ColliderBox::ComputePolygonCentroid(const std::vector<KTVECTOR3>& poly
 
 std::vector<KTVECTOR3> ColliderBox::ComputeContactPolygon(const ColliderBox* refBox, const ColliderBox* incBox, const KTVECTOR3& collisionNormal){
 	// 1) 参照ボックス（refBox）および参照面の決定
- //    参照軸は bestAxis に最も近い軸 (abs dot 最大) を選ぶ
+	//参照軸は bestAxis に最も近い軸 (abs dot 最大) を選ぶ
 	int refAxis = 0;
 	float bestDot = fabs(Dot(refBox->_axis[0], collisionNormal));
 	for (int i = 1; i < 3; ++i) {

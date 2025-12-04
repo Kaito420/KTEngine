@@ -94,7 +94,7 @@ public:
 
 class ColliderSphere : public Collider {
 public:
-	float _radius;
+	float _radius = 0.5;
 
 	void Awake() override;
 
@@ -115,7 +115,7 @@ public:
 	}
 
 	bool CollideWith(ColliderSphere* other, CollisionManifold& outCollisionManifold) {
-		return false;
+		return CheckVSSphere(other, outCollisionManifold);
 	}
 
 	bool CheckVSSphere(const ColliderSphere* other, CollisionManifold& outCollisionManifold)const;
@@ -124,6 +124,7 @@ public:
 
 	std::string GetComponentName() { return "ColliderSphere"; }
 
+	void ShowUI()override;
 };
 
 class ColliderBox : public Collider
