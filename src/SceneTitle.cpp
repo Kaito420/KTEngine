@@ -42,6 +42,6 @@ void SceneTitle::Initialize()
 	title->_transform._position = { -1.0f, 0.5f, 3.0f };
 	title->_transform._scale = { 4.5f, 2.5f, 1.0f };
 	title->AddComponent<Square>()->_texture = Texture::Load("asset/texture/Title.jpg");
-	title->AddComponent<TitleManager>();
+	//title->AddComponent<TitleManager>();
 
 }

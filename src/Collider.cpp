@@ -98,7 +98,7 @@ CollisionManifold::CollisionManifold()
 {
 	std::vector<Vertex> vertices;
 	std::vector<UINT> indices;
-	CreateSphereMesh(0.3f, 10, 10, vertices, indices);
+	CreateSphereMesh(0.1f, 10, 10, vertices, indices);
 	_indexCount = indices.size();
 
 	//頂点バッファ生成
@@ -151,7 +151,7 @@ void CollisionManifold::Render()const {
 
 		MATERIAL material = {};
 		material.Diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
-		material.TextureEnable = false;
+		material.TextureEnable = true;
 		RendererDX11::SetMaterial(material);
 
 		// シェーダーリソースビュー設定
@@ -162,6 +162,39 @@ void CollisionManifold::Render()const {
 
 	}
 }
+
+void ColliderSphere::Awake(){
+	Manager::GetCurrentScene()->GetPhysicsSystem()->RegisterCollider(this);
+}
+
+void ColliderSphere::OnDestroy(){
+	Manager::GetCurrentScene()->GetPhysicsSystem()->RemoveCollider(this);
+}
+
+void ColliderSphere::Update()
+{
+}
+
+bool ColliderSphere::CheckVSSphere(const ColliderSphere* other, CollisionManifold& outCollisionManifold) const
+{
+	outCollisionManifold.a = const_cast<ColliderSphere*>(other);
+	outCollisionManifold.b = const_cast<ColliderSphere*>(this);
+
+	float distanceSqr = (this->_owner->_transform._position -
+		other->_owner->_transform._position).MagnitudeSqr();
+
+	float radiusSumSqr = (this->_radius + other->_radius) * (this->_radius + other->_radius);
+
+	if (distanceSqr <= radiusSumSqr) {//当たっている
+		outCollisionManifold.penetrationDepth = sqrtf(radiusSumSqr) - sqrtf(distanceSqr);
+		outCollisionManifold.normal = (other->_owner->_transform._position -
+			this->_owner->_transform._position).Normalize();
+		return true;
+	}
+	else
+		return false;
+}
+
 
 void ColliderBox::Awake() {
 	Manager::GetCurrentScene()->GetPhysicsSystem()->RegisterCollider(this);

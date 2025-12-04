@@ -67,6 +67,10 @@ public:
         return *this;
     }
 
+    float MagnitudeSqr()const {
+        return x * x + y * y;
+    }
+
     float Magnitude()const { //ベクトルの大きさ
         return sqrtf(x * x + y * y);
     }
@@ -144,6 +148,9 @@ public:
         return *this;
     }
 
+    float MagnitudeSqr()const {
+        return x * x + y * y + z * z;
+    }
 
     float Magnitude()const {  //ベクトルの大きさを求める
         return sqrtf(x * x + y * y + z * z);
@@ -233,6 +240,10 @@ public:
     KTVECTOR4& operator*=(float f) {
         x *= f; y *= f; z *= f; w *= f;
         return *this;
+    }
+
+    float MagnitudeSqr()const {
+        return x * x + y * y + z * z + w * w;
     }
 
     float Magnitude() const {

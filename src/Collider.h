@@ -101,6 +101,7 @@ public:
 	// GameObjectの情報で更新する
 	void Update() override;
 
+	//デバッグ描画用
 	void Render()const override;
 
 	bool Collide(Collider* other, CollisionManifold& outCollisionManifold) {
@@ -108,7 +109,6 @@ public:
 	}
 
 	bool CollideWith(ColliderBox* other, CollisionManifold& outCollisionManifold) {
-		//return CheckVSOBB(other);
 		return false;
 	}
 
@@ -118,7 +118,7 @@ public:
 
 	bool CheckVSSphere(const ColliderSphere* other, CollisionManifold& outCollisionManifold)const;
 
-	std::string GetComponentName() { return "ColliderSpherer"; }
+	std::string GetComponentName() { return "ColliderSphere"; }
 
 };
 
@@ -135,6 +135,7 @@ public:
 	// GameObjectの情報で更新する
 	void Update() override;
 
+	//デバッグ描画用
 	void Render()const override;
 
 
