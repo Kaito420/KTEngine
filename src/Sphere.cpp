@@ -18,7 +18,7 @@ void Sphere::CreateSphereMesh(float radius, int sliceCount, int stackCount, std:
 	vertices.push_back({ XMFLOAT3(0.0f, radius, 0.0f),
 						 XMFLOAT3(0.0f, 1.0f, 0.0f),
 						 XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
-						 XMFLOAT2(0.0f, 0.0f)
+						 XMFLOAT2(0.5f, 0.0f)
 		});
 
 	float phiStep = XM_PI / stackCount;
@@ -52,7 +52,7 @@ void Sphere::CreateSphereMesh(float radius, int sliceCount, int stackCount, std:
 	vertices.push_back({ XMFLOAT3(0.0f, -radius, 0.0f),
 						 XMFLOAT3(0.0f, -1.0f, 0.0f),
 						 XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
-						 XMFLOAT2(0.0f, 1.0f) });
+						 XMFLOAT2(0.5f, 1.0f) });
 
 	// top stack (top pole to first ring)
 	for (UINT i = 0; i < sliceCount; ++i)
@@ -119,6 +119,7 @@ void Sphere::Awake() {
 
 	RendererDX11::GetDevice()->CreateBuffer(&bd, &sd, &_indexBuffer);
 
+	_texture = Texture::Load("asset\\texture\\default.png");
 }
 
 void Sphere::Render()const {

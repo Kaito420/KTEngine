@@ -9,6 +9,7 @@
 #include "Manager.h"
 #include "Scene.h"
 #include "RendererDX11.h"
+#include "Texture.h"
 
 void CollisionManifold::CreateSphereMesh(float radius, int sliceCount, int stackCount, std::vector<Vertex>& vertices, std::vector<UINT>& indices) {
 	vertices.clear();
@@ -120,11 +121,11 @@ CollisionManifold::CollisionManifold()
 
 	RendererDX11::GetDevice()->CreateBuffer(&bd, &sd, &_indexBuffer);
 
+	_texture = Texture::Load("asset\\texture\\white.png");
 }
 
 void CollisionManifold::Render()const {
-	//for (auto& cp : contacts) 
-	if(contacts.size() != 0){
+	for (auto& cp : contacts) {
 		UINT stride = sizeof(Vertex);
 		UINT offset = 0;
 
@@ -133,7 +134,7 @@ void CollisionManifold::Render()const {
 
 		//マトリクス設定
 		//平行移動行列
-		XMMATRIX translation = XMMatrixTranslation(contacts[0].position.x, contacts[0].position.y, contacts[0].position.z);
+		XMMATRIX translation = XMMatrixTranslation(cp.position.x, cp.position.y, cp.position.z);
 
 		XMMATRIX rotation = XMMatrixIdentity();
 
@@ -154,6 +155,8 @@ void CollisionManifold::Render()const {
 		RendererDX11::SetMaterial(material);
 
 		// シェーダーリソースビュー設定
+		RendererDX11::GetContext()->PSSetShaderResources(0, 1, &_texture);
+
 		// ポリゴン描画
 		RendererDX11::GetContext()->DrawIndexed(_indexCount, 0, 0);
 
@@ -288,10 +291,9 @@ void ColliderBox::Render()const {
 
 }
 
-CollisionManifold ColliderBox::CheckVSOBB(ColliderBox* other) {
-	CollisionManifold manifold;
-	manifold.a = other;
-	manifold.b = this;
+bool ColliderBox::CheckVSOBB(const ColliderBox* other, CollisionManifold& manifold) const {
+	manifold.a = const_cast<ColliderBox*>(other);
+	manifold.b = const_cast<ColliderBox*>(this);
 
 	float minOverlap = FLT_MAX;	//最小の重なり量
 	KTVECTOR3 bestAxis;			//最小の重なり軸
@@ -300,13 +302,13 @@ CollisionManifold ColliderBox::CheckVSOBB(ColliderBox* other) {
 	//分離軸SAT判定
 	for(int i = 0; i<3; i++) {
 		float overlap = 0.0f;
-		if (!OverlapOnAxis(other, _axis[i], overlap)) return manifold;
+		if (!OverlapOnAxis(other, _axis[i], overlap)) return false;
 		if(overlap < minOverlap) {
 			minOverlap = overlap;
 			bestAxis = _axis[i];
 		}
 
-		if (!OverlapOnAxis(other, other->_axis[i], overlap)) return manifold;
+		if (!OverlapOnAxis(other, other->_axis[i], overlap)) return false;
 		if (overlap < minOverlap) {
 			minOverlap = overlap;
 			bestAxis = other->_axis[i];
@@ -320,7 +322,7 @@ CollisionManifold ColliderBox::CheckVSOBB(ColliderBox* other) {
 			if (axis.Magnitude() < DBL_EPSILON) continue;
 
 			float overlap = 0.0f;
-			if (!OverlapOnAxis(other, axis.Normalize(), overlap)) return manifold;
+			if (!OverlapOnAxis(other, axis.Normalize(), overlap)) return false;
 			if(overlap < minOverlap) {
 				minOverlap = overlap;
 				bestAxis = axis;
@@ -359,7 +361,7 @@ CollisionManifold ColliderBox::CheckVSOBB(ColliderBox* other) {
 	}
 	
 	//全ての軸で重なっているので衝突している
-	return manifold;
+	return true;
 }
 
 bool ColliderBox::OverlapOnAxis(const ColliderBox* other, const KTVECTOR3& axis) const{

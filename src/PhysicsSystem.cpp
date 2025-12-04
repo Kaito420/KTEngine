@@ -16,13 +16,16 @@ void PhysicsSystem::Update() {
 		col->BeginFrame();
 	}
 
+	//manifoldsのリセット
+	ClearManifold();
+
 	for (size_t i = 0; i < _colliders.size() - 1; i++) {
 		for (size_t j = i + 1; j < _colliders.size(); j++) {
 			auto* colA = _colliders[i];
 			auto* colB = _colliders[j];
-			CollisionManifold manifold = colA->Collide(colB);
+			CollisionManifold manifold;
 
-			if (manifold.hasCollision) {	//衝突した際
+			if (colA->Collide(colB, manifold)) {	//衝突した際
 
 				colA->_isOverlap = true;//確認用
 				colB->_isOverlap = true;
@@ -39,6 +42,8 @@ void PhysicsSystem::Update() {
 					colB->GetOwner()->DispatchOnCollisionEnter(colA);
 				else
 					colB->GetOwner()->DispatchOnCollisionStay(colA);
+			
+				_manifolds.push_back(manifold);	//manifoldの保存
 			}
 		}
 	}
@@ -62,23 +67,16 @@ void PhysicsSystem::Update() {
 	//=====================================================================
 	//物理演算
 	//=====================================================================
-	for (size_t i = 0; i < _colliders.size() - 1; i++) {
-		for (size_t j = i + 1; j < _colliders.size(); j++) {
-			auto* colA = _colliders[i];
-			auto* colB = _colliders[j];
 
-			// 衝突情報
-			CollisionManifold manifold = colA->Collide(colB);
+	for (auto& manifold : _manifolds) {
 
-			if (!manifold.hasCollision) continue; // 衝突していない
-			manifold.Render();	//機能しない
-			for (int iter = 0; iter < 10; iter++) {
-				ResolveInpulse(manifold);
-			}
-
-			ResolveCollision(manifold);
+		manifold.Render();
+		for (int iter = 0; iter < 10; iter++) {
+			ResolveInpulse(manifold);
 		}
+		ResolveCollision(manifold);
 	}
+
 
 	//状態更新
 	for (auto* col : _colliders) {
@@ -87,7 +85,7 @@ void PhysicsSystem::Update() {
 
 }
 
-void PhysicsSystem::ResolveCollision(CollisionManifold manifold)
+void PhysicsSystem::ResolveCollision(CollisionManifold& manifold)
 {
 	RigidBody* rbA = manifold.a->GetOwner()->GetComponent<RigidBody>();
 	RigidBody* rbB = manifold.b->GetOwner()->GetComponent<RigidBody>();
@@ -119,7 +117,7 @@ void PhysicsSystem::ResolveCollision(CollisionManifold manifold)
 	}
 }
 
-void PhysicsSystem::ResolveInpulse(CollisionManifold manifold)
+void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold)
 {
 	RigidBody* rbA = manifold.a->GetOwner()->GetComponent<RigidBody>();
 	RigidBody* rbB = manifold.b->GetOwner()->GetComponent<RigidBody>();

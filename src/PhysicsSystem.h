@@ -14,6 +14,7 @@
 
 class PhysicsSystem {
 	std::vector<Collider*> _colliders;
+	std::vector<CollisionManifold> _manifolds;
 public:
 	void RegisterCollider(Collider* collider) {
 		_colliders.push_back(collider);
@@ -28,9 +29,11 @@ public:
 
 	void Update();
 
-	void ResolveCollision(CollisionManifold manifold);
+	void ResolveCollision(CollisionManifold& manifold);
 
-	void ResolveInpulse(CollisionManifold manifold);
+	void ResolveInpulse(CollisionManifold& manifold);
+
+	void ClearManifold() { _manifolds.clear(); }
 };
 
 #endif // !_PHYSICSSYSTEM_H_
