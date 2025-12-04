@@ -184,24 +184,26 @@ bool ColliderSphere::CheckVSSphere(const ColliderSphere* other, CollisionManifol
 	outCollisionManifold.a = const_cast<ColliderSphere*>(other);
 	outCollisionManifold.b = const_cast<ColliderSphere*>(this);
 
+	//’†SŠÔ‚Ì•½•û‹——£
 	float distanceSqr = (this->_owner->_transform._position -
 		other->_owner->_transform._position).MagnitudeSqr();
 
+	//”¼Œa‚Ì˜a‚Ì•½•û
 	float radiusSumSqr = (this->_radius + other->_radius) * (this->_radius + other->_radius);
 
 	if (distanceSqr <= radiusSumSqr) {//“–‚½‚Á‚Ä‚¢‚é
 		outCollisionManifold.penetrationDepth = sqrtf(radiusSumSqr) - sqrtf(distanceSqr);
 		outCollisionManifold.normal = (other->_owner->_transform._position -
 			this->_owner->_transform._position).Normalize();
-		KTVECTOR3 cpa;
+		KTVECTOR3 cpa;//A‘¤‚ÌÚG“_
 		cpa = other->_owner->_transform._position -
 			_radius * outCollisionManifold.normal;
 
-		KTVECTOR3 cpb;
+		KTVECTOR3 cpb;//B‘¤‚ÌÚG“_
 		cpb = this->_owner->_transform._position +
 			_radius * outCollisionManifold.normal;
 
-		ContactPoint cp;
+		ContactPoint cp;//ÚG“_“¯m‚Ì’†“_‚ğÕ“Ë‰ğÁ‚É—˜—p‚·‚é
 		cp.position = (cpa + cpb) / 2.0f;
 		cp.penetration = outCollisionManifold.penetrationDepth;
 		outCollisionManifold.contacts.push_back(cp);
