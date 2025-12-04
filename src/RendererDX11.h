@@ -68,6 +68,10 @@ namespace RendererDX11 {
 
     void CreateVertexShader();
     void CreatePixelShader();
+
+    void SetCullModeBack();
+    void SetCullModeFront();
+    void SetCullModeNone();
 }
 
 #endif // !_RENDERERDX11_H

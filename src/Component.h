@@ -34,6 +34,7 @@ public:
 	bool Started() { return _started = true; }
 	bool GetStarted() { return _started; }
 	GameObject* GetOwner() const { return _owner; }
+	void SetOwner(GameObject* gameObject) { _owner = gameObject; }
 
 	/// <summary>
 	/// インスタンス生成直後に実行（コンポーネント有効無効に関係なく呼ばれる）

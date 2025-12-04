@@ -27,6 +27,9 @@ void SceneGame::Initialize() {
 	camera->_name = "Camera";
 	camera->_transform._position = { -1.1f, 1.0f, -20.0f };
 
+	GameObject* skyDome = AddGameObject<GameObject>();
+	skyDome->_name = "SkyDome";
+	skyDome->AddComponent<SkyDome>();
 	
 	GameObject* blockSpawner = AddGameObject<GameObject>();
 	blockSpawner->_name = "BlockSpawner";
@@ -56,11 +59,6 @@ void SceneGame::Initialize() {
 	cubeKiller->AddComponent<Cube>();
 	cubeKiller->AddComponent<ColliderBox>();
 
-	GameObject* skyDome = AddGameObject<GameObject>();
-	skyDome->_name = "SkyDome";
-	skyDome->AddComponent<SkyDome>();
-	skyDome->AddComponent<Sphere>()->_texture = Texture::Load("asset\\texture\\Sky.png");
-	skyDome->_transform._scale = { 300.0f, 300.0f, 300.0f };
 
 	GameObject* board1 = AddGameObject<GameObject>();
 	board1->_name = "Board1";
