@@ -86,6 +86,8 @@ public:
 	virtual bool CollideWith(ColliderBox* other, CollisionManifold& outCollisionManifold) = 0;
 	virtual bool CollideWith(ColliderSphere* other, CollisionManifold& outCollisionManifold) = 0;
 
+	virtual KTMATRIX3 ComputeLocalInertiaTensor(float mass) = 0;
+
 	std::string GetComponentName() { return "Collider"; }
 
 };
@@ -117,6 +119,8 @@ public:
 	}
 
 	bool CheckVSSphere(const ColliderSphere* other, CollisionManifold& outCollisionManifold)const;
+
+	KTMATRIX3 ComputeLocalInertiaTensor(float mass)override;
 
 	std::string GetComponentName() { return "ColliderSphere"; }
 
@@ -168,6 +172,7 @@ public:
 
 	static std::vector<KTVECTOR3> ComputeContactPolygon(const ColliderBox* refBox, const ColliderBox* incBox, const KTVECTOR3& collisionNormal);
 
+	KTMATRIX3 ComputeLocalInertiaTensor(float mass)override;
 
 	std::string GetComponentName() { return "ColliderBox"; }
 

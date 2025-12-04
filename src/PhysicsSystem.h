@@ -29,6 +29,8 @@ public:
 
 	void Update();
 
+	void SetLocalInertiaTensor();
+
 	void ResolveCollision(CollisionManifold& manifold);
 
 	void ResolveInpulse(CollisionManifold& manifold);

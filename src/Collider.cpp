@@ -195,6 +195,15 @@ bool ColliderSphere::CheckVSSphere(const ColliderSphere* other, CollisionManifol
 		return false;
 }
 
+KTMATRIX3 ColliderSphere::ComputeLocalInertiaTensor(float mass){
+	float v = (2.0f / 5.0f) * mass * _radius * _radius;
+	return KTMATRIX3(
+		v, 0.0f, 0.0f,
+		0.0f, v, 0.0f,
+		0.0f, 0.0f, v
+	);
+}
+
 
 void ColliderBox::Awake() {
 	Manager::GetCurrentScene()->GetPhysicsSystem()->RegisterCollider(this);
@@ -615,6 +624,18 @@ std::vector<KTVECTOR3> ColliderBox::ComputeContactPolygon(const ColliderBox* ref
 	}
 
 	return poly; // ‹ó‚È‚çƒNƒŠƒbƒv‚ÅÁ‚¦‚½‚±‚Æ‚ğ¦‚·
+}
+
+KTMATRIX3 ColliderBox::ComputeLocalInertiaTensor(float mass)
+{
+	float ix = (1.0f / 12.0f) * mass * (_extents.y * _extents.y + _extents.z * _extents.z) * 4.0f;
+	float iy = (1.0f / 12.0f) * mass * (_extents.x * _extents.x + _extents.z * _extents.z) * 4.0f;
+	float iz = (1.0f / 12.0f) * mass * (_extents.x * _extents.x + _extents.y * _extents.y) * 4.0f;
+	return KTMATRIX3(
+		ix, 0.0f, 0.0f,
+		0.0f, iy, 0.0f,
+		0.0f, 0.0f, iz
+	);
 }
 
 void ColliderBox::ShowUI() {

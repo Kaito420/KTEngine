@@ -18,6 +18,8 @@ void PhysicsSystem::Update() {
 
 	//manifoldsのリセット
 	ClearManifold();
+	//慣性テンソルの更新
+	SetLocalInertiaTensor();
 
 	for (size_t i = 0; i < _colliders.size() - 1; i++) {
 		for (size_t j = i + 1; j < _colliders.size(); j++) {
@@ -83,6 +85,21 @@ void PhysicsSystem::Update() {
 		col->EndFrame();
 	}
 
+}
+
+void PhysicsSystem::SetLocalInertiaTensor(){
+	for (auto& col : _colliders) {
+		RigidBody* rb = col->GetOwner()->GetComponent<RigidBody>();
+		if (rb == nullptr)continue;
+		if (rb->_mass > 0.0f) {
+			rb->_inertiaTensorBody = col->ComputeLocalInertiaTensor(rb->_mass);
+			rb->_inertiaTensorBodyInv = rb->_inertiaTensorBody.Inverse();
+		}
+		else {
+			rb->_inertiaTensorBody = KTMATRIX3::Zero();
+			rb->_inertiaTensorBodyInv = KTMATRIX3::Zero();
+		}
+	}
 }
 
 void PhysicsSystem::ResolveCollision(CollisionManifold& manifold)
