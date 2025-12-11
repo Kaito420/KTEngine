@@ -6,6 +6,17 @@
 
 #define DT 0.016f // 60fps‘z’è
 
+template <typename T>
+static T Clamp(T f, T l, T h) {
+    if (l > h)
+        std::swap(l, h);
+    if (f <= l)
+        return l;
+    if (h <= f)
+        return h;
+    return f;   
+}
+
 struct KTVECTOR2 {
 public:
     float x = 0.0f;
@@ -598,13 +609,6 @@ struct KTQUATERNION {
             w * q.z + x * q.y - y * q.x + z * q.w,
             w * q.w - x * q.x - y * q.y - z * q.z
         );
-        //return KTQUATERNION(
-        //    q.w * x + q.x * w + q.y * z - q.z * y,
-        //    q.w * y - q.x * z + q.y * w + q.z * x,
-        //    q.w * z + q.x * y - q.y * x + q.z * w,
-        //    q.w * w - q.x * x - q.y * y - q.z * z
-        //);
-
     }
 
     /// <summary>
