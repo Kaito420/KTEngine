@@ -186,6 +186,17 @@ public:
     friend KTVECTOR3 CrossNormalize(const KTVECTOR3& k1, const KTVECTOR3& k2) {
         return Cross(k1, k2).Normalize();
     }
+
+
+    KTVECTOR3 Right() {
+        return KTVECTOR3(1.0f, 0.0f, 0.0f);
+    }
+    KTVECTOR3 Up() {
+        return KTVECTOR3(0.0f, 1.0f, 0.0f);
+    }
+    KTVECTOR3 Forward() {
+        return KTVECTOR3(0.0f, 0.0f, 1.0f);
+    }
 };
 
 struct KTVECTOR4 {
@@ -669,7 +680,7 @@ struct KTQUATERNION {
         KTQUATERNION nq = this->Normalize();
         // ƒsƒbƒ` (xŽ²‰ñ‚è‚Ì‰ñ“])
         float sinp = 2.0f * (nq.w * nq.x - nq.y * nq.z);
-        if (fabs(sinp) >= 1)
+        if (fabs(sinp) >= 1.0f)
             euler.x = copysignf(90.0f, sinp);
         else
             euler.x = asinf(sinp) * (180.0f / 3.14159265359f);
