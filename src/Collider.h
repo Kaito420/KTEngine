@@ -111,7 +111,7 @@ public:
 	}
 
 	bool CollideWith(ColliderBox* other, CollisionManifold& outCollisionManifold) {
-		return false;
+		return CheckVSOBB(other, outCollisionManifold);
 	}
 
 	bool CollideWith(ColliderSphere* other, CollisionManifold& outCollisionManifold) {
@@ -119,6 +119,7 @@ public:
 	}
 
 	bool CheckVSSphere(const ColliderSphere* other, CollisionManifold& outCollisionManifold)const;
+	bool CheckVSOBB(const ColliderBox* other, CollisionManifold& outCollisionManifold)const;
 
 	KTMATRIX3 ComputeLocalInertiaTensor(float mass)override;
 
@@ -130,7 +131,7 @@ public:
 class ColliderBox : public Collider
 {
 public:
-	KTVECTOR3 _axis[3];
+	KTVECTOR3 _axis[3];	//[0] : X, [1] : Y, [2] : Z
 	KTVECTOR3 _extents;
 
 	void Awake() override;
@@ -153,7 +154,7 @@ public:
 	}
 
 	bool CollideWith(ColliderSphere* other, CollisionManifold& outCollisionManifold) {
-		return false;
+		return CheckVSSphere(other, outCollisionManifold);
 	}
 
 	bool CheckVSOBB(const ColliderBox* other, CollisionManifold& outCollisionManifold)const;

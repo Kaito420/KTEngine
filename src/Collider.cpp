@@ -11,6 +11,7 @@
 #include "RendererDX11.h"
 #include "Texture.h"
 
+
 void CollisionManifold::CreateSphereMesh(float radius, int sliceCount, int stackCount, std::vector<Vertex>& vertices, std::vector<UINT>& indices) {
 	vertices.clear();
 	indices.clear();
@@ -212,6 +213,43 @@ bool ColliderSphere::CheckVSSphere(const ColliderSphere* other, CollisionManifol
 	}
 	else
 		return false;
+}
+
+bool ColliderSphere::CheckVSOBB(const ColliderBox* other, CollisionManifold& outCollisionManifold)const {
+
+	outCollisionManifold.a = const_cast<ColliderBox*>(other);
+	outCollisionManifold.b = const_cast<ColliderSphere*>(this);
+
+	KTVECTOR3 bPos = other->GetOwner()->_transform._position;	//OBBの座標
+	KTVECTOR3 cPos = this->_owner->_transform._position;		//Sphereの座標
+
+	KTVECTOR3 BToC = cPos - bPos;
+	float q[3];
+	float c[3];
+	for (int i = 0; i < 3; i++) {
+		q[i] = Dot(BToC, other->_axis[i]);
+	}
+	c[0] = Clamp(q[0], -other->_extents.x, other->_extents.x);
+	c[1] = Clamp(q[1], -other->_extents.y, other->_extents.y);
+	c[2] = Clamp(q[2], -other->_extents.z, other->_extents.z);
+
+	KTVECTOR3 closestPoint =
+		bPos + c[0] * other->_axis[0] +
+		c[1] * other->_axis[1] + c[2] * other->_axis[2];
+
+	float distanceSqr = (closestPoint - cPos).MagnitudeSqr();
+	float radiusSqr = this->_radius * this->_radius;
+
+	if (distanceSqr <= radiusSqr) {
+		outCollisionManifold.penetrationDepth = sqrtf(radiusSqr) - sqrtf(distanceSqr);
+		outCollisionManifold.normal = (closestPoint - cPos).Normalize();
+		ContactPoint cp;
+		cp.penetration = sqrtf(radiusSqr) - sqrtf(distanceSqr);
+		cp.position = closestPoint;
+		outCollisionManifold.contacts.push_back(cp);
+		return true;
+	}
+	return false;
 }
 
 KTMATRIX3 ColliderSphere::ComputeLocalInertiaTensor(float mass){
@@ -427,6 +465,10 @@ bool ColliderBox::CheckVSOBB(const ColliderBox* other, CollisionManifold& manifo
 	
 	//全ての軸で重なっているので衝突している
 	return true;
+}
+
+bool ColliderBox::CheckVSSphere(const ColliderSphere* other, CollisionManifold& outCollisionManifold) const {
+	return other->CheckVSOBB(this, outCollisionManifold);
 }
 
 bool ColliderBox::OverlapOnAxis(const ColliderBox* other, const KTVECTOR3& axis) const{

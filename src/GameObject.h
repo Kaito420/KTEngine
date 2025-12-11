@@ -48,20 +48,17 @@ public:
 	void Destroy() { _destroy = true; }
 	bool IsDestroy() const { return _destroy; }
 
-	void RotationToQuaternion() {//オイラー角からクォータニオンへ変換、DirectX11だとこの順番らしい
-		_transform._quaternion = KTQUATERNION::FromEulerAngles(_transform._rotation.y, _transform._rotation.z, _transform._rotation.x);
-	}
 
 	KTVECTOR3 GetRight() const {
 		XMMATRIX matrix;
 		matrix = XMMatrixRotationRollPitchYaw(XMConvertToRadians(_transform._rotation.x), XMConvertToRadians(_transform._rotation.y), XMConvertToRadians(_transform._rotation.z));
 		KTVECTOR3 right;
 		XMStoreFloat3((XMFLOAT3*)&right, matrix.r[0]);
-		return right;
+		return right.Normalize();
 	}
 
 	KTVECTOR3 GetLeft() const {
-		return -GetRight();
+		return -GetRight().Normalize();
 	}
 
 	KTVECTOR3 GetUp() const {
@@ -69,11 +66,11 @@ public:
 		matrix = XMMatrixRotationRollPitchYaw(XMConvertToRadians(_transform._rotation.x), XMConvertToRadians(_transform._rotation.y), XMConvertToRadians(_transform._rotation.z));
 		KTVECTOR3 up;
 		XMStoreFloat3((XMFLOAT3*)&up, matrix.r[1]);
-		return up;
+		return up.Normalize();
 	}
 
 	KTVECTOR3 GetDown() const {
-		return -GetUp();
+		return -GetUp().Normalize();
 	}
 
 	KTVECTOR3 GetForward() const {
@@ -81,11 +78,11 @@ public:
 		matrix = XMMatrixRotationRollPitchYaw(XMConvertToRadians(_transform._rotation.x), XMConvertToRadians(_transform._rotation.y), XMConvertToRadians(_transform._rotation.z));
 		KTVECTOR3 forward;
 		XMStoreFloat3((XMFLOAT3*)&forward, matrix.r[2]);
-		return forward;
+		return forward.Normalize();
 	}
 
 	KTVECTOR3 GetBack() const {
-		return -GetForward();
+		return -GetForward().Normalize();
 	}
 
 	/// <summary>

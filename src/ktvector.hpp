@@ -6,6 +6,17 @@
 
 #define DT 0.016f // 60fps想定
 
+template <typename T>
+static T Clamp(T f, T l, T h) {
+    if (l > h)
+        std::swap(l, h);
+    if (f <= l)
+        return l;
+    if (h <= f)
+        return h;
+    return f;   
+}
+
 struct KTVECTOR2 {
 public:
     float x = 0.0f;
@@ -174,6 +185,17 @@ public:
 
     friend KTVECTOR3 CrossNormalize(const KTVECTOR3& k1, const KTVECTOR3& k2) {
         return Cross(k1, k2).Normalize();
+    }
+
+
+    KTVECTOR3 Right() {
+        return KTVECTOR3(1.0f, 0.0f, 0.0f);
+    }
+    KTVECTOR3 Up() {
+        return KTVECTOR3(0.0f, 1.0f, 0.0f);
+    }
+    KTVECTOR3 Forward() {
+        return KTVECTOR3(0.0f, 0.0f, 1.0f);
     }
 };
 
@@ -598,13 +620,6 @@ struct KTQUATERNION {
             w * q.z + x * q.y - y * q.x + z * q.w,
             w * q.w - x * q.x - y * q.y - z * q.z
         );
-        //return KTQUATERNION(
-        //    q.w * x + q.x * w + q.y * z - q.z * y,
-        //    q.w * y - q.x * z + q.y * w + q.z * x,
-        //    q.w * z + q.x * y - q.y * x + q.z * w,
-        //    q.w * w - q.x * x - q.y * y - q.z * z
-        //);
-
     }
 
     /// <summary>
@@ -665,7 +680,7 @@ struct KTQUATERNION {
         KTQUATERNION nq = this->Normalize();
         // ピッチ (x軸回りの回転)
         float sinp = 2.0f * (nq.w * nq.x - nq.y * nq.z);
-        if (fabs(sinp) >= 1)
+        if (fabs(sinp) >= 1.0f)
             euler.x = copysignf(90.0f, sinp);
         else
             euler.x = asinf(sinp) * (180.0f / 3.14159265359f);
