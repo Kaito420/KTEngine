@@ -26,13 +26,15 @@ namespace {
     ID3D11InputLayout* vertexLayout = nullptr;
     ID3D11PixelShader* pixelShader = nullptr;
 
-    ID3D11DepthStencilState* depthStateEnable;
-    ID3D11DepthStencilState* depthStateDisable;
+    ID3D11DepthStencilState* depthStateEnable = nullptr;
+    ID3D11DepthStencilState* depthStateDisable = nullptr;
 
-    ID3D11BlendState* blendState;
-    ID3D11BlendState* blendStateATC;
+    ID3D11BlendState* blendState = nullptr;
+    ID3D11BlendState* blendStateATC = nullptr;
 
-
+    ID3D11RasterizerState* cullModeNone = nullptr;
+    ID3D11RasterizerState* cullModeBack = nullptr;
+    ID3D11RasterizerState* cullModeFront = nullptr;
 }
 
 bool RendererDX11::Init(HWND hwnd) {
@@ -109,10 +111,16 @@ bool RendererDX11::Init(HWND hwnd) {
     rd.DepthClipEnable = TRUE;
     rd.MultisampleEnable = FALSE;
 
-    ID3D11RasterizerState* rs;
-    device->CreateRasterizerState(&rd, &rs);
+    device->CreateRasterizerState(&rd, &cullModeNone);
 
-    context->RSSetState(rs);
+    rd.CullMode = D3D11_CULL_BACK;
+
+    device->CreateRasterizerState(&rd, &cullModeBack);
+
+    rd.CullMode = D3D11_CULL_FRONT;
+    device->CreateRasterizerState(&rd, &cullModeFront);
+
+    context->RSSetState(cullModeBack);
 
 	//ブレンドステート設定
 	D3D11_BLEND_DESC blendDesc = {};
@@ -230,6 +238,16 @@ void RendererDX11::Shutdown() {
     if (vertexShader)vertexShader->Release();
     if (vertexLayout) vertexLayout->Release();
     if (pixelShader)pixelShader->Release();
+
+    if (depthStateEnable) depthStateEnable->Release();
+    if(depthStateDisable) depthStateDisable->Release();
+
+    if(blendState) blendState->Release();
+    if(blendStateATC) blendStateATC->Release();
+
+    if(cullModeNone) cullModeNone->Release();
+    if (cullModeBack) cullModeBack->Release();
+    if(cullModeFront) cullModeFront->Release();
 }
 
 ID3D11Device* RendererDX11::GetDevice() { return device; }
@@ -337,5 +355,17 @@ void RendererDX11::CreatePixelShader(){
 
 
     delete[] buffer;
+}
+
+void RendererDX11::SetCullModeBack(){
+    context->RSSetState(cullModeBack);
+}
+
+void RendererDX11::SetCullModeFront(){
+    context->RSSetState(cullModeFront);
+}
+
+void RendererDX11::SetCullModeNone(){
+    context->RSSetState(cullModeNone);
 }
 

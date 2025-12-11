@@ -40,6 +40,7 @@ struct CollisionManifold {
 	//======================
 	ComPtr<ID3D11Buffer> _vertexBuffer;
 	ComPtr<ID3D11Buffer> _indexBuffer;
+	ID3D11ShaderResourceView* _texture = nullptr;
 	int _indexCount = 0;
 	CollisionManifold();
 	void CreateSphereMesh(float radius, int sliceCount, int stackCount, std::vector<Vertex>& vertices, std::vector<UINT>& indices);
@@ -81,9 +82,11 @@ public:
 		_previousOverlaps = _currentOverlaps;
 	}
 
-	virtual CollisionManifold Collide(Collider* other) = 0;
-	virtual CollisionManifold CollideWith(ColliderBox* other) = 0;
-	virtual CollisionManifold CollideWith(ColliderSphere* other) = 0;
+	virtual bool Collide(Collider* other, CollisionManifold& outCollisionManifold) = 0;
+	virtual bool CollideWith(ColliderBox* other, CollisionManifold& outCollisionManifold) = 0;
+	virtual bool CollideWith(ColliderSphere* other, CollisionManifold& outCollisionManifold) = 0;
+
+	virtual KTMATRIX3 ComputeLocalInertiaTensor(float mass) = 0;
 
 	std::string GetComponentName() { return "Collider"; }
 
@@ -91,7 +94,7 @@ public:
 
 class ColliderSphere : public Collider {
 public:
-	float _radius;
+	float _radius = 0.5;
 
 	void Awake() override;
 
@@ -100,25 +103,28 @@ public:
 	// GameObjectの情報で更新する
 	void Update() override;
 
+	//デバッグ描画用
 	void Render()const override;
 
-	CollisionManifold Collide(Collider* other) {
-		return other->CollideWith(this);	//ここで自身と相手が入れ替わる
+	bool Collide(Collider* other, CollisionManifold& outCollisionManifold) {
+		return other->CollideWith(this, outCollisionManifold);	//ここで自身と相手が入れ替わる
 	}
 
-	CollisionManifold CollideWith(ColliderBox* other) {
-		//return CheckVSOBB(other);
-		return CollisionManifold();
+	bool CollideWith(ColliderBox* other, CollisionManifold& outCollisionManifold) {
+		return false;
 	}
 
-	CollisionManifold CollideWith(ColliderSphere* other) {
-		return CollisionManifold();
+	bool CollideWith(ColliderSphere* other, CollisionManifold& outCollisionManifold) {
+		return CheckVSSphere(other, outCollisionManifold);
 	}
 
-	CollisionManifold CheckVSSphere(ColliderSphere* other);
+	bool CheckVSSphere(const ColliderSphere* other, CollisionManifold& outCollisionManifold)const;
 
-	std::string GetComponentName() { return "ColliderSpherer"; }
+	KTMATRIX3 ComputeLocalInertiaTensor(float mass)override;
 
+	std::string GetComponentName() { return "ColliderSphere"; }
+
+	void ShowUI()override;
 };
 
 class ColliderBox : public Collider
@@ -134,23 +140,24 @@ public:
 	// GameObjectの情報で更新する
 	void Update() override;
 
+	//デバッグ描画用
 	void Render()const override;
 
 
-	CollisionManifold Collide(Collider* other) {
-		return other->CollideWith(this);	//ここで自身と相手が入れ替わる
+	bool Collide(Collider* other, CollisionManifold& outCollisionManifold) {
+		return other->CollideWith(this, outCollisionManifold);	//ここで自身と相手が入れ替わる
 	}
 
-	CollisionManifold CollideWith(ColliderBox* other) {
-		return CheckVSOBB(other);
+	bool CollideWith(ColliderBox* other, CollisionManifold& outCollisionManifold) {
+		return CheckVSOBB(other, outCollisionManifold);
 	}
 
-	CollisionManifold CollideWith(ColliderSphere* other) {
-		return CollisionManifold();
+	bool CollideWith(ColliderSphere* other, CollisionManifold& outCollisionManifold) {
+		return false;
 	}
 
-	CollisionManifold CheckVSOBB(ColliderBox* other);
-	CollisionManifold CheckVSSphere(ColliderSphere* other);
+	bool CheckVSOBB(const ColliderBox* other, CollisionManifold& outCollisionManifold)const;
+	bool CheckVSSphere(const ColliderSphere* other, CollisionManifold& outCollisionManifold)const;
 
 	bool OverlapOnAxis(const ColliderBox* other, const KTVECTOR3& axis)const;
 
@@ -166,6 +173,7 @@ public:
 
 	static std::vector<KTVECTOR3> ComputeContactPolygon(const ColliderBox* refBox, const ColliderBox* incBox, const KTVECTOR3& collisionNormal);
 
+	KTMATRIX3 ComputeLocalInertiaTensor(float mass)override;
 
 	std::string GetComponentName() { return "ColliderBox"; }
 

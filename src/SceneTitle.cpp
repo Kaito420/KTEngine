@@ -16,26 +16,44 @@ void SceneTitle::Initialize()
 	AddGameObject<Camera>()->_name = "Camera";
 	AddGameObject<GameObject>()->_name = "Square1";
 	FindGameObjectByName<GameObject>("Square1")->AddComponent<Square>();
-	AddGameObject<GameObject>()->_name = "Sphere1";
-	FindGameObjectByName<GameObject>("Sphere1")->AddComponent<Sphere>();
-	AddGameObject<GameObject>()->_name = "Cube1";
-	FindGameObjectByName<GameObject>("Cube1")->AddComponent<Cube>();
-	FindGameObjectByName<GameObject>("Cube1")->AddComponent<ColliderBox>();
+
+	GameObject* sphere1 = AddGameObject<GameObject>();
+	sphere1->_name = "Sphere1";
+	sphere1->_transform._position = { 0.0f, 2.0f, 0.0f };
+	sphere1->AddComponent<Sphere>();
+	sphere1->AddComponent<RigidBody>();
+	sphere1->AddComponent<ColliderSphere>();
+
+	GameObject* sphere2 = AddGameObject<GameObject>();
+	sphere2->_name = "Sphere2";
+	sphere2->_transform._position = { 0.0f, 0.0f, 0.0f };
+	sphere2->AddComponent<Sphere>();
+	sphere2->AddComponent<RigidBody>();
+	sphere2->AddComponent<ColliderSphere>();
+
+
+	GameObject* cube1 = AddGameObject<GameObject>();
+	cube1->_name = "Cube1";
+	cube1->_transform._position = { 2.0f, 2.0f, 0.0f };
+	cube1->AddComponent<Cube>();
+	cube1->AddComponent<ColliderBox>();
 	RigidBody* rb1 = FindGameObjectByName<GameObject>("Cube1")->AddComponent<RigidBody>();
 	//rb1->_useGravity = false;
 	//rb1->_mass = 10000.0f;
 
-	AddGameObject<GameObject>()->_name = "Cube2";
-	FindGameObjectByName<GameObject>("Cube2")->_transform._position = { 0.0f,1.5f,0.0f };
-	FindGameObjectByName<GameObject>("Cube2")->AddComponent<Cube>();
-	FindGameObjectByName<GameObject>("Cube2")->AddComponent<ColliderBox>();
-	FindGameObjectByName<GameObject>("Cube2")->AddComponent<RigidBody>();
+	GameObject* cube2 = AddGameObject<GameObject>();
+	cube2->_name = "Cube2";
+	cube2->_transform._position = { 2.0f,0.0f,0.0f };
+	cube2->AddComponent<Cube>();
+	cube2->AddComponent<ColliderBox>();
+	cube2->AddComponent<RigidBody>();
 
-	//AddGameObject<GameObject>()->_name = "Cube3";
-	//FindGameObjectByName<GameObject>("Cube3")->_transform._position = { 0.0f,2.5f,0.0f };
-	//FindGameObjectByName<GameObject>("Cube3")->AddComponent<Cube>();
-	//FindGameObjectByName<GameObject>("Cube3")->AddComponent<ColliderBox>();
-	//FindGameObjectByName<GameObject>("Cube3")->AddComponent<RigidBody>();
+	GameObject* cube3 = AddGameObject<GameObject>();
+	cube3->_name = "Cube3";
+	cube3->_transform._position = { 2.0f,-2.0f,0.0f };
+	cube3->AddComponent<Cube>();
+	cube3->AddComponent<ColliderBox>();
+	cube3->AddComponent<RigidBody>();
 
 	GameObject* title = AddGameObject<GameObject>();
 	title->_name = "Title";

@@ -92,36 +92,12 @@ void RigidBody::Awake(){
 	//Šµ«ƒeƒ“ƒ\ƒ‹‚Ì‰Šú‰»
 	_inertiaTensorBody = KTMATRIX3::Identity();
 	_inertiaTensorBodyInv = KTMATRIX3::Identity();
-	
-	auto* colBox = _owner->GetComponent<ColliderBox>();//BoxˆÈŠO‚É‚à‘Î‰ž‚³‚¹‚é
-	if (colBox) {
-		if (_mass > 0.0f) {
-			_inertiaTensorBody = InertiaTensorBox(_mass, colBox->_extents);
-			_inertiaTensorBodyInv = _inertiaTensorBody.Inverse();
-		}
-		else {
-			_inertiaTensorBody = KTMATRIX3::Zero();
-			_inertiaTensorBodyInv = KTMATRIX3::Zero();
-		}
-	}
 
 }
 
 void RigidBody::Update() {
 	_invMass = (_mass != 0.0f) ? 1.0f / _mass : 0.0f; // ‹tŽ¿—Ê
 
-
-	auto* colBox = _owner->GetComponent<ColliderBox>();
-	if (colBox) {
-		if (_mass > 0.0f) {
-			_inertiaTensorBody = InertiaTensorBox(_mass, colBox->_extents);
-			_inertiaTensorBodyInv = _inertiaTensorBody.Inverse();
-		}
-		else {
-			_inertiaTensorBody = KTMATRIX3::Zero();
-			_inertiaTensorBodyInv = KTMATRIX3::Zero();
-		}
-	}
 }
 
 

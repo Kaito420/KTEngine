@@ -9,6 +9,7 @@
 #include "Manager.h"
 #include "Scene.h"
 #include "RendererDX11.h"
+#include "Texture.h"
 
 void CollisionManifold::CreateSphereMesh(float radius, int sliceCount, int stackCount, std::vector<Vertex>& vertices, std::vector<UINT>& indices) {
 	vertices.clear();
@@ -97,7 +98,7 @@ CollisionManifold::CollisionManifold()
 {
 	std::vector<Vertex> vertices;
 	std::vector<UINT> indices;
-	CreateSphereMesh(0.3f, 10, 10, vertices, indices);
+	CreateSphereMesh(0.1f, 10, 10, vertices, indices);
 	_indexCount = indices.size();
 
 	//頂点バッファ生成
@@ -120,11 +121,11 @@ CollisionManifold::CollisionManifold()
 
 	RendererDX11::GetDevice()->CreateBuffer(&bd, &sd, &_indexBuffer);
 
+	_texture = Texture::Load("asset\\texture\\white.png");
 }
 
 void CollisionManifold::Render()const {
-	//for (auto& cp : contacts) 
-	if(contacts.size() != 0){
+	for (auto& cp : contacts) {
 		UINT stride = sizeof(Vertex);
 		UINT offset = 0;
 
@@ -133,7 +134,7 @@ void CollisionManifold::Render()const {
 
 		//マトリクス設定
 		//平行移動行列
-		XMMATRIX translation = XMMatrixTranslation(contacts[0].position.x, contacts[0].position.y, contacts[0].position.z);
+		XMMATRIX translation = XMMatrixTranslation(cp.position.x, cp.position.y, cp.position.z);
 
 		XMMATRIX rotation = XMMatrixIdentity();
 
@@ -150,15 +151,82 @@ void CollisionManifold::Render()const {
 
 		MATERIAL material = {};
 		material.Diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
-		material.TextureEnable = false;
+		material.TextureEnable = true;
 		RendererDX11::SetMaterial(material);
 
 		// シェーダーリソースビュー設定
+		RendererDX11::GetContext()->PSSetShaderResources(0, 1, &_texture);
+
 		// ポリゴン描画
 		RendererDX11::GetContext()->DrawIndexed(_indexCount, 0, 0);
 
 	}
 }
+
+void ColliderSphere::Awake(){
+	Manager::GetCurrentScene()->GetPhysicsSystem()->RegisterCollider(this);
+}
+
+void ColliderSphere::OnDestroy(){
+	Manager::GetCurrentScene()->GetPhysicsSystem()->RemoveCollider(this);
+}
+
+void ColliderSphere::Update()
+{
+}
+
+void ColliderSphere::Render() const
+{
+}
+
+bool ColliderSphere::CheckVSSphere(const ColliderSphere* other, CollisionManifold& outCollisionManifold) const
+{
+	outCollisionManifold.a = const_cast<ColliderSphere*>(other);
+	outCollisionManifold.b = const_cast<ColliderSphere*>(this);
+
+	//中心間の平方距離
+	float distanceSqr = (this->_owner->_transform._position -
+		other->_owner->_transform._position).MagnitudeSqr();
+
+	//半径の和の平方
+	float radiusSumSqr = (this->_radius + other->_radius) * (this->_radius + other->_radius);
+
+	if (distanceSqr <= radiusSumSqr) {//当たっている
+		outCollisionManifold.penetrationDepth = sqrtf(radiusSumSqr) - sqrtf(distanceSqr);
+		outCollisionManifold.normal = (other->_owner->_transform._position -
+			this->_owner->_transform._position).Normalize();
+		KTVECTOR3 cpa;//A側の接触点
+		cpa = other->_owner->_transform._position -
+			_radius * outCollisionManifold.normal;
+
+		KTVECTOR3 cpb;//B側の接触点
+		cpb = this->_owner->_transform._position +
+			_radius * outCollisionManifold.normal;
+
+		ContactPoint cp;//接触点同士の中点を衝突解消に利用する
+		cp.position = (cpa + cpb) / 2.0f;
+		cp.penetration = outCollisionManifold.penetrationDepth;
+		outCollisionManifold.contacts.push_back(cp);
+
+		return true;
+	}
+	else
+		return false;
+}
+
+KTMATRIX3 ColliderSphere::ComputeLocalInertiaTensor(float mass){
+	float v = (2.0f / 5.0f) * mass * _radius * _radius;
+	return KTMATRIX3(
+		v, 0.0f, 0.0f,
+		0.0f, v, 0.0f,
+		0.0f, 0.0f, v
+	);
+}
+
+void ColliderSphere::ShowUI(){
+	ImGui::Checkbox("_wasOverlap", &_wasOverlap);
+}
+
 
 void ColliderBox::Awake() {
 	Manager::GetCurrentScene()->GetPhysicsSystem()->RegisterCollider(this);
@@ -288,10 +356,9 @@ void ColliderBox::Render()const {
 
 }
 
-CollisionManifold ColliderBox::CheckVSOBB(ColliderBox* other) {
-	CollisionManifold manifold;
-	manifold.a = other;
-	manifold.b = this;
+bool ColliderBox::CheckVSOBB(const ColliderBox* other, CollisionManifold& manifold) const {
+	manifold.a = const_cast<ColliderBox*>(other);
+	manifold.b = const_cast<ColliderBox*>(this);
 
 	float minOverlap = FLT_MAX;	//最小の重なり量
 	KTVECTOR3 bestAxis;			//最小の重なり軸
@@ -300,13 +367,13 @@ CollisionManifold ColliderBox::CheckVSOBB(ColliderBox* other) {
 	//分離軸SAT判定
 	for(int i = 0; i<3; i++) {
 		float overlap = 0.0f;
-		if (!OverlapOnAxis(other, _axis[i], overlap)) return manifold;
+		if (!OverlapOnAxis(other, _axis[i], overlap)) return false;
 		if(overlap < minOverlap) {
 			minOverlap = overlap;
 			bestAxis = _axis[i];
 		}
 
-		if (!OverlapOnAxis(other, other->_axis[i], overlap)) return manifold;
+		if (!OverlapOnAxis(other, other->_axis[i], overlap)) return false;
 		if (overlap < minOverlap) {
 			minOverlap = overlap;
 			bestAxis = other->_axis[i];
@@ -320,7 +387,7 @@ CollisionManifold ColliderBox::CheckVSOBB(ColliderBox* other) {
 			if (axis.Magnitude() < DBL_EPSILON) continue;
 
 			float overlap = 0.0f;
-			if (!OverlapOnAxis(other, axis.Normalize(), overlap)) return manifold;
+			if (!OverlapOnAxis(other, axis.Normalize(), overlap)) return false;
 			if(overlap < minOverlap) {
 				minOverlap = overlap;
 				bestAxis = axis;
@@ -359,7 +426,7 @@ CollisionManifold ColliderBox::CheckVSOBB(ColliderBox* other) {
 	}
 	
 	//全ての軸で重なっているので衝突している
-	return manifold;
+	return true;
 }
 
 bool ColliderBox::OverlapOnAxis(const ColliderBox* other, const KTVECTOR3& axis) const{
@@ -555,7 +622,7 @@ KTVECTOR3 ColliderBox::ComputePolygonCentroid(const std::vector<KTVECTOR3>& poly
 
 std::vector<KTVECTOR3> ColliderBox::ComputeContactPolygon(const ColliderBox* refBox, const ColliderBox* incBox, const KTVECTOR3& collisionNormal){
 	// 1) 参照ボックス（refBox）および参照面の決定
- //    参照軸は bestAxis に最も近い軸 (abs dot 最大) を選ぶ
+	//参照軸は bestAxis に最も近い軸 (abs dot 最大) を選ぶ
 	int refAxis = 0;
 	float bestDot = fabs(Dot(refBox->_axis[0], collisionNormal));
 	for (int i = 1; i < 3; ++i) {
@@ -580,6 +647,18 @@ std::vector<KTVECTOR3> ColliderBox::ComputeContactPolygon(const ColliderBox* ref
 	}
 
 	return poly; // 空ならクリップで消えたことを示す
+}
+
+KTMATRIX3 ColliderBox::ComputeLocalInertiaTensor(float mass)
+{
+	float ix = (1.0f / 12.0f) * mass * (_extents.y * _extents.y + _extents.z * _extents.z) * 4.0f;
+	float iy = (1.0f / 12.0f) * mass * (_extents.x * _extents.x + _extents.z * _extents.z) * 4.0f;
+	float iz = (1.0f / 12.0f) * mass * (_extents.x * _extents.x + _extents.y * _extents.y) * 4.0f;
+	return KTMATRIX3(
+		ix, 0.0f, 0.0f,
+		0.0f, iy, 0.0f,
+		0.0f, 0.0f, iz
+	);
 }
 
 void ColliderBox::ShowUI() {
