@@ -5,6 +5,8 @@
 #include "Cube.h"
 #include "Texture.h"
 #include "TitleManager.h"
+#include "Wave.h"
+#include "SkyDome.h"
 
 void SceneTitle::Initialize()
 {
@@ -13,53 +15,103 @@ void SceneTitle::Initialize()
 
 	_physicsSystem = new PhysicsSystem();
 
-	AddGameObject<Camera>()->_name = "Camera";
+	Camera* camera = AddGameObject<Camera>();
+	camera->_name = "Camera";
+	camera->_transform._position = { 0.0f, 0.0f, -10.0f };
+
+	GameObject* skyDome = AddGameObject<GameObject>();
+	skyDome->_name = "SkyDome";
+	skyDome->AddComponent<SkyDome>();
+
 	AddGameObject<GameObject>()->_name = "Square1";
 	FindGameObjectByName<GameObject>("Square1")->AddComponent<Square>();
 
-	GameObject* sphere1 = AddGameObject<GameObject>();
-	sphere1->_name = "Sphere1";
-	sphere1->_transform._position = { 0.0f, 2.0f, 0.0f };
-	sphere1->AddComponent<Sphere>();
-	sphere1->AddComponent<RigidBody>();
-	sphere1->AddComponent<ColliderSphere>();
+	//GameObject* sphere1 = AddGameObject<GameObject>();
+	//sphere1->_name = "Sphere1";
+	//sphere1->_transform._position = { 0.0f, 2.0f, 0.0f };
+	//sphere1->AddComponent<Sphere>();
+	//sphere1->AddComponent<RigidBody>();
+	//sphere1->AddComponent<ColliderSphere>();
 
-	GameObject* sphere2 = AddGameObject<GameObject>();
-	sphere2->_name = "Sphere2";
-	sphere2->_transform._position = { 0.0f, 0.0f, 0.0f };
-	sphere2->AddComponent<Sphere>();
-	sphere2->AddComponent<RigidBody>();
-	sphere2->AddComponent<ColliderSphere>();
+	//GameObject* sphere2 = AddGameObject<GameObject>();
+	//sphere2->_name = "Sphere2";
+	//sphere2->_transform._position = { 0.0f, 0.0f, 0.0f };
+	//sphere2->AddComponent<Sphere>();
+	//sphere2->AddComponent<RigidBody>();
+	//sphere2->AddComponent<ColliderSphere>();
 
 
-	GameObject* cube1 = AddGameObject<GameObject>();
-	cube1->_name = "Cube1";
-	cube1->_transform._position = { 2.0f, 2.0f, 0.0f };
-	cube1->AddComponent<Cube>();
-	cube1->AddComponent<ColliderBox>();
-	RigidBody* rb1 = FindGameObjectByName<GameObject>("Cube1")->AddComponent<RigidBody>();
-	//rb1->_useGravity = false;
-	//rb1->_mass = 10000.0f;
+	//GameObject* cube1 = AddGameObject<GameObject>();
+	//cube1->_name = "Cube1";
+	//cube1->_transform._position = { 2.0f, 2.0f, 0.0f };
+	//cube1->AddComponent<Cube>();
+	//cube1->AddComponent<ColliderBox>();
+	//RigidBody* rb1 = cube1->AddComponent<RigidBody>();
 
-	GameObject* cube2 = AddGameObject<GameObject>();
-	cube2->_name = "Cube2";
-	cube2->_transform._position = { 2.0f,0.0f,0.0f };
-	cube2->AddComponent<Cube>();
-	cube2->AddComponent<ColliderBox>();
-	cube2->AddComponent<RigidBody>();
+	//GameObject* cube2 = AddGameObject<GameObject>();
+	//cube2->_name = "Cube2";
+	//cube2->_transform._position = { 2.0f,0.0f,0.0f };
+	//cube2->AddComponent<Cube>();
+	//cube2->AddComponent<ColliderBox>();
+	//cube2->AddComponent<RigidBody>();
 
-	GameObject* cube3 = AddGameObject<GameObject>();
-	cube3->_name = "Cube3";
-	cube3->_transform._position = { 2.0f,-2.0f,0.0f };
-	cube3->AddComponent<Cube>();
-	cube3->AddComponent<ColliderBox>();
-	cube3->AddComponent<RigidBody>();
+	//GameObject* cube3 = AddGameObject<GameObject>();
+	//cube3->_name = "Cube3";
+	//cube3->_transform._position = { 2.0f,-2.0f,0.0f };
+	//cube3->AddComponent<Cube>();
+	//cube3->AddComponent<ColliderBox>();
+	//cube3->AddComponent<RigidBody>();
 
-	GameObject* title = AddGameObject<GameObject>();
-	title->_name = "Title";
-	title->_transform._position = { -1.0f, 0.5f, 3.0f };
-	title->_transform._scale = { 4.5f, 2.5f, 1.0f };
-	title->AddComponent<Square>()->_texture = Texture::Load("asset/texture/Title.jpg");
-	title->AddComponent<TitleManager>();
+	GameObject* sphereGY = AddGameObject<GameObject>();
+	sphereGY->_name = "SphereGY";
+	sphereGY->_transform._position = { 2.0f, 4.0f, 0.0f };
+	sphereGY->AddComponent<Sphere>();
+	RigidBody* sphereRb = sphereGY->AddComponent<RigidBody>();
+	sphereRb->_restitution = 1.0f;
+	sphereGY->AddComponent<ColliderSphere>();
+
+	GameObject* cubeGY1 = AddGameObject<GameObject>();
+	cubeGY1->_name = "CubeGY1";
+	cubeGY1->_transform._position = { 2.0f, 2.0f, 0.0f };
+	cubeGY1->_transform._scale = { 10.0f,1.0f,1.0f };
+	cubeGY1->_transform._quaternion = KTQUATERNION::FromEulerAngles(0.0f, 0.0f, -5.0f);
+	cubeGY1->AddComponent<Cube>();
+	cubeGY1->AddComponent<ColliderBox>();
+	RigidBody* rbGY1 = cubeGY1->AddComponent<RigidBody>();
+	rbGY1->_mass = 10000.0f;
+
+	GameObject* cubeGY2 = AddGameObject<GameObject>();
+	cubeGY2->_name = "CubeGY2";
+	cubeGY2->_transform._position = { 4.0f, -1.0f,0.0f };
+	cubeGY2->_transform._scale = { 10.0f,1.0f,1.0f };
+	cubeGY2->_transform._quaternion = KTQUATERNION::FromEulerAngles(0.0f, 0.0f, 5.0f);
+	cubeGY2->AddComponent<Cube>();
+	cubeGY2->AddComponent<ColliderBox>();
+	RigidBody* rbGY2 = cubeGY2->AddComponent<RigidBody>();
+	rbGY2->_mass = 10000.0f;
+
+	GameObject* cubeGY3 = AddGameObject<GameObject>();
+	cubeGY3->_name = "CubeGY3";
+	cubeGY3->_transform._position = { 2.0f,-4.0f,0.0f };
+	cubeGY3->_transform._scale = { 10.0f,1.0f,1.0f };
+	cubeGY3->_transform._quaternion = KTQUATERNION::FromEulerAngles( 0.0f,0.0f,-5.0f);
+	cubeGY3->AddComponent<Cube>();
+	cubeGY3->AddComponent<ColliderBox>();
+	RigidBody* rbGY3 = cubeGY3->AddComponent<RigidBody>();
+	rbGY3->_mass = 10000.0f;
+
+	//GameObject* title = AddGameObject<GameObject>();
+	//title->_name = "Title";
+	//title->_transform._position = { -1.0f, 0.5f, 3.0f };
+	//title->_transform._scale = { 4.5f, 2.5f, 1.0f };
+	//title->AddComponent<Square>()->_texture = Texture::Load("asset/texture/Title.jpg");
+	//title->AddComponent<TitleManager>();
+	
+	GameObject* wave = AddGameObject<GameObject>();
+	wave->_name = "Wave";
+	wave->_transform._quaternion = KTQUATERNION::FromEulerAngles(-90.0f, 0.0f, 0.0f);
+	wave->_transform._position = { -20.0f, 5.0f, 20.0f };
+	wave->_transform._scale = { 0.32f, 1.0f, 0.18f };
+	wave->AddComponent<Wave>();
 
 }

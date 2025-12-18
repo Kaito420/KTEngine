@@ -163,7 +163,7 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold)
 		// ”½”­ŒW”
 		float e = 0.0f;
 		if (rbA && rbB)
-			e = (std::min)(rbA->_restitution, rbB->_restitution);
+			e = (std::max)(rbA->_restitution, rbB->_restitution);
 		else if (rbA)
 			e = rbA->_restitution;
 		else if (rbB)

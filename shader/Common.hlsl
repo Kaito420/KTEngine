@@ -32,6 +32,25 @@ cbuffer MaterialBuffer : register(b3)
     MATERIAL Material;
 }
 
+struct LIGHT
+{
+    bool Enable;
+    bool3 Dummy;
+    float4 Direction;
+    float4 Diffuse;
+    float4 Ambient;
+};
+
+cbuffer LightBuffer : register(b4)
+{
+    LIGHT Light;
+}
+
+cbuffer CameraBuffer : register(b5)
+{
+    float4 CameraPosition;
+}
+
 struct VS_IN{
     float4 Position : POSITION0;
     float4 Normal : NORMAL0;

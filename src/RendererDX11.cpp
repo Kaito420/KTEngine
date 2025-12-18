@@ -21,6 +21,8 @@ namespace {
     ID3D11Buffer* viewBuffer = nullptr;
     ID3D11Buffer* projectionBuffer = nullptr;
 	ID3D11Buffer* materialBuffer = nullptr;
+	ID3D11Buffer* lightBuffer = nullptr;
+	ID3D11Buffer* cameraBuffer = nullptr;
 
     ID3D11VertexShader* vertexShader = nullptr;
     ID3D11InputLayout* vertexLayout = nullptr;
@@ -197,7 +199,23 @@ bool RendererDX11::Init(HWND hwnd) {
 	context->VSSetConstantBuffers(3, 1, &materialBuffer);
 	context->PSSetConstantBuffers(3, 1, &materialBuffer);
 
+	bd.ByteWidth = sizeof(LIGHT);
+	device->CreateBuffer(&bd, NULL, &lightBuffer);
+	context->VSSetConstantBuffers(4, 1, &lightBuffer);
+	context->PSSetConstantBuffers(4, 1, &lightBuffer);
 
+    //初期ライト追加
+    LIGHT light{};
+    light.Enable = true;
+    light.Direction = XMFLOAT4(0.0f, 0.0f, 1.0f, 0.0f);
+    light.Ambient = XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f);
+    light.Diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+    SetLight(light);
+
+	bd.ByteWidth = sizeof(XMFLOAT4);
+	device->CreateBuffer(&bd, NULL, &cameraBuffer);
+	context->VSSetConstantBuffers(5, 1, &cameraBuffer);
+	context->PSSetConstantBuffers(5, 1, &cameraBuffer);
 
     //シェーダー初期化
     CreateVertexShader();
@@ -234,6 +252,8 @@ void RendererDX11::Shutdown() {
     if (worldBuffer) worldBuffer->Release();
     if (viewBuffer)viewBuffer->Release();
     if (projectionBuffer)projectionBuffer->Release();
+	if (materialBuffer)materialBuffer->Release();
+	if (lightBuffer)lightBuffer->Release();
 
     if (vertexShader)vertexShader->Release();
     if (vertexLayout) vertexLayout->Release();
@@ -282,6 +302,10 @@ void RendererDX11::SetProjectionMatrix(XMMATRIX projection){
 void RendererDX11::SetMaterial(MATERIAL material)
 {
     context->UpdateSubresource(materialBuffer, 0, NULL, &material, 0, 0);
+}
+
+void RendererDX11::SetLight(LIGHT light){
+	context->UpdateSubresource(lightBuffer, 0, NULL, &light, 0, 0);
 }
 
 void RendererDX11::SetWorldProjection2D(){

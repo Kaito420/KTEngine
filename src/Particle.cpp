@@ -109,7 +109,8 @@ void Particle::Render() const
 	material.TextureEnable = true;
 	RendererDX11::SetMaterial(material);
 
-	//RendererDX11::SetDepthEnable(false);
+	RendererDX11::SetDepthEnable(false);
+	RendererDX11::SetCullModeFront();
 
 	for (int i = 0; i < PARTICLE_MAX; i++) {
 		if (_particle[i].enable == true) {
@@ -135,6 +136,7 @@ void Particle::Render() const
 		}
 	}
 
+	RendererDX11::SetCullModeBack();
 
-	//RendererDX11::SetDepthEnable(true);
+	RendererDX11::SetDepthEnable(true);
 }

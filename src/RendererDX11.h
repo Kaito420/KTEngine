@@ -47,6 +47,14 @@ struct MATERIAL
     float		Dummy[2];
 };
 
+struct LIGHT {
+	BOOL	Enable;
+    BOOL	Dummy[3];
+	XMFLOAT4 Direction;
+	XMFLOAT4 Diffuse;
+	XMFLOAT4 Ambient;
+};
+
 namespace RendererDX11 {
     bool Init(HWND hwnd);
     void Shutdown();
@@ -62,6 +70,7 @@ namespace RendererDX11 {
     void SetProjectionMatrix(XMMATRIX projection);
 
 	void SetMaterial(MATERIAL material);
+	void SetLight(LIGHT light);
 
     void SetWorldProjection2D();
 	void SetWorldProjection3D();
