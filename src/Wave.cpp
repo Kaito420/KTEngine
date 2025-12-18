@@ -91,7 +91,7 @@ void Wave::Awake(){
 
 
 	// テクスチャ読み込み
-	m_Texture = Texture::Load("asset\\texture\\Title.jpg");
+	m_Texture = Texture::Load("asset\\texture\\KTEngine.png");
 	//m_TextureEnv = Texture::Load("asset\\texture\\Sky.png");
 
 

@@ -7,6 +7,7 @@
 #include "TitleManager.h"
 #include "Wave.h"
 #include "SkyDome.h"
+#include "KillY.h"
 
 void SceneTitle::Initialize()
 {
@@ -17,14 +18,14 @@ void SceneTitle::Initialize()
 
 	Camera* camera = AddGameObject<Camera>();
 	camera->_name = "Camera";
-	camera->_transform._position = { 0.0f, 0.0f, -10.0f };
+	camera->_transform._position = { 0.0f, 0.0f, -21.0f };
 
 	GameObject* skyDome = AddGameObject<GameObject>();
 	skyDome->_name = "SkyDome";
 	skyDome->AddComponent<SkyDome>();
 
-	AddGameObject<GameObject>()->_name = "Square1";
-	FindGameObjectByName<GameObject>("Square1")->AddComponent<Square>();
+	//AddGameObject<GameObject>()->_name = "Square1";
+	//FindGameObjectByName<GameObject>("Square1")->AddComponent<Square>();
 
 	//GameObject* sphere1 = AddGameObject<GameObject>();
 	//sphere1->_name = "Sphere1";
@@ -68,7 +69,11 @@ void SceneTitle::Initialize()
 	sphereGY->AddComponent<Sphere>();
 	RigidBody* sphereRb = sphereGY->AddComponent<RigidBody>();
 	sphereRb->_restitution = 1.0f;
+	sphereRb->_useGravity = true;
 	sphereGY->AddComponent<ColliderSphere>();
+	KillY* killY = sphereGY->AddComponent<KillY>();
+	killY->SetThreshold(-10.0f);
+	killY->SetResetPosition({ 2.0f,4.0f,0.0f });
 
 	GameObject* cubeGY1 = AddGameObject<GameObject>();
 	cubeGY1->_name = "CubeGY1";
