@@ -21,10 +21,10 @@ void Particle::Awake()
 
 	Vertex vertex[4];
 
-	vertex[0].position = XMFLOAT3(-0.1f,  0.1f, 0.0f);
-	vertex[1].position = XMFLOAT3( 0.1f,  0.1f, 0.0f);
+	vertex[0].position = XMFLOAT3(-0.1f, +0.1f, 0.0f);
+	vertex[1].position = XMFLOAT3(+0.1f, +0.1f, 0.0f);
 	vertex[2].position = XMFLOAT3(-0.1f, -0.1f, 0.0f);
-	vertex[3].position = XMFLOAT3( 0.1f, -0.1f, 0.0f);
+	vertex[3].position = XMFLOAT3(+0.1f, -0.1f, 0.0f);
 
 	vertex[0].uv = XMFLOAT2(0.0f, 0.0f);
 	vertex[1].uv = XMFLOAT2(1.0f, 0.0f);
@@ -32,8 +32,8 @@ void Particle::Awake()
 	vertex[3].uv = XMFLOAT2(1.0f, 1.0f);
 
 	for (int i = 0; i < 4; i++) {
-		vertex[i].color = XMFLOAT4(1, 1, 1, 1);
-		vertex[i].normal = XMFLOAT3(0.0f, 1.0f, 0.0f);
+		vertex[i].color = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+		vertex[i].normal = XMFLOAT3(0.0f, 0.0f, -1.0f);
 	}
 
 	D3D11_SUBRESOURCE_DATA sd;
@@ -66,7 +66,7 @@ void Particle::Update()
 			_particle[i].enable = true;
 			_particle[i].Life = 20;
 			_particle[i].Position = _owner->_transform._position;//生まれた瞬間親の位置
-			_particle[i].Velocity = KTVECTOR3((rand() % 100 - 50) / 5000.0f
+			_particle[i].Velocity = KTVECTOR3((rand() % 100 - 50) / 500.0f
 				, (rand() % 100 + 50) / 500.0f
 				, (rand() % 100 - 50) / 5000.0f);
 
@@ -93,11 +93,8 @@ void Particle::Render() const
 	UINT offset = 0;
 	RendererDX11::GetContext()->IASetVertexBuffers(0, 1, &_VertexBuffer, &stride, &offset);
 
-
 	//テクスチャ設定
 	RendererDX11::GetContext()->PSSetShaderResources(0, 1, &_texture);
-
-
 
 	// プリミティブトポロジ設定
 	RendererDX11::GetContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
@@ -109,7 +106,7 @@ void Particle::Render() const
 	material.TextureEnable = true;
 	RendererDX11::SetMaterial(material);
 
-	//RendererDX11::SetDepthEnable(false);
+	RendererDX11::SetDepthEnable(false);
 
 	for (int i = 0; i < PARTICLE_MAX; i++) {
 		if (_particle[i].enable == true) {
@@ -118,9 +115,7 @@ void Particle::Render() const
 				 _particle[i].Position.y,
 				 _particle[i].Position.z);
 
-			KTVECTOR3 radians = { XMConvertToRadians(_owner->_transform._rotation.x),
-								  XMConvertToRadians(_owner->_transform._rotation.y),
-								  XMConvertToRadians(_owner->_transform._rotation.z) };
+			KTVECTOR3 radians = { 0 ,0 ,0 };
 
 			XMMATRIX rotation = XMMatrixRotationRollPitchYaw(radians.x, radians.y, radians.z);
 
@@ -136,5 +131,5 @@ void Particle::Render() const
 	}
 
 
-	//RendererDX11::SetDepthEnable(true);
+	RendererDX11::SetDepthEnable(true);
 }

@@ -11,7 +11,7 @@ void SkyDome::Awake()
 	_sphere->Awake();
 	_sphere->SetOwner(GetOwner());
 	_sphere->_texture = Texture::Load("asset\\texture\\Sky.png");
-	_sphere->_radius = 150.0f;
+	_owner->_transform._scale = { 500.0f,500.0f,500.0f };
 }
 
 void SkyDome::Update()
@@ -22,7 +22,7 @@ void SkyDome::Update()
 void SkyDome::Render() const
 {
 	RendererDX11::SetDepthEnable(false);
-	RendererDX11::SetCullModeNone();
+	RendererDX11::SetCullModeFront();
 	_sphere->Render();
 	RendererDX11::SetCullModeBack();
 	RendererDX11::SetDepthEnable(true);

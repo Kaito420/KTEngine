@@ -19,10 +19,11 @@ private:
 
 	void CreateSphereMesh(float radius, int sliceCount, int stackCount,
 		std::vector<Vertex>& vertices, std::vector<UINT>& indices);
+	float _radius = 0.5f;	//Œ©‚½–Ú‚É”½‰f‚³‚ê‚È‚¢
+	int _stackCount = 16;
+	int _sliceCount = 16;
+
 public:
-	float _radius = 0.5f;
-	int _stackCount = 10;
-	int _sliceCount = 10;
 
 	ID3D11ShaderResourceView* _texture = nullptr;
 

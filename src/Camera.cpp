@@ -49,7 +49,7 @@ void Camera::Update() {
 		position + frontVec * _distance, // íçéãì_
 		upVec  // è„ï˚å¸
 	);
-	XMMATRIX projection = XMMatrixPerspectiveFovLH(XMConvertToRadians(60.0f), 1280.0f / 720.0f, 0.1f, 1000.0f);
+	XMMATRIX projection = XMMatrixPerspectiveFovLH(XMConvertToRadians(60.0f), (float)SCREEN_WIDTH / SCREEN_HEIGHT, 0.1f, 1000.0f);
 
 	RendererDX11::SetViewMatrix(view);
 	RendererDX11::SetProjectionMatrix(projection);
@@ -70,4 +70,5 @@ void Camera::Update() {
 	if (Input::GetMouseWheelDelta() != 0) {
 		_transform._position += frontKTVec * (float)Input::GetMouseWheelDelta() * 0.03f;
 	}
+
 }

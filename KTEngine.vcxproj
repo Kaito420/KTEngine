@@ -42,6 +42,7 @@
     <ClCompile Include="src\FadeObject.cpp" />
     <ClCompile Include="src\ImGuiLayer.cpp" />
     <ClCompile Include="src\Input.cpp" />
+    <ClCompile Include="src\KillY.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Manager.cpp" />
     <ClCompile Include="src\ModelRenderer.cpp" />
@@ -60,6 +61,7 @@
     <ClCompile Include="src\Square.cpp" />
     <ClCompile Include="src\Texture.cpp" />
     <ClCompile Include="src\TitleManager.cpp" />
+    <ClCompile Include="src\Wave.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="libs\imgui\backends\imgui_impl_dx11.h" />
@@ -89,6 +91,7 @@
     <ClInclude Include="src\GameObject.h" />
     <ClInclude Include="src\ImGuiLayer.h" />
     <ClInclude Include="src\Input.h" />
+    <ClInclude Include="src\KillY.h" />
     <ClInclude Include="src\ktvector.hpp" />
     <ClInclude Include="src\Manager.h" />
     <ClInclude Include="src\ModelRenderer.h" />
@@ -107,6 +110,7 @@
     <ClInclude Include="src\Square.h" />
     <ClInclude Include="src\Texture.h" />
     <ClInclude Include="src\TitleManager.h" />
+    <ClInclude Include="src\Wave.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="shader\Common.hlsl">
@@ -160,6 +164,18 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="shader\UnlitTextureVS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="shader\VertexDirectionalLightingPS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="shader\VertexDirectionalLightingVS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
