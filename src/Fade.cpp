@@ -1,6 +1,7 @@
 #include "Fade.h"
 #include "GameObject.h"
 #include "Manager.h"
+#include "Camera.h"
 #include "Scene.h"
 #include "SceneTitle.h"
 #include "SceneGame.h"
@@ -26,7 +27,8 @@ void Fade::Render() const
 	RendererDX11::GetContext()->IASetVertexBuffers(0, 1, _vertexBuffer.GetAddressOf(), &stride, &offset);
 
 	//マトリクス設定
-	XMMATRIX translation = XMMatrixTranslation(_owner->_transform._position.x, _owner->_transform._position.y, _owner->_transform._position.z);
+	Camera* camera = Manager::GetCurrentScene()->FindGameObjectByName<Camera>("Camera");
+	XMMATRIX translation = XMMatrixTranslation(camera->_transform._position.x, camera->_transform._position.y, camera->_transform._position.z + 0.2f);
 
 	KTVECTOR3 radians = { XMConvertToRadians(_owner->_transform._rotation.x),
 						  XMConvertToRadians(_owner->_transform._rotation.y),

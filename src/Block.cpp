@@ -10,5 +10,14 @@ void Block::Awake()
 	AddComponent<Sphere>();
 	AddComponent<ColliderSphere>();
 	AddComponent<RigidBody>();
-	AddComponent<Piece>();
+	_piece = AddComponent<Piece>();
+
+	_transform._scale = _transform._scale * (float)_piece->_type * 0.5f;
+}
+
+void Block::Update()
+{
+	if(_transform._position.y < -10.0f){
+		Destroy();
+	}
 }

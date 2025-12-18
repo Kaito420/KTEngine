@@ -172,8 +172,16 @@ void ColliderSphere::OnDestroy(){
 	Manager::GetCurrentScene()->GetPhysicsSystem()->RemoveCollider(this);
 }
 
-void ColliderSphere::Update()
-{
+void ColliderSphere::Update(){
+	//_owner->_transform._scale‚Ìˆê”Ô‘å‚«‚¢’l‚ð”½‰f‚·‚é
+	float tempScale = _owner->_transform._scale.x;
+	if (tempScale < _owner->_transform._scale.y) {
+		tempScale = _owner->_transform._scale.y;
+	}
+	if (tempScale < _owner->_transform._scale.z) {
+		tempScale = _owner->_transform._scale.z;
+	}
+	_radius = tempScale * 0.5f;
 }
 
 void ColliderSphere::Render() const

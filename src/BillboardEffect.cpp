@@ -23,10 +23,10 @@ void BillboardEffect::Awake()
 	RendererDX11::GetContext()->Map(_vertexBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &msr);
 	Vertex* vertex = (Vertex*)msr.pData;
 
-	vertex[0].position = XMFLOAT3(-0.5f, -0.5f, 0.0f);
-	vertex[1].position = XMFLOAT3( 0.5f, -0.5f, 0.0f);
-	vertex[2].position = XMFLOAT3(-0.5f,  0.5f, 0.0f);
-	vertex[3].position = XMFLOAT3( 0.5f,  0.5f, 0.0f);
+	vertex[0].position = XMFLOAT3(-0.5f, +0.5f, 0.0f);
+	vertex[1].position = XMFLOAT3(+0.5f, +0.5f, 0.0f);
+	vertex[2].position = XMFLOAT3(-0.5f, -0.5f, 0.0f);
+	vertex[3].position = XMFLOAT3(+0.5f, -0.5f, 0.0f);
 
 	vertex[0].uv = XMFLOAT2(0.0f, 0.0f);
 	vertex[1].uv = XMFLOAT2(1.0f, 0.0f);
@@ -35,14 +35,14 @@ void BillboardEffect::Awake()
 
 	for (int i = 0; i < 4; i++) {
 		vertex[i].color = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-		vertex[i].normal = XMFLOAT3(0.0f, 1.0f, 0.0f);
+		vertex[i].normal = XMFLOAT3(0.0f, 0.0f, -1.0f);
 	}
 	RendererDX11::GetContext()->Unmap(_vertexBuffer.Get(), 0);
 
 	_texture = Texture::Load("asset/texture/explosion.png");
 	_numXCut = 4;
 	_numYCut = 4;
-	_loop = false;
+	_loop = true;
 	_maxFrame = _numXCut * _numYCut;
 	_frame = 0;
 	
@@ -70,6 +70,8 @@ void BillboardEffect::Update()
 
 void BillboardEffect::Render() const
 {
+	RendererDX11::SetDepthEnable(false);
+
 	//1ƒJƒbƒg“–‚½‚è‚Ìwidth,hight
 	float w = 1.0 / _numXCut;
 	float h = 1.0 / _numYCut;
@@ -82,10 +84,10 @@ void BillboardEffect::Render() const
 	RendererDX11::GetContext()->Map(_vertexBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &msr);
 	Vertex* vertex = (Vertex*)msr.pData;
 
-	vertex[0].position = XMFLOAT3(-0.5f, -0.5f, 0.0f);
-	vertex[1].position = XMFLOAT3(0.5f, -0.5f, 0.0f);
-	vertex[2].position = XMFLOAT3(-0.5f, 0.5f, 0.0f);
-	vertex[3].position = XMFLOAT3(0.5f, 0.5f, 0.0f);
+	vertex[0].position = XMFLOAT3(-0.5f, +0.5f, 0.0f);
+	vertex[1].position = XMFLOAT3(+0.5f, +0.5f, 0.0f);
+	vertex[2].position = XMFLOAT3(-0.5f, -0.5f, 0.0f);
+	vertex[3].position = XMFLOAT3(+0.5f, -0.5f, 0.0f);
 
 	vertex[0].uv = XMFLOAT2(u, v);
 	vertex[1].uv = XMFLOAT2(u + w, v);
@@ -130,6 +132,8 @@ void BillboardEffect::Render() const
 
 	//ƒ|ƒŠƒSƒ“•`‰æ
 	RendererDX11::GetContext()->Draw(4, 0);
+
+	RendererDX11::SetDepthEnable(true);
 
 }
 

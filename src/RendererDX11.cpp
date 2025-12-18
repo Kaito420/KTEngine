@@ -30,6 +30,7 @@ namespace {
 
     ID3D11DepthStencilState* depthStateEnable = nullptr;
     ID3D11DepthStencilState* depthStateDisable = nullptr;
+	ID3D11DepthStencilState* depthStateReadOnly = nullptr;
 
     ID3D11BlendState* blendState = nullptr;
     ID3D11BlendState* blendStateATC = nullptr;
@@ -159,6 +160,12 @@ bool RendererDX11::Init(HWND hwnd) {
     depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
     device->CreateDepthStencilState(&depthStencilDesc, &depthStateDisable);
 
+	depthStencilDesc.DepthEnable = TRUE;
+	depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+	depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS;
+	depthStencilDesc.StencilEnable = FALSE;
+	device->CreateDepthStencilState(&depthStencilDesc, &depthStateReadOnly);
+
     //‰Šú—LŒø
     context->OMSetDepthStencilState(depthStateEnable, NULL);
 
@@ -261,6 +268,7 @@ void RendererDX11::Shutdown() {
 
     if (depthStateEnable) depthStateEnable->Release();
     if(depthStateDisable) depthStateDisable->Release();
+	if (depthStateReadOnly) depthStateReadOnly->Release();
 
     if(blendState) blendState->Release();
     if(blendStateATC) blendStateATC->Release();
@@ -279,6 +287,11 @@ void RendererDX11::SetDepthEnable(bool enable){
     else
         context->OMSetDepthStencilState(depthStateDisable, NULL);
 
+}
+
+void RendererDX11::SetDepthReadOnly()
+{
+	context->OMSetDepthStencilState(depthStateReadOnly, NULL);
 }
 
 void RendererDX11::SetWorldMatrix(XMMATRIX world){

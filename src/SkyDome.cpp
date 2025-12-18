@@ -11,7 +11,7 @@ void SkyDome::Awake()
 	_sphere->Awake();
 	_sphere->SetOwner(GetOwner());
 	_sphere->_texture = Texture::Load("asset\\texture\\Sky.png");
-	_sphere->_radius = 1500.0f;
+	_owner->_transform._scale = { 500.0f,500.0f,500.0f };
 }
 
 void SkyDome::Update()

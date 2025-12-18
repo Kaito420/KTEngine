@@ -104,13 +104,6 @@ void SceneTitle::Initialize()
 	cubeGY3->AddComponent<ColliderBox>();
 	RigidBody* rbGY3 = cubeGY3->AddComponent<RigidBody>();
 	rbGY3->_mass = 10000.0f;
-
-	//GameObject* title = AddGameObject<GameObject>();
-	//title->_name = "Title";
-	//title->_transform._position = { -1.0f, 0.5f, 3.0f };
-	//title->_transform._scale = { 4.5f, 2.5f, 1.0f };
-	//title->AddComponent<Square>()->_texture = Texture::Load("asset/texture/Title.jpg");
-	//title->AddComponent<TitleManager>();
 	
 	GameObject* wave = AddGameObject<GameObject>();
 	wave->_name = "Wave";
@@ -118,5 +111,6 @@ void SceneTitle::Initialize()
 	wave->_transform._position = { -20.0f, 5.0f, 20.0f };
 	wave->_transform._scale = { 0.32f, 1.0f, 0.18f };
 	wave->AddComponent<Wave>();
+	wave->AddComponent<TitleManager>();
 
 }

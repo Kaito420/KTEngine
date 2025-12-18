@@ -10,8 +10,9 @@ void BlockSpawner::Awake()
 
 void BlockSpawner::Start()
 {
-	GameObject* floor = Manager::GetCurrentScene()->FindGameObjectByName<GameObject>("Floor");
-	_owner->_transform._position.y = floor->_transform._position.y + 4.0f;
+	//GameObject* floor = Manager::GetCurrentScene()->FindGameObjectByName<GameObject>("Floor");
+	//_owner->_transform._position.y = floor->_transform._position.y + 4.0f;
+	_owner->_transform._position.y = 10.0f;
 }
 
 void BlockSpawner::Update()
@@ -37,6 +38,6 @@ void BlockSpawner::Update()
 		block->_transform._quaternion = KTQUATERNION::FromEulerAngles(block->_transform._rotation.x, block->_transform._rotation.y, block->_transform._rotation.z);
 		block->GetComponent<RigidBody>()->_useGravity = true;
 		//block->GetComponent<RigidBody>()->_restitution = 0.0f;
-		_owner->_transform._position.y += 0.5f;
+		//_owner->_transform._position.y += 0.5f;
 	}
 }

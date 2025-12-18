@@ -41,47 +41,47 @@ void SceneGame::Initialize() {
 	blockSpawner->AddComponent<Particle>();
 
 
-	GameObject* floor = AddGameObject<GameObject>();
-	floor->_name = "Floor";
-	floor->_transform._position = { 0.0f, -1.5f,0.0f };
-	floor->_transform._scale = { 10.0f, 1.0f, 10.0f };
-	floor->AddComponent<Cube>();
-	floor->AddComponent<ColliderBox>();
-	floor->AddComponent<RigidBody>()->_mass = 10000;
+	GameObject* floor1 = AddGameObject<GameObject>();
+	floor1->_name = "Floor1";
+	floor1->_transform._position = { 0.0f, -1.5f,0.0f };
+	floor1->_transform._scale = { 10.0f, 1.0f, 10.0f };
+	floor1->AddComponent<Cube>();
+	floor1->AddComponent<ColliderBox>();
+	floor1->AddComponent<RigidBody>()->_mass = 10000;
 
-	GameObject* cubeKiller = AddGameObject<GameObject>();
-	cubeKiller->_name = "CubeKiller";
-	cubeKiller->_transform._position = { 0.0f, -5.0f, 0.0f };
-	cubeKiller->_transform._scale = { 50.0f, 1.0f, 50.0f };
-	cubeKiller->_transform._rotation = { 180.0f, 0.0f, 0.0f };
-	cubeKiller->_transform._quaternion = KTQUATERNION::FromEulerAngles(cubeKiller->_transform._rotation.y, cubeKiller->_transform._rotation.z, cubeKiller->_transform._rotation.x);
-	cubeKiller->AddComponent<CubeKiller>();
-	cubeKiller->AddComponent<Cube>();
-	cubeKiller->AddComponent<ColliderBox>();
+	//GameObject* cubeKiller = AddGameObject<GameObject>();
+	//cubeKiller->_name = "CubeKiller";
+	//cubeKiller->_transform._position = { 0.0f, -5.0f, 0.0f };
+	//cubeKiller->_transform._scale = { 50.0f, 1.0f, 50.0f };
+	//cubeKiller->_transform._rotation = { 180.0f, 0.0f, 0.0f };
+	//cubeKiller->_transform._quaternion = KTQUATERNION::FromEulerAngles(cubeKiller->_transform._rotation.y, cubeKiller->_transform._rotation.z, cubeKiller->_transform._rotation.x);
+	//cubeKiller->AddComponent<CubeKiller>();
+	//cubeKiller->AddComponent<Cube>();
+	//cubeKiller->AddComponent<ColliderBox>();
 
 
-	GameObject* board1 = AddGameObject<GameObject>();
-	board1->_name = "Board1";
-	board1->_transform._position = { -5.0f, 2.0f, 0.0f };
-	board1->_transform._scale = { 3.0f, 2.0f, 0.1f };
-	board1->AddComponent<Billboard>()->_texture = Texture::Load("asset\\texture\\1.png");
+	//GameObject* board1 = AddGameObject<GameObject>();
+	//board1->_name = "Board1";
+	//board1->_transform._position = { -5.0f, 2.0f, 0.0f };
+	//board1->_transform._scale = { 3.0f, 2.0f, 0.1f };
+	//board1->AddComponent<Billboard>()->_texture = Texture::Load("asset\\texture\\1.png");
 
-	GameObject* board2 = AddGameObject<GameObject>();
-	board2->_name = "Board2";
-	board2->_transform._position = { 5.0f, 0.0f, -8.0f };
-	board2->_transform._scale = { 3.0f, 2.0f, 0.1f };
-	board2->AddComponent<Billboard>()->_texture = Texture::Load("asset\\texture\\2.png");
+	//GameObject* board2 = AddGameObject<GameObject>();
+	//board2->_name = "Board2";
+	//board2->_transform._position = { 5.0f, 0.0f, -8.0f };
+	//board2->_transform._scale = { 3.0f, 2.0f, 0.1f };
+	//board2->AddComponent<Billboard>()->_texture = Texture::Load("asset\\texture\\2.png");
 
-	GameObject* board3 = AddGameObject<GameObject>();
-	board3->_name = "Board3";
-	board3->_transform._position = { -4.0f, 0.0f, -10.0f };
-	board3->_transform._scale = { 3.0f, 2.0f, 0.1f };
-	board3->AddComponent<Billboard>()->_texture = Texture::Load("asset\\texture\\3.png");
-	
-	GameObject* board4 = AddGameObject<GameObject>();
-	board4->_name = "Board4";
-	board4->_transform._position = { 6.0f, 3.0f, 5.0f };
-	board4->_transform._scale = { 3.0f, 2.0f, 0.1f };
-	board4->AddComponent<Billboard>()->_texture = Texture::Load("asset\\texture\\4.png");
+	//GameObject* board3 = AddGameObject<GameObject>();
+	//board3->_name = "Board3";
+	//board3->_transform._position = { -4.0f, 0.0f, -10.0f };
+	//board3->_transform._scale = { 3.0f, 2.0f, 0.1f };
+	//board3->AddComponent<Billboard>()->_texture = Texture::Load("asset\\texture\\3.png");
+	//
+	//GameObject* board4 = AddGameObject<GameObject>();
+	//board4->_name = "Board4";
+	//board4->_transform._position = { 6.0f, 3.0f, 5.0f };
+	//board4->_transform._scale = { 3.0f, 2.0f, 0.1f };
+	//board4->AddComponent<Billboard>()->_texture = Texture::Load("asset\\texture\\4.png");
 
 }
