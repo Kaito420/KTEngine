@@ -9,6 +9,9 @@ void Block::Awake()
 {
 	AddComponent<Sphere>();
 	AddComponent<ColliderSphere>();
+	//AddComponent<Cube>();
+	//AddComponent<ColliderBox>();
+
 	AddComponent<RigidBody>();
 	_piece = AddComponent<Piece>();
 

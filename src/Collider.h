@@ -27,6 +27,17 @@ struct ContactPoint {
 	float penetration; // 浸入深度
 };
 
+struct AABB {
+	KTVECTOR3 min;
+	KTVECTOR3 max;
+	bool CheckOverlap(const AABB& other)const {
+		if (max.x < other.min.x || min.x > other.max.x) return false;
+		if (max.y < other.min.y || min.y > other.max.y) return false;
+		if (max.z < other.min.z || min.z > other.max.z) return false;
+		return true;
+	}
+};
+
 struct CollisionManifold {
 	Collider* a;	// コリジョンA
 	Collider* b;	// コリジョンB
@@ -58,6 +69,8 @@ protected:
 	ComPtr<ID3D11Buffer> _indexBuffer;
 
 public:
+	AABB _aabb;
+
 	bool _isOverlap;
 	bool _wasOverlap;
 

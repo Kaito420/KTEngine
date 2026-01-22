@@ -182,14 +182,22 @@ void ColliderSphere::Update(){
 		tempScale = _owner->_transform._scale.z;
 	}
 	_radius = tempScale * 0.5f;
+
+	//AABB更新
+	_aabb.min = _owner->_transform._position - KTVECTOR3(_radius, _radius, _radius);
+	_aabb.max = _owner->_transform._position + KTVECTOR3(_radius, _radius, _radius);
+
 }
 
 void ColliderSphere::Render() const
 {
 }
 
-bool ColliderSphere::CheckVSSphere(const ColliderSphere* other, CollisionManifold& outCollisionManifold) const
-{
+bool ColliderSphere::CheckVSSphere(const ColliderSphere* other, CollisionManifold& outCollisionManifold) const{
+
+	if(!this->_aabb.CheckOverlap(other->_aabb))
+		return false;
+
 	outCollisionManifold.a = const_cast<ColliderSphere*>(other);
 	outCollisionManifold.b = const_cast<ColliderSphere*>(this);
 
@@ -224,6 +232,9 @@ bool ColliderSphere::CheckVSSphere(const ColliderSphere* other, CollisionManifol
 }
 
 bool ColliderSphere::CheckVSOBB(const ColliderBox* other, CollisionManifold& outCollisionManifold)const {
+
+	if (!this->_aabb.CheckOverlap(other->_aabb))
+		return false;
 
 	outCollisionManifold.a = const_cast<ColliderBox*>(other);
 	outCollisionManifold.b = const_cast<ColliderSphere*>(this);
@@ -345,12 +356,23 @@ void ColliderBox::OnDestroy()
 }
 
 void ColliderBox::Update() {
+	//ローカル軸更新
 	_center = _owner->_transform._position;
 	_axis[0] = _owner->GetRight();
 	_axis[1] = _owner->GetUp();
 	_axis[2] = _owner->GetForward();
 
 	_extents = _owner->_transform._scale * 0.5f;
+
+	//AABB更新
+	KTVECTOR3 r;
+	r.x = fabsf(_axis[0].x) * _extents.x + fabsf(_axis[1].x) * _extents.y + fabsf(_axis[2].x) * _extents.z;
+	r.y = fabsf(_axis[0].y) * _extents.x + fabsf(_axis[1].y) * _extents.y + fabsf(_axis[2].y) * _extents.z;
+	r.z = fabsf(_axis[0].z) * _extents.x + fabsf(_axis[1].z) * _extents.y + fabsf(_axis[2].z) * _extents.z;
+
+	_aabb.min = _owner->_transform._position - r;
+	_aabb.max = _owner->_transform._position + r;
+
 }
 
 void ColliderBox::Render()const {
@@ -403,6 +425,10 @@ void ColliderBox::Render()const {
 }
 
 bool ColliderBox::CheckVSOBB(const ColliderBox* other, CollisionManifold& manifold) const {
+
+	if (!this->_aabb.CheckOverlap(other->_aabb))
+		return false;
+
 	manifold.a = const_cast<ColliderBox*>(other);
 	manifold.b = const_cast<ColliderBox*>(this);
 
