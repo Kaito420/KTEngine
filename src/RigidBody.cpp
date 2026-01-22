@@ -30,7 +30,31 @@ KTMATRIX3 RigidBody::InertiaTensorBox(float mass, const KTVECTOR3& halfSize){
 	);
 }
 
+void RigidBody::Sleep() {
+	_sleeping = true;
+	_velocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
+	_angularVelocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
+}
+
+void RigidBody::WakeUp() {
+	_sleeping = false;
+	_sleepTimer = 0.0f;
+}
+
+void RigidBody::CheckSleep() {
+	//sleep判定
+	float tmp1 = _velocity.MagnitudeSqr();
+	float tmp2 = _angularVelocity.MagnitudeSqr();
+	if (tmp1 < _sleepEpsilon && _angularVelocity.MagnitudeSqr() < _sleepEpsilon)
+		Sleep();
+}
+
 void RigidBody::Integrate(){
+
+	if (_sleeping) {
+		_sleepTimer += DT;
+		return;
+	}
 
 	//平行移動の計算
 	if (_invMass <= 0.0f)return;//静的な場合は無視
@@ -46,10 +70,6 @@ void RigidBody::Integrate(){
 	_velocity += acceleration * DT;
 	//速度の減衰
 	_velocity *= _linearDamping;
-
-	//速度が微小の場合
-	if (fabs(_velocity.x) < 1e-2f && fabs(_velocity.y) < 1e-2f && fabs(_velocity.z) < 1e-2f)
-		_velocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
 
 	//位置の更新
 	_owner->_transform._position += _velocity * DT;
@@ -67,8 +87,6 @@ void RigidBody::Integrate(){
 
 	//角速度の減衰
 	_angularVelocity *= _angularDamping;
-	if (fabs(_angularVelocity.x) < 1e-2f && fabs(_angularVelocity.y) < 1e-2f && fabs(_angularVelocity.z) < 1e-2f)
-		_angularVelocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
 
 	//姿勢の更新
 	KTQUATERNION omegaQuat(_angularVelocity.x, _angularVelocity.y, _angularVelocity.z, 0.0f);
@@ -138,4 +156,5 @@ void RigidBody::ShowUI() {
 	}
 	ImGui::InputFloat("Mass", &_mass);
 	ImGui::Checkbox("UseGravity", &_useGravity);
+	ImGui::Checkbox("Sleeping", &_sleeping);
 }

@@ -35,13 +35,19 @@ void PhysicsSystem::Update() {
 				colA->_currentOverlaps.insert(colB);
 				colB->_currentOverlaps.insert(colA);
 
-				if (colA->_previousOverlaps.find(colB) == colA->_previousOverlaps.end())
+				if (colA->_previousOverlaps.find(colB) == colA->_previousOverlaps.end()) {
 					colA->GetOwner()->DispatchOnCollisionEnter(colB);
+					if (colA->GetOwner()->GetComponent<RigidBody>())
+						colA->GetOwner()->GetComponent<RigidBody>()->WakeUp();
+				}
 				else
 					colA->GetOwner()->DispatchOnCollisionStay(colB);
 
-				if (colB->_previousOverlaps.find(colA) == colB->_previousOverlaps.end())
+				if (colB->_previousOverlaps.find(colA) == colB->_previousOverlaps.end()) {
 					colB->GetOwner()->DispatchOnCollisionEnter(colA);
+					if (colB->GetOwner()->GetComponent<RigidBody>())
+						colB->GetOwner()->GetComponent<RigidBody>()->WakeUp();
+				}
 				else
 					colB->GetOwner()->DispatchOnCollisionStay(colA);
 			
@@ -53,8 +59,11 @@ void PhysicsSystem::Update() {
 	//Exit”»’è
 	for (auto* col : _colliders) {
 		for (auto* prevCol : col->_previousOverlaps) {
-			if (col->_currentOverlaps.find(prevCol) == col->_currentOverlaps.end())
+			if (col->_currentOverlaps.find(prevCol) == col->_currentOverlaps.end()) {
 				col->GetOwner()->DispatchOnCollisionExit(prevCol);
+				if(col->GetOwner()->GetComponent<RigidBody>())
+					col->GetOwner()->GetComponent<RigidBody>()->WakeUp();
+			}
 		}
 	}
 
@@ -110,7 +119,7 @@ void PhysicsSystem::ResolveCollision(CollisionManifold& manifold)
 
 	// ¬‚³‚ÈŒ„ŠÔislopj‚ðŽc‚µ‚Ä‰ßè•â³‚ð–h‚®
 	float slop = 0.05f;
-	float percent = 0.4f; // 0.2`0.8‚Ì”ÍˆÍ‚Å’²®‰Â”\
+	float percent = 0.4f; // 0.2`0.8‚Ì”ÍˆÍ‚Å’²®
 	float depth = (std::max)(0.0f, manifold.penetrationDepth - slop);
 
 	//—LŒøŽ¿—Ê‚ÌŒvŽZ
@@ -185,11 +194,12 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold)
 
 		KTVECTOR3 impulse = joule * manifold.normal;
 
-		if (rbA) {
+		if (rbA && !rbA->IsSleeping()) {
+			
 			rbA->_velocity -= (impulse * invMassA);
 			rbA->_angularVelocity -= rbA->_inertiaTensorWorldInv * Cross(rA, impulse);
 		}
-		if (rbB) {
+		if (rbB && !rbB->IsSleeping()) {
 			rbB->_velocity += (impulse * invMassB);
 			rbB->_angularVelocity += rbB->_inertiaTensorWorldInv * Cross(rB, impulse);
 		}
@@ -247,14 +257,16 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold)
 			else
 				frictionImpulse = -joule * mu_d * tangent; // “®–€ŽC
 
-			if (rbA) {
+			if (rbA && !rbA->IsSleeping()) {
 				rbA->_velocity += (frictionImpulse * invMassA);
 				rbA->_angularVelocity += rbA->_inertiaTensorWorldInv * Cross(rA, frictionImpulse);
 			}
-			if (rbB) {
+			if (rbB && !rbB->IsSleeping()) {
 				rbB->_velocity -= (frictionImpulse * invMassB);
 				rbB->_angularVelocity -= rbB->_inertiaTensorWorldInv * Cross(rB, frictionImpulse);
 			}
 		}
 	}
+	rbA->CheckSleep();
+	rbB->CheckSleep();
 }

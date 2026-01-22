@@ -15,6 +15,10 @@ private:
 	float _gravity = -9.8f;
 	float _gravityScale = 1.0f;
 
+	bool _sleeping = false;
+	float _sleepTimer = 0.0f;
+	float _sleepEpsilon = 0.00009f; // êáñ∞îªíËópÇÃî˜è¨íl
+
 	KTVECTOR3 _forceAccum = KTVECTOR3(0.0f, 0.0f, 0.0f); // óÕÇÃí~êœ
 
 public:
@@ -51,6 +55,16 @@ public:
 
 	void ApplyTorque(const KTVECTOR3& torque) {
 		_torqueAccum += torque;
+	}
+
+	void Sleep();
+
+	void WakeUp();
+
+	void CheckSleep();
+
+	bool IsSleeping() const {
+		return _sleeping;
 	}
 
 	void Integrate();
