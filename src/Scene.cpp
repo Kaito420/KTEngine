@@ -7,6 +7,9 @@
 #include "Scene.h"
 #include <imgui.h>
 #include "Manager.h"
+#include "GameObject.h"
+#include "Shader.h"
+#include "ShaderManager.h"
 
 void Scene::Initialize(){
 	//テスト用
@@ -53,6 +56,19 @@ void Scene::Update(){
 void Scene::Render()const{
 	for(const auto& gameObject : _gameObjects){
 		if (gameObject->GetActive()) {
+			const auto& shader = gameObject->GetComponent<Shader>();
+			if (shader) {//shaderがある場合はそのシェーダーに変える
+				ID3D11VertexShader* vs = ShaderManager::Instance().GetVertexShader(shader->GetVertexShaderID());
+				ID3D11InputLayout* layout = ShaderManager::Instance().GetInputLayout(shader->GetVertexLayoutID());
+				ID3D11PixelShader* ps = ShaderManager::Instance().GetPixelShader(shader->GetPixelShaderID());
+
+				RendererDX11::GetContext()->VSSetShader(vs, nullptr, 0);
+				RendererDX11::GetContext()->IASetInputLayout(layout);
+				RendererDX11::GetContext()->PSSetShader(ps, nullptr, 0);
+			}
+			else {
+				RendererDX11::SetDefaultShader();
+			}
 			gameObject->Render();
 			gameObject->RenderComponents();
 		}

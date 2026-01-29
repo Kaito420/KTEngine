@@ -78,10 +78,15 @@ namespace RendererDX11 {
 
     void CreateVertexShader();
     void CreatePixelShader();
+	void CreateVertexShader(ID3D11VertexShader** vertexShader, ID3D11InputLayout** vertexLayout, const char* fileName);
+	void CreatePixelShader(ID3D11PixelShader** pixelShader, const char* fileName);
 
     void SetCullModeBack();
     void SetCullModeFront();
     void SetCullModeNone();
+    
+    void SetDefaultShader();
+	void ShaderReload();
 }
 
 #endif // !_RENDERERDX11_H

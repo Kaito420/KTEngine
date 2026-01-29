@@ -8,6 +8,7 @@
 #include "Wave.h"
 #include "SkyDome.h"
 #include "KillY.h"
+#include "Shader.h"
 
 void SceneTitle::Initialize()
 {
@@ -24,44 +25,6 @@ void SceneTitle::Initialize()
 	skyDome->_name = "SkyDome";
 	skyDome->AddComponent<SkyDome>();
 
-	//AddGameObject<GameObject>()->_name = "Square1";
-	//FindGameObjectByName<GameObject>("Square1")->AddComponent<Square>();
-
-	//GameObject* sphere1 = AddGameObject<GameObject>();
-	//sphere1->_name = "Sphere1";
-	//sphere1->_transform._position = { 0.0f, 2.0f, 0.0f };
-	//sphere1->AddComponent<Sphere>();
-	//sphere1->AddComponent<RigidBody>();
-	//sphere1->AddComponent<ColliderSphere>();
-
-	//GameObject* sphere2 = AddGameObject<GameObject>();
-	//sphere2->_name = "Sphere2";
-	//sphere2->_transform._position = { 0.0f, 0.0f, 0.0f };
-	//sphere2->AddComponent<Sphere>();
-	//sphere2->AddComponent<RigidBody>();
-	//sphere2->AddComponent<ColliderSphere>();
-
-
-	//GameObject* cube1 = AddGameObject<GameObject>();
-	//cube1->_name = "Cube1";
-	//cube1->_transform._position = { 2.0f, 2.0f, 0.0f };
-	//cube1->AddComponent<Cube>();
-	//cube1->AddComponent<ColliderBox>();
-	//RigidBody* rb1 = cube1->AddComponent<RigidBody>();
-
-	//GameObject* cube2 = AddGameObject<GameObject>();
-	//cube2->_name = "Cube2";
-	//cube2->_transform._position = { 2.0f,0.0f,0.0f };
-	//cube2->AddComponent<Cube>();
-	//cube2->AddComponent<ColliderBox>();
-	//cube2->AddComponent<RigidBody>();
-
-	//GameObject* cube3 = AddGameObject<GameObject>();
-	//cube3->_name = "Cube3";
-	//cube3->_transform._position = { 2.0f,-2.0f,0.0f };
-	//cube3->AddComponent<Cube>();
-	//cube3->AddComponent<ColliderBox>();
-	//cube3->AddComponent<RigidBody>();
 
 	GameObject* sphereGY = AddGameObject<GameObject>();
 	sphereGY->_name = "SphereGY";
@@ -84,6 +47,7 @@ void SceneTitle::Initialize()
 	cubeGY1->AddComponent<ColliderBox>();
 	RigidBody* rbGY1 = cubeGY1->AddComponent<RigidBody>();
 	rbGY1->_mass = 10000.0f;
+	cubeGY1->AddComponent<Shader>();
 
 	GameObject* cubeGY2 = AddGameObject<GameObject>();
 	cubeGY2->_name = "CubeGY2";
