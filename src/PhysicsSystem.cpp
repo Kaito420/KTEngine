@@ -82,7 +82,7 @@ void PhysicsSystem::Update() {
 	for (auto& manifold : _manifolds) {
 
 		manifold.Render();
-		for (int iter = 0; iter < 10; iter++) {
+		for (int iter = 0; iter < 30; iter++) {
 			ResolveInpulse(manifold);
 		}
 		ResolveCollision(manifold);
@@ -152,10 +152,18 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold)
 	//有効質量の計算
 	float invMassA = (rbA) ? rbA->_invMass : 0.0f;
 	float invMassB = (rbB) ? rbB->_invMass : 0.0f;
-	float invMassSum = invMassA + invMassB;
-	float joule = 0.0f;
+	float deltaImpulse = 0.0f;
 
-	for (const auto& contact : manifold.contacts) {
+	// 反発係数
+	float e = 0.0f;
+	if (rbA && rbB)
+		e = (std::max)(rbA->_restitution, rbB->_restitution);
+	else if (rbA)
+		e = rbA->_restitution;
+	else if (rbB)
+		e = rbB->_restitution;
+
+	for (auto& contact : manifold.contacts) {//法線方向
 
 		KTVECTOR3 rA = contact.position - manifold.a->GetOwner()->_transform._position;
 		KTVECTOR3 rB = contact.position - manifold.b->GetOwner()->_transform._position;
@@ -164,19 +172,10 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold)
 		KTVECTOR3 vA = rbA ? rbA->_velocity + Cross(rbA->_angularVelocity, rA) : KTVECTOR3(0.0f, 0.0f, 0.0f);
 		KTVECTOR3 vB = rbB ? rbB->_velocity + Cross(rbB->_angularVelocity, rB) : KTVECTOR3(0.0f, 0.0f, 0.0f);
 		//相対速度
-		KTVECTOR3 rV = vB - vA;//A->Bの相対速度
-		float relVelAlongNormal = Dot(rV, manifold.normal);//manifold.normal => B->A方向のため離れていく時負になる
-		if (relVelAlongNormal <= 0.0f) continue;// 離れていく場合はスキップ
+		KTVECTOR3 rV = vA - vB;//B->Aの相対速度
+		float relVelAlongNormal = Dot(rV, manifold.normal);//manifold.normal => B->A方向
+		if (relVelAlongNormal > 0.0f) continue;// 離れていく場合はスキップ(B->A方向で一致→内積が正の値の場合離れていく)
 
-		//法線方向
-		// 反発係数
-		float e = 0.0f;
-		if (rbA && rbB)
-			e = (std::max)(rbA->_restitution, rbB->_restitution);
-		else if (rbA)
-			e = rbA->_restitution;
-		else if (rbB)
-			e = rbB->_restitution;
 
 		//有効質量
 		KTVECTOR3 rnA = rbA ? Cross(rA, manifold.normal) : KTVECTOR3(0.0f, 0.0f, 0.0f);
@@ -184,29 +183,56 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold)
 
 		float angA = rbA ? Dot(rbA->_inertiaTensorWorldInv * rnA, rnA) : 0.0f;
 		float angB = rbB ? Dot(rbB->_inertiaTensorWorldInv * rnB, rnB) : 0.0f;
-		invMassSum = invMassA + invMassB + angA + angB;
+		float normalMass = invMassA + invMassB + angA + angB;
 
-		if (invMassSum <= 0.0f) continue;
+		if (normalMass <= 0.0f) continue;
 
-		// 衝突インパルスの計算
-		joule = -(1.0f + e) * relVelAlongNormal;
-		joule /= invMassSum;
+		// 衝突インパルスの計算（累積処理）
+		//deltaImpulseの計算
+		float deltaImpulse = -(1.0f + e) * relVelAlongNormal;
+		deltaImpulse /= normalMass;
 
-		KTVECTOR3 impulse = joule * manifold.normal;
+
+		//累積値の計算
+		float oldSum = contact.normalImpulseSum;
+		contact.normalImpulseSum += deltaImpulse;
+		if(contact.normalImpulseSum < 0.0f)
+			contact.normalImpulseSum = 0.0f;
+
+		//実際に適用するのは差分だけ
+		deltaImpulse = contact.normalImpulseSum - oldSum;
+
+		//速度更新（インパルスの適用）
+		KTVECTOR3 applyNormalImpule = deltaImpulse * manifold.normal;
 
 		if (rbA && !rbA->IsSleeping()) {
-			
-			rbA->_velocity -= (impulse * invMassA);
-			rbA->_angularVelocity -= rbA->_inertiaTensorWorldInv * Cross(rA, impulse);
+			rbA->_velocity += (applyNormalImpule * invMassA);
+			rbA->_angularVelocity += rbA->_inertiaTensorWorldInv * Cross(rA, applyNormalImpule);
 		}
 		if (rbB && !rbB->IsSleeping()) {
-			rbB->_velocity += (impulse * invMassB);
-			rbB->_angularVelocity += rbB->_inertiaTensorWorldInv * Cross(rB, impulse);
+			rbB->_velocity -= (applyNormalImpule * invMassB);
+			rbB->_angularVelocity -= rbB->_inertiaTensorWorldInv * Cross(rB, applyNormalImpule);
 		}
 
 	}
 	
-	for (const auto& contact : manifold.contacts) {
+	// 静止摩擦と動摩擦の決定
+	float mu_s = 0.0f;
+	float mu_d = 0.0f;
+	if (rbA && rbB) {
+		mu_s = (std::max)(rbA->_staticFriction, rbB->_staticFriction);
+		mu_d = (std::max)(rbA->_dynamicFriction, rbB->_dynamicFriction);
+	}
+	else if (rbA) {
+		mu_s = rbA->_staticFriction;
+		mu_d = rbA->_dynamicFriction;
+	}
+	else if (rbB) {
+		mu_s = rbB->_staticFriction;
+		mu_d = rbB->_dynamicFriction;
+	}
+
+	for (auto& contact : manifold.contacts) {//接線方向
 		//// 再計算
 		KTVECTOR3 rA = contact.position - manifold.a->GetOwner()->_transform._position;
 		KTVECTOR3 rB = contact.position - manifold.b->GetOwner()->_transform._position;
@@ -215,7 +241,7 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold)
 		KTVECTOR3 vA = rbA ? rbA->_velocity + Cross(rbA->_angularVelocity, rA) : KTVECTOR3(0.0f, 0.0f, 0.0f);
 		KTVECTOR3 vB = rbB ? rbB->_velocity + Cross(rbB->_angularVelocity, rB) : KTVECTOR3(0.0f, 0.0f, 0.0f);
 		//相対速度
-		KTVECTOR3 rV = vB - vA;
+		KTVECTOR3 rV = vA - vB;
 
 		// 摩擦力の計算（接線方向）
 		KTVECTOR3 tangent = rV - Dot(rV, manifold.normal) * manifold.normal;
@@ -229,41 +255,35 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold)
 			float tanAngA = rbA ? Dot(rbA->_inertiaTensorWorldInv * rtA, rtA) : 0.0f;
 			float tanAngB = rbB ? Dot(rbB->_inertiaTensorWorldInv * rtB, rtB) : 0.0f;
 
-			float denomTangent = invMassA + invMassB + tanAngA + tanAngB;
-			if (denomTangent <= 0.0f) continue;
+			float tangentMass = invMassA + invMassB + tanAngA + tanAngB;
+			if (tangentMass <= 0.0f) continue;
 
 			float jt = -Dot(rV, tangent);
-			jt /= denomTangent;
+			jt /= tangentMass;
 
-			// 静止摩擦と動摩擦の決定
-			float mu_s = 0.0f;
-			float mu_d = 0.0f;
-			if (rbA && rbB) {
-				mu_s = (std::max)(rbA->_staticFriction, rbB->_staticFriction);
-				mu_d = (std::max)(rbA->_dynamicFriction, rbB->_dynamicFriction);
-			}
-			else if (rbA) {
-				mu_s = rbA->_staticFriction;
-				mu_d = rbA->_dynamicFriction;
-			}
-			else if (rbB) {
-				mu_s = rbB->_staticFriction;
-				mu_d = rbB->_dynamicFriction;
-			}
 
-			KTVECTOR3 frictionImpulse;
-			if (fabs(jt) < fabs(joule) * mu_s)
-				frictionImpulse = -jt * tangent; // 静止摩擦
-			else
-				frictionImpulse = -joule * mu_d * tangent; // 動摩擦
+			//摩擦の上限値計算(F = μ * N)
+			float maxFriction = contact.normalImpulseSum * mu_s;
+
+			//累積値の計算
+			KTVECTOR3 oldTangentImpulse = contact.tangentImpulseSum;
+			KTVECTOR3 newTangentImpulse = oldTangentImpulse + jt * tangent;
+			//円錐摩擦制約でクランプ
+			float len = newTangentImpulse.Magnitude();
+			if (len > maxFriction) {
+				newTangentImpulse = (newTangentImpulse / len) * maxFriction;
+			}
+			contact.tangentImpulseSum = newTangentImpulse;
+			//実際に適用するのは差分だけ
+			KTVECTOR3 applyTangentImpulse = contact.tangentImpulseSum - oldTangentImpulse;
 
 			if (rbA && !rbA->IsSleeping()) {
-				rbA->_velocity += (frictionImpulse * invMassA);
-				rbA->_angularVelocity += rbA->_inertiaTensorWorldInv * Cross(rA, frictionImpulse);
+				rbA->_velocity += (applyTangentImpulse * invMassA);
+				rbA->_angularVelocity += rbA->_inertiaTensorWorldInv * Cross(rA, applyTangentImpulse);
 			}
 			if (rbB && !rbB->IsSleeping()) {
-				rbB->_velocity -= (frictionImpulse * invMassB);
-				rbB->_angularVelocity -= rbB->_inertiaTensorWorldInv * Cross(rB, frictionImpulse);
+				rbB->_velocity -= (applyTangentImpulse * invMassB);
+				rbB->_angularVelocity -= rbB->_inertiaTensorWorldInv * Cross(rB, applyTangentImpulse);
 			}
 		}
 	}

@@ -17,6 +17,7 @@ public:
 	Type _type;
 	void Awake() override;
 	void OnCollisionEnter(Collider* other) override;
+	void ShowUI()override;
 
 	std::string GetComponentName() override { return "Piece"; }
 };
