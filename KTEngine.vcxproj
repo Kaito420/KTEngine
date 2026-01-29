@@ -43,6 +43,7 @@
     <ClCompile Include="src\ImGuiLayer.cpp" />
     <ClCompile Include="src\Input.cpp" />
     <ClCompile Include="src\KillY.cpp" />
+    <ClCompile Include="src\Light.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Manager.cpp" />
     <ClCompile Include="src\ModelRenderer.cpp" />
@@ -95,6 +96,7 @@
     <ClInclude Include="src\Input.h" />
     <ClInclude Include="src\KillY.h" />
     <ClInclude Include="src\ktvector.hpp" />
+    <ClInclude Include="src\Light.h" />
     <ClInclude Include="src\Manager.h" />
     <ClInclude Include="src\ModelRenderer.h" />
     <ClInclude Include="src\Particle.h" />

@@ -39,6 +39,8 @@ struct LIGHT
     float4 Direction;
     float4 Diffuse;
     float4 Ambient;
+    float4 Position;
+    float4 Parameter;
 };
 
 cbuffer LightBuffer : register(b4)

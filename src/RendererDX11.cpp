@@ -219,6 +219,8 @@ bool RendererDX11::Init(HWND hwnd) {
     light.Direction = XMFLOAT4(0.0f, 0.0f, 1.0f, 0.0f);
     light.Ambient = XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f);
     light.Diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	light.Position = XMFLOAT4(0.0f, 10.0f, 0.0f, 1.0f);
+	light.Parameter = XMFLOAT4(100.0f, 0.0f, 0.0f, 0.0f);
     SetLight(light);
 
 	bd.ByteWidth = sizeof(XMFLOAT4);

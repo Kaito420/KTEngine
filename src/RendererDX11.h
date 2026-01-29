@@ -53,6 +53,8 @@ struct LIGHT {
 	XMFLOAT4 Direction;
 	XMFLOAT4 Diffuse;
 	XMFLOAT4 Ambient;
+    XMFLOAT4 Position;
+    XMFLOAT4 Parameter;
 };
 
 namespace RendererDX11 {
