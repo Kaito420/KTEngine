@@ -6,7 +6,7 @@
 
 
 void Piece::Awake() {//ランダムに種類を決定（デバッグ用に種類を減らしている）
-	_type = (Type)(rand() % (Type::Max - 4) + 1);
+	_type = (Type)(rand() % (Type::Sun) + 1);
 	//_type = Type::Earth;
 }
 

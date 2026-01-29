@@ -216,11 +216,11 @@ bool RendererDX11::Init(HWND hwnd) {
     //‰Šúƒ‰ƒCƒg’Ç‰Á
     LIGHT light{};
     light.Enable = true;
-    light.Direction = XMFLOAT4(0.0f, 0.0f, 1.0f, 0.0f);
+    light.Direction = XMFLOAT4(0.0f, -1.0f, -1.0f, 0.0f);
     light.Ambient = XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f);
-    light.Diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	light.Position = XMFLOAT4(0.0f, 10.0f, 0.0f, 1.0f);
-	light.Parameter = XMFLOAT4(100.0f, 0.0f, 0.0f, 0.0f);
+    light.Diffuse = XMFLOAT4(0.8f, 0.8f, 0.8f, 1.0f);
+	light.Position = XMFLOAT4(-5.0f, 10.0f, 5.0f, 0.0f);
+	light.Parameter = XMFLOAT4(100.0f, 1.5f, 0.0f, 0.0f);
     SetLight(light);
 
 	bd.ByteWidth = sizeof(XMFLOAT4);
@@ -326,12 +326,16 @@ void RendererDX11::SetLight(LIGHT light){
 	_context->UpdateSubresource(_lightBuffer, 0, NULL, &light, 0, 0);
 }
 
+void RendererDX11::SetCameraPosition(XMFLOAT4 cameraPos){
+	_context->UpdateSubresource(_cameraBuffer, 0, NULL, &cameraPos, 0, 0);
+}
+
 void RendererDX11::SetWorldProjection2D(){
     SetWorldMatrix(XMMatrixIdentity());
     SetViewMatrix(XMMatrixIdentity());
 
     XMMATRIX projection;
-    projection = XMMatrixOrthographicOffCenterLH(0.0f, 1280.0f, 720.0f, 0.0f, 0.0f, 1.0f);
+    projection = XMMatrixOrthographicOffCenterLH(0.0f, SCREEN_WIDTH, SCREEN_HEIGHT, 0.0f, 0.0f, 1.0f);
     SetProjectionMatrix(projection);
 
 }

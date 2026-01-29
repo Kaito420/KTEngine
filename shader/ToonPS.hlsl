@@ -7,7 +7,7 @@ SamplerState g_SamplerState : register(s0);
 void main(in PS_IN In, out float4 outDiffuse : SV_Target)
 {
     //光源からピクセルへのベクトル
-    float4 lv = In.WorldPosition - Light.Position;
+    float4 lv = Light.Position - In.WorldPosition;
     float4 ld = length(lv); //物体と光源の距離
     lv = normalize(lv); //正規化
     
@@ -18,7 +18,7 @@ void main(in PS_IN In, out float4 outDiffuse : SV_Target)
     
     //ピクセルの法線を正規化
     float4 normal = normalize(In.Normal);
-    float light = -dot(normal.xyz, lv.xyz);
+    float light = dot(normal.xyz, lv.xyz);
     light = saturate(light);
     light *= ofs;
     
@@ -48,7 +48,7 @@ void main(in PS_IN In, out float4 outDiffuse : SV_Target)
     
     
     //カメラからピクセルへ向かうベクトル
-    float3 eyev = In.WorldPosition.xyz - CameraPosition.xyz;
+    float3 eyev = CameraPosition.xyz - In.WorldPosition.xyz;
     eyev = normalize(eyev);
     
     //エッジ処理
@@ -60,12 +60,12 @@ void main(in PS_IN In, out float4 outDiffuse : SV_Target)
     //輪郭部分ほど明るくする
     float rim;
     rim = dot(eyev, normal.xyz);
-    rim = 1 - max(0, -rim);
+    rim = 1 - max(0, rim);
     rim *= lit;
     
     rim = pow(rim, 3);
     
     //リムライティングの明るさをデフューズに加算して出力
-    outDiffuse.rgb += rim;
+    //outDiffuse.rgb += rim;
     
 }

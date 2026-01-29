@@ -74,6 +74,7 @@ namespace RendererDX11 {
 
 	void SetMaterial(MATERIAL material);
 	void SetLight(LIGHT light);
+    void SetCameraPosition(XMFLOAT4 cameraPos);
 
     void SetWorldProjection2D();
 	void SetWorldProjection3D();

@@ -47,7 +47,6 @@ void SceneTitle::Initialize()
 	cubeGY1->AddComponent<ColliderBox>();
 	RigidBody* rbGY1 = cubeGY1->AddComponent<RigidBody>();
 	rbGY1->_mass = 10000.0f;
-	cubeGY1->AddComponent<Shader>();
 
 	GameObject* cubeGY2 = AddGameObject<GameObject>();
 	cubeGY2->_name = "CubeGY2";

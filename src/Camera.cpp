@@ -71,4 +71,6 @@ void Camera::Update() {
 		_transform._position += frontKTVec * (float)Input::GetMouseWheelDelta() * 0.03f;
 	}
 
+	XMFLOAT4 tempPos = XMFLOAT4(_transform._position.x, _transform._position.y, _transform._position.z, 0.0f);
+
 }
