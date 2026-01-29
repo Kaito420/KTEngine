@@ -10,7 +10,7 @@ void SkyDome::Awake()
 	_sphere = new Sphere();
 	_sphere->Awake();
 	_sphere->SetOwner(GetOwner());
-	_sphere->_texture = Texture::Load("asset\\texture\\Sky.png");
+	_sphere->_texture = Texture::Load("asset\\texture\\Space.jpg");
 	_owner->_transform._scale = { 500.0f,500.0f,500.0f };
 }
 

@@ -468,5 +468,7 @@ void RendererDX11::ShaderReload(){
 	ShaderManager::Instance().LoadPixelShader("UnlitTexture", "shader/UnlitTexturePS.cso");
 	ShaderManager::Instance().LoadVertexShader("DirectionalLight", "shader/VertexDirectionalLightingVS.cso");
 	ShaderManager::Instance().LoadPixelShader("DirectionalLight", "shader/VertexDirectionalLightingPS.cso");
+	ShaderManager::Instance().LoadVertexShader("Toon", "shader/ToonVS.cso");
+	ShaderManager::Instance().LoadPixelShader("Toon", "shader/ToonPS.cso");
 }
 

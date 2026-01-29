@@ -4,13 +4,15 @@
 #include "Collider.h"
 #include "RigidBody.h"
 #include "Piece.h"
+#include "Texture.h"
 
 void Block::Awake()
 {
-	//AddComponent<Sphere>();
-	//AddComponent<ColliderSphere>();
-	AddComponent<Cube>();
-	AddComponent<ColliderBox>();
+	Sphere* sphere = AddComponent<Sphere>();
+	sphere->_texture = Texture::Load("asset\\texture\\Sun.png");
+	AddComponent<ColliderSphere>();
+	//AddComponent<Cube>();
+	//AddComponent<ColliderBox>();
 
 	AddComponent<RigidBody>();
 	_piece = AddComponent<Piece>();
