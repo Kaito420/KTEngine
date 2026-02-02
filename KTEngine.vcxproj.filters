@@ -171,6 +171,9 @@
     <ClCompile Include="src\Light.cpp">
       <Filter>ソース ファイル\Object</Filter>
     </ClCompile>
+    <ClCompile Include="src\ScenePhysicsTest.cpp">
+      <Filter>ソース ファイル\Framework</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ImGuiLayer.h">
@@ -313,6 +316,9 @@
     </ClInclude>
     <ClInclude Include="src\Light.h">
       <Filter>ヘッダー ファイル\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ScenePhysicsTest.h">
+      <Filter>ヘッダー ファイル\Framework</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

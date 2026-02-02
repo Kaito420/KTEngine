@@ -55,6 +55,7 @@
     <ClCompile Include="src\RigidBody.cpp" />
     <ClCompile Include="src\Scene.cpp" />
     <ClCompile Include="src\SceneGame.cpp" />
+    <ClCompile Include="src\ScenePhysicsTest.cpp" />
     <ClCompile Include="src\SceneResult.cpp" />
     <ClCompile Include="src\SceneTitle.cpp" />
     <ClCompile Include="src\Shader.cpp" />
@@ -107,6 +108,7 @@
     <ClInclude Include="src\RigidBody.h" />
     <ClInclude Include="src\Scene.h" />
     <ClInclude Include="src\SceneGame.h" />
+    <ClInclude Include="src\ScenePhysicsTest.h" />
     <ClInclude Include="src\SceneResult.h" />
     <ClInclude Include="src\SceneTitle.h" />
     <ClInclude Include="src\Shader.h" />
