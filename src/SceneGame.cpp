@@ -47,7 +47,8 @@ void SceneGame::Initialize() {
 	floor1->_transform._scale = { 10.0f, 1.0f, 10.0f };
 	floor1->AddComponent<Cube>();
 	floor1->AddComponent<ColliderBox>();
-	floor1->AddComponent<RigidBody>()->_mass = 10000;
-
+	RigidBody* rb = floor1->AddComponent<RigidBody>();
+	rb->_mass = 10000.0f;
+	rb->_useGravity = false;
 
 }

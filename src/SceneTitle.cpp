@@ -32,7 +32,6 @@ void SceneTitle::Initialize()
 	sphereGY->AddComponent<Sphere>();
 	RigidBody* sphereRb = sphereGY->AddComponent<RigidBody>();
 	sphereRb->_restitution = 1.0f;
-	sphereRb->_useGravity = true;
 	sphereGY->AddComponent<ColliderSphere>();
 	KillY* killY = sphereGY->AddComponent<KillY>();
 	killY->SetThreshold(-10.0f);
@@ -46,6 +45,7 @@ void SceneTitle::Initialize()
 	cubeGY1->AddComponent<Cube>();
 	cubeGY1->AddComponent<ColliderBox>();
 	RigidBody* rbGY1 = cubeGY1->AddComponent<RigidBody>();
+	rbGY1->_useGravity = false;
 	rbGY1->_mass = 10000.0f;
 
 	GameObject* cubeGY2 = AddGameObject<GameObject>();
@@ -56,6 +56,7 @@ void SceneTitle::Initialize()
 	cubeGY2->AddComponent<Cube>();
 	cubeGY2->AddComponent<ColliderBox>();
 	RigidBody* rbGY2 = cubeGY2->AddComponent<RigidBody>();
+	rbGY2->_useGravity = false;
 	rbGY2->_mass = 10000.0f;
 
 	GameObject* cubeGY3 = AddGameObject<GameObject>();
@@ -66,6 +67,7 @@ void SceneTitle::Initialize()
 	cubeGY3->AddComponent<Cube>();
 	cubeGY3->AddComponent<ColliderBox>();
 	RigidBody* rbGY3 = cubeGY3->AddComponent<RigidBody>();
+	rbGY3->_useGravity = false;
 	rbGY3->_mass = 10000.0f;
 	
 	GameObject* wave = AddGameObject<GameObject>();

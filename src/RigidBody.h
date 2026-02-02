@@ -22,7 +22,7 @@ private:
 	KTVECTOR3 _forceAccum = KTVECTOR3(0.0f, 0.0f, 0.0f); // —Í‚Ì’~Ï
 
 public:
-	bool _useGravity = false;
+	bool _useGravity = true;
 	float _mass = 1.0f;
 	float _invMass = (_mass != 0.0f) ? 1.0f / _mass : 0.0f; // ‹t¿—Ê
 	float _restitution = 0.0f; // ”½”­ŒW”

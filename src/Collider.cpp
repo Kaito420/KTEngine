@@ -126,42 +126,42 @@ CollisionManifold::CollisionManifold()
 }
 
 void CollisionManifold::Render()const {
-	for (auto& cp : contacts) {
-		UINT stride = sizeof(Vertex);
-		UINT offset = 0;
+	//for (auto& cp : contacts) {
+	//	UINT stride = sizeof(Vertex);
+	//	UINT offset = 0;
 
-		RendererDX11::GetContext()->IASetVertexBuffers(0, 1, _vertexBuffer.GetAddressOf(), &stride, &offset);
-		RendererDX11::GetContext()->IASetIndexBuffer(_indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+	//	RendererDX11::GetContext()->IASetVertexBuffers(0, 1, _vertexBuffer.GetAddressOf(), &stride, &offset);
+	//	RendererDX11::GetContext()->IASetIndexBuffer(_indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
 
-		//マトリクス設定
-		//平行移動行列
-		XMMATRIX translation = XMMatrixTranslation(cp.position.x, cp.position.y, cp.position.z);
+	//	//マトリクス設定
+	//	//平行移動行列
+	//	XMMATRIX translation = XMMatrixTranslation(cp.position.x, cp.position.y, cp.position.z);
 
-		XMMATRIX rotation = XMMatrixIdentity();
+	//	XMMATRIX rotation = XMMatrixIdentity();
 
-		//スケーリング行列
-		XMMATRIX scaling = XMMatrixIdentity();
+	//	//スケーリング行列
+	//	XMMATRIX scaling = XMMatrixIdentity();
 
-		//ワールド行列
-		XMMATRIX worldMatrix = scaling * rotation * translation;
+	//	//ワールド行列
+	//	XMMATRIX worldMatrix = scaling * rotation * translation;
 
-		RendererDX11::SetWorldMatrix(worldMatrix);
+	//	RendererDX11::SetWorldMatrix(worldMatrix);
 
-		// プリミティブトポロジ設定
-		RendererDX11::GetContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	//	// プリミティブトポロジ設定
+	//	RendererDX11::GetContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-		MATERIAL material = {};
-		material.Diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
-		material.TextureEnable = true;
-		RendererDX11::SetMaterial(material);
+	//	MATERIAL material = {};
+	//	material.Diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
+	//	material.TextureEnable = true;
+	//	RendererDX11::SetMaterial(material);
 
-		// シェーダーリソースビュー設定
-		RendererDX11::GetContext()->PSSetShaderResources(0, 1, &_texture);
+	//	// シェーダーリソースビュー設定
+	//	RendererDX11::GetContext()->PSSetShaderResources(0, 1, &_texture);
 
-		// ポリゴン描画
-		RendererDX11::GetContext()->DrawIndexed(_indexCount, 0, 0);
+	//	// ポリゴン描画
+	//	RendererDX11::GetContext()->DrawIndexed(_indexCount, 0, 0);
 
-	}
+	//}
 }
 
 void ColliderSphere::Awake(){
@@ -189,8 +189,8 @@ void ColliderSphere::Update(){
 
 }
 
-void ColliderSphere::Render() const
-{
+void ColliderSphere::Render() const{
+
 }
 
 bool ColliderSphere::CheckVSSphere(const ColliderSphere* other, CollisionManifold& outCollisionManifold) const{
@@ -437,10 +437,10 @@ bool ColliderBox::CheckVSOBB(const ColliderBox* other, CollisionManifold& manifo
 
 	//各軸について投影してチェック
 	//分離軸SAT判定
-	for(int i = 0; i<3; i++) {
+	for (int i = 0; i < 3; i++) {
 		float overlap = 0.0f;
 		if (!OverlapOnAxis(other, _axis[i], overlap)) return false;
-		if(overlap < minOverlap) {
+		if (overlap < minOverlap) {
 			minOverlap = overlap;
 			bestAxis = _axis[i];
 		}
