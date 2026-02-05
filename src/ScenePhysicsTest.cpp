@@ -45,11 +45,11 @@ void ScenePhysicsTest::Initialize()
 	rb->_useGravity = false;
 
 	int num = 0;
-	for(int x = 0; x < 5; x++)
+	for(int x = 0; x < 3; x++)
 	{
-		for(int y = 0; y < 5; y++)
+		for(int y = 0; y < 9; y++)
 		{
-			for(int z = 0; z < 5; z++)
+			for(int z = 0; z < 3; z++)
 			{
 				GameObject* gameObject = AddGameObject<GameObject>();
 				std::string numS = std::to_string(num);

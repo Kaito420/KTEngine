@@ -16,6 +16,7 @@ class PhysicsSystem {
 	std::vector<Collider*> _colliders;
 	std::vector<CollisionManifold> _manifolds;
 	std::vector<CollisionManifold> _prevManifolds;
+	uint64_t MakePairKey(Collider* a, Collider* b);
 public:
 	void RegisterCollider(Collider* collider) {
 		_colliders.push_back(collider);

@@ -6,6 +6,7 @@
 
 #include "PhysicsSystem.h"
 #include <algorithm>
+#include <map>
 
 void PhysicsSystem::Update() {
 
@@ -25,7 +26,7 @@ void PhysicsSystem::Update() {
 
 	//manifoldsの保存
 	_prevManifolds = std::move(_manifolds);
-	//manifoldsのクリア（）念のため
+	//manifoldsのクリア（念のため）
 	ClearManifold();
 	//慣性テンソルの更新
 	SetLocalInertiaTensor();
@@ -340,18 +341,21 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold)
 
 void PhysicsSystem::ApplyWarmStarting(){
 
+	std::map<uint64_t, CollisionManifold*> oldManifoldMap;
+	for (auto& old : _prevManifolds) {
+		uint64_t key = MakePairKey(old.a, old.b);
+		oldManifoldMap[key] = &old;
+	}
+
 	for (auto& newManifold : _manifolds) {
 		//前フレームの同じペアのマニフォールドを探す
-		CollisionManifold* oldManifold = nullptr;
-		for (auto& old : _prevManifolds) {//ポインタで確認（ポインタが頻繁に変わる場合は危険）
-			if ((newManifold.a == old.a && newManifold.b == old.b) ||
-				(newManifold.a == old.b && newManifold.b == old.a)) {
-				oldManifold = &old;
-				break;
-			}
-		}
+		uint64_t key = MakePairKey(newManifold.a, newManifold.b);
 
-		if (!oldManifold) continue;//前フレームで接触していなければスキップ
+		//マップから検索
+		auto it = oldManifoldMap.find(key);
+		if (it == oldManifoldMap.end()) continue;//前フレームで接触していなければスキップ
+
+		CollisionManifold* oldManifold = it->second;
 
 		//剛体の取得
 		RigidBody* rbA = newManifold.a->GetOwner()->GetComponent<RigidBody>();
@@ -403,3 +407,10 @@ void PhysicsSystem::ApplyWarmStarting(){
 		}
 	}
 }
+
+
+uint64_t PhysicsSystem::MakePairKey(Collider* a, Collider* b) {
+	if (a > b) std::swap(a, b);
+	return (uint64_t)a ^ ((uint64_t)b << 32);
+}
+
