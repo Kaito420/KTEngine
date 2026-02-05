@@ -24,6 +24,7 @@ private:
 public:
 	bool _useGravity = true;
 	float _mass = 1.0f;
+	float _oldMass;
 	float _invMass = (_mass != 0.0f) ? 1.0f / _mass : 0.0f; // ‹t¿—Ê
 	float _restitution = 0.0f; // ”½”­ŒW”
 

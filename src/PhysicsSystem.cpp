@@ -150,6 +150,8 @@ void PhysicsSystem::SetLocalInertiaTensor(){
 		RigidBody* rb = col->GetOwner()->GetComponent<RigidBody>();
 		if (rb == nullptr)continue;
 		if (rb->_mass > 0.0f) {
+			bool massChanged = ((rb->_oldMass - rb->_mass) * (rb->_oldMass - rb->_mass) > 1e-6f);
+			if (!col->_hasChangedScale && !massChanged) continue; //スケールか質量が変化していなければスキップ
 			rb->_inertiaTensorBody = col->ComputeLocalInertiaTensor(rb->_mass);
 			rb->_inertiaTensorBodyInv = rb->_inertiaTensorBody.Inverse();
 		}
@@ -157,6 +159,7 @@ void PhysicsSystem::SetLocalInertiaTensor(){
 			rb->_inertiaTensorBody = KTMATRIX3::Zero();
 			rb->_inertiaTensorBodyInv = KTMATRIX3::Zero();
 		}
+		rb->_oldMass = rb->_mass;
 	}
 }
 

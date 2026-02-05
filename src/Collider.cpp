@@ -35,6 +35,13 @@ void ColliderSphere::Update(){
 	_aabb.min = _owner->_transform._position - KTVECTOR3(_radius, _radius, _radius);
 	_aabb.max = _owner->_transform._position + KTVECTOR3(_radius, _radius, _radius);
 
+	if ((_oldRadius - _radius) * (_oldRadius - _radius) > 1e-6f)
+		_hasChangedScale = true;
+	else
+		_hasChangedScale = false;
+
+	_oldRadius = _radius;
+
 }
 
 void ColliderSphere::Render() const{
@@ -220,6 +227,13 @@ void ColliderBox::Update() {
 
 	_aabb.min = _owner->_transform._position - r;
 	_aabb.max = _owner->_transform._position + r;
+
+	if ((_oldExtents - _extents).MagnitudeSqr() > 1e-6f)
+		_hasChangedScale = true;
+	else
+		_hasChangedScale = false;
+
+	_oldExtents = _extents;
 
 }
 

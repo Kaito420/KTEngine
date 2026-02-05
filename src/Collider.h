@@ -84,9 +84,7 @@ struct CollisionManifold {
 
 };
 
-class Collider : public Component
-{
-
+class Collider : public Component{
 protected:
 	KTVECTOR3 _center;
 
@@ -95,6 +93,7 @@ protected:
 
 public:
 	AABB _aabb;
+	bool _hasChangedScale = false;
 
 	bool _isOverlap;
 	bool _wasOverlap;
@@ -131,6 +130,8 @@ public:
 };
 
 class ColliderSphere : public Collider {
+private:
+	float _oldRadius;
 public:
 	float _radius = 0.5;
 
@@ -166,11 +167,13 @@ public:
 	void ShowUI()override;
 };
 
-class ColliderBox : public Collider
-{
+class ColliderBox : public Collider{
+private:
+	KTVECTOR3 _oldExtents;
 public:
 	KTVECTOR3 _axis[3];	//[0] : X, [1] : Y, [2] : Z
 	KTVECTOR3 _extents;
+
 
 	void Awake() override;
 
