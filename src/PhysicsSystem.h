@@ -14,7 +14,7 @@
 
 struct ManifoldKey {
 	uint64_t key;
-	CollisionManifold manifold;
+	CollisionManifold* manifold;
 
 	bool operator<(const ManifoldKey& other)const {
 		return key < other.key;

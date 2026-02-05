@@ -342,7 +342,7 @@ void PhysicsSystem::ApplyWarmStarting(){
 	//リスト作成
 	for(auto& old : _prevManifolds){
 		uint64_t key = MakePairKey(old.a, old.b);
-		searchList.push_back({ key, old });
+		searchList.push_back({ key, &old });
 	}
 
 	//ソート
@@ -357,7 +357,7 @@ void PhysicsSystem::ApplyWarmStarting(){
 		auto it = std::lower_bound(searchList.begin(), searchList.end(), target);
 
 		if (it != searchList.end() && it->key == key) {//見つかった場合
-			CollisionManifold* oldManifold = &it->manifold;
+			CollisionManifold* oldManifold = it->manifold;
 
 			//剛体の取得
 			RigidBody* rbA = newManifold.a->GetOwner()->GetComponent<RigidBody>();
