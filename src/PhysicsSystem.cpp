@@ -23,7 +23,9 @@ void PhysicsSystem::Update() {
 			return a->_aabb.min.x < b->_aabb.min.x;
 		});
 
-	//manifoldsのリセット
+	//manifoldsの保存
+	_prevManifolds = std::move(_manifolds);
+	//manifoldsのクリア（）念のため
 	ClearManifold();
 	//慣性テンソルの更新
 	SetLocalInertiaTensor();
@@ -91,6 +93,40 @@ void PhysicsSystem::Update() {
 	//=====================================================================
 	//物理演算
 	//=====================================================================
+
+	//反発速度（Bias）の事前計算
+	for (auto& manifold : _manifolds) {
+		RigidBody* rbA = manifold.a->GetOwner()->GetComponent<RigidBody>();
+		RigidBody* rbB = manifold.b->GetOwner()->GetComponent<RigidBody>();
+
+		// 反発係数の決定
+		float e = 0.0f;
+		if (rbA && rbB) e = (std::max)(rbA->_restitution, rbB->_restitution);
+		else if (rbA) e = rbA->_restitution;
+		else if (rbB) e = rbB->_restitution;
+
+		for (auto& cp : manifold.contacts) {
+			KTVECTOR3 rA = cp.position - manifold.a->GetOwner()->_transform._position;
+			KTVECTOR3 rB = cp.position - manifold.b->GetOwner()->_transform._position;
+
+			// 相対速度の計算
+			KTVECTOR3 vA = rbA ? rbA->_velocity + Cross(rbA->_angularVelocity, rA) : KTVECTOR3(0, 0, 0);
+			KTVECTOR3 vB = rbB ? rbB->_velocity + Cross(rbB->_angularVelocity, rB) : KTVECTOR3(0, 0, 0);
+			KTVECTOR3 rv = vA - vB;
+			float vRel = Dot(rv, manifold.normal);
+
+			// 反発閾値
+			if (vRel <= -1.0f) {
+				cp.velocityBias = -e * vRel;
+			}
+			else {
+				cp.velocityBias = 0.0f;
+			}
+		}
+	}
+
+	//ウォームスタート
+	ApplyWarmStarting();
 
 	for (auto& manifold : _manifolds) {
 
@@ -186,8 +222,8 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold)
 		//相対速度
 		KTVECTOR3 rV = vA - vB;//B->Aの相対速度
 		float relVelAlongNormal = Dot(rV, manifold.normal);//manifold.normal => B->A方向
-		if (relVelAlongNormal > 0.0f) continue;// 離れていく場合はスキップ(B->A方向で一致→内積が正の値の場合離れていく)
-
+		// 離れていく場合はスキップ(B->A方向で一致→内積が正の値の場合離れていく) && 法線インパルスが0以下の場合スキップ
+		if (relVelAlongNormal > 0.0f && contact.normalImpulseSum <= 0.0f)continue;
 
 		//有効質量
 		KTVECTOR3 rnA = rbA ? Cross(rA, manifold.normal) : KTVECTOR3(0.0f, 0.0f, 0.0f);
@@ -201,8 +237,7 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold)
 
 		// 衝突インパルスの計算（累積処理）
 		//deltaImpulseの計算
-		float deltaImpulse = -(1.0f + e) * relVelAlongNormal;
-		deltaImpulse /= normalMass;
+		float deltaImpulse = (contact.velocityBias - relVelAlongNormal) / normalMass;
 
 
 		//累積値の計算
@@ -301,4 +336,70 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold)
 	}
 	rbA->CheckSleep();
 	rbB->CheckSleep();
+}
+
+void PhysicsSystem::ApplyWarmStarting(){
+
+	for (auto& newManifold : _manifolds) {
+		//前フレームの同じペアのマニフォールドを探す
+		CollisionManifold* oldManifold = nullptr;
+		for (auto& old : _prevManifolds) {//ポインタで確認（ポインタが頻繁に変わる場合は危険）
+			if ((newManifold.a == old.a && newManifold.b == old.b) ||
+				(newManifold.a == old.b && newManifold.b == old.a)) {
+				oldManifold = &old;
+				break;
+			}
+		}
+
+		if (!oldManifold) continue;//前フレームで接触していなければスキップ
+
+		//剛体の取得
+		RigidBody* rbA = newManifold.a->GetOwner()->GetComponent<RigidBody>();
+		RigidBody* rbB = newManifold.b->GetOwner()->GetComponent<RigidBody>();
+		if (!rbA && !rbB) continue;
+
+		//接触点のマッチング
+		for (auto& newContact : newManifold.contacts) {
+
+			float minDistSqr = FLT_MAX;
+			ContactPoint* bestOldContact = nullptr;
+
+			for (auto& oldContact : oldManifold->contacts) {
+				float distSqr = (newContact.position - oldContact.position).MagnitudeSqr();
+
+				//距離比較
+				if (distSqr < 0.005f && distSqr < minDistSqr) {
+					minDistSqr = distSqr;
+					bestOldContact = &oldContact;
+				}
+			}
+
+			//マッチする古い点が見つかったら累積インパルスを引き継ぐ
+			if (bestOldContact) {
+				newContact.normalImpulseSum = bestOldContact->normalImpulseSum;
+				newContact.tangentImpulseSum = bestOldContact->tangentImpulseSum;
+
+				//引き継いだインパルスを事前に速度に適用
+				KTVECTOR3 rA = newContact.position - newManifold.a->GetOwner()->_transform._position;
+				KTVECTOR3 rB = newContact.position - newManifold.b->GetOwner()->_transform._position;
+
+				//法線方向のインパルス復元
+				KTVECTOR3 applyImpulse = newContact.normalImpulseSum * newManifold.normal;
+				//接線方向のインパルス復元
+				applyImpulse += newContact.tangentImpulseSum;
+
+				float invMassA = (rbA) ? rbA->_invMass : 0.0f;
+				float invMassB = (rbB) ? rbB->_invMass : 0.0f;
+
+				if (rbA && !rbA->IsSleeping()) {
+					rbA->_velocity += applyImpulse * invMassA;
+					rbA->_angularVelocity += rbA->_inertiaTensorWorldInv * Cross(rA, applyImpulse);
+				}
+				if (rbB && !rbB->IsSleeping()) {
+					rbB->_velocity -= applyImpulse * invMassB;
+					rbB->_angularVelocity -= rbB->_inertiaTensorWorldInv * Cross(rB, applyImpulse);
+				}
+			}
+		}
+	}
 }

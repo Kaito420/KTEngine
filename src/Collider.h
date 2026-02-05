@@ -27,6 +27,7 @@ struct ContactPoint {
 	float penetration; // 浸入深度
 	float normalImpulseSum = 0.0f; // 法線方向の累積インパルス
 	KTVECTOR3 tangentImpulseSum = { 0.0f, 0.0f, 0.0f }; // 接線方向の累積インパルス
+	float velocityBias = 0.0f; // 反発や位置補正のための目標速度
 };
 
 struct AABB {
