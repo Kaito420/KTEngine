@@ -203,15 +203,6 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold)
 	float invMassB = (rbB) ? rbB->_invMass : 0.0f;
 	float deltaImpulse = 0.0f;
 
-	// ”½”­ŒW”
-	float e = 0.0f;
-	if (rbA && rbB)
-		e = (std::max)(rbA->_restitution, rbB->_restitution);
-	else if (rbA)
-		e = rbA->_restitution;
-	else if (rbB)
-		e = rbB->_restitution;
-
 	for (auto& contact : manifold.contacts) {//–@ü•ûŒü
 
 		KTVECTOR3 rA = contact.position - manifold.a->GetOwner()->_transform._position;
