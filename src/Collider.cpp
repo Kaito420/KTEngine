@@ -327,7 +327,7 @@ bool ColliderBox::CheckVSOBB(const ColliderBox* other, CollisionManifold& manifo
 
 
 	//衝突点の計算
-	std::vector<KTVECTOR3> contactPolygon = ComputeContactPolygon(this, other, manifold.normal);
+	FixedList<KTVECTOR3, 16> contactPolygon = ComputeContactPolygon(this, other, manifold.normal);
 	if (!contactPolygon.empty()) {
 		for (auto& p : contactPolygon) {
 			ContactPoint cp;
@@ -408,9 +408,8 @@ bool ColliderBox::OverlapOnAxis(const ColliderBox* other, const KTVECTOR3& axis,
 	return distance <= (rA + rB);
 }
 
-std::vector<KTVECTOR3> ColliderBox::GetFaceVertices(const ColliderBox* box, int axisIndex, int sign){
-	std::vector<KTVECTOR3> verts;
-	verts.reserve(4);
+FixedList<KTVECTOR3, 4> ColliderBox::GetFaceVertices(const ColliderBox* box, int axisIndex, int sign){
+	FixedList<KTVECTOR3, 4> verts;
 
 	// extents の各軸成分を取り出し
 	float ex = box->_extents.x;
@@ -440,9 +439,8 @@ std::vector<KTVECTOR3> ColliderBox::GetFaceVertices(const ColliderBox* box, int 
 	return verts;
 }
 
-std::vector<Plane> ColliderBox::GetOBBPlanes(const ColliderBox* box){
-	std::vector<Plane> planes;
-	planes.reserve(6);
+FixedList<Plane, 8> ColliderBox::GetOBBPlanes(const ColliderBox* box){
+	FixedList<Plane, 8> planes;
 
 	float ex = box->_extents.x;
 	float ey = box->_extents.y;
@@ -464,8 +462,8 @@ std::vector<Plane> ColliderBox::GetOBBPlanes(const ColliderBox* box){
 	return planes;
 }
 
-std::vector<KTVECTOR3> ColliderBox::ClipPolygonAgainstPlane(const std::vector<KTVECTOR3>& polygon, const Plane& plane, float eps){
-	std::vector<KTVECTOR3> out;
+FixedList<KTVECTOR3, 16> ColliderBox::ClipPolygonAgainstPlane(const FixedList<KTVECTOR3, 16>& polygon, const Plane& plane, float eps){
+	FixedList<KTVECTOR3, 16> out;
 	if (polygon.empty()) return out;
 
 	auto inside = [&](const KTVECTOR3& v) {
@@ -510,41 +508,8 @@ std::vector<KTVECTOR3> ColliderBox::ClipPolygonAgainstPlane(const std::vector<KT
 	return out;
 }
 
-KTVECTOR3 ColliderBox::ComputePolygonCentroid(const std::vector<KTVECTOR3>& polygon, const KTVECTOR3& refNormal){
-	KTVECTOR3 centroid(0.0f, 0.0f, 0.0f);
-	if (polygon.size() == 0) return centroid;
-	if (polygon.size() == 1) return polygon[0];
-	if (polygon.size() == 2) return (polygon[0] + polygon[1]) * 0.5f;
 
-	// 三角分割: v0 を基準に (v0, vi, vi+1)
-	KTVECTOR3 v0 = polygon[0];
-	double areaSum = 0.0;
-	KTVECTOR3 cSum(0.0f, 0.0f, 0.0f);
-
-	for (size_t i = 1; i + 1 < polygon.size(); ++i) {
-		KTVECTOR3 a = polygon[i] - v0;
-		KTVECTOR3 b = polygon[i + 1] - v0;
-		KTVECTOR3 cross = Cross(a, b);
-		double triArea = 0.5 * (double)cross.Magnitude(); // 面積
-		if (triArea <= 1e-12) continue;
-		// 三角形の重心
-		KTVECTOR3 triCentroid = (v0 + polygon[i] + polygon[i + 1]) * (1.0f / 3.0f);
-		cSum += triCentroid * (float)triArea;
-		areaSum += triArea;
-	}
-
-	if (areaSum <= 1e-12) {
-		// 面積がほぼ0 -> 頂点平均で代替
-		KTVECTOR3 s(0, 0, 0);
-		for (auto& p : polygon) s += p;
-		return s * (1.0f / (float)polygon.size());
-	}
-
-	centroid = cSum * (1.0f / (float)areaSum);
-	return centroid;
-}
-
-std::vector<KTVECTOR3> ColliderBox::ComputeContactPolygon(const ColliderBox* refBox, const ColliderBox* incBox, const KTVECTOR3& collisionNormal){
+FixedList<KTVECTOR3, 16> ColliderBox::ComputeContactPolygon(const ColliderBox* refBox, const ColliderBox* incBox, const KTVECTOR3& collisionNormal){
 	// 1) 参照ボックス（refBox）および参照面の決定
 	//参照軸は bestAxis に最も近い軸 (abs dot 最大) を選ぶ
 	int refAxis = 0;
@@ -559,10 +524,16 @@ std::vector<KTVECTOR3> ColliderBox::ComputeContactPolygon(const ColliderBox* ref
 	int refSign = (s >= 0.0f) ? +1 : -1;
 
 	// 初期ポリゴン = 参照面の4頂点
-	std::vector<KTVECTOR3> poly = GetFaceVertices(refBox, refAxis, refSign);
+	FixedList<KTVECTOR3, 16> poly;
+	auto initalVerts =  GetFaceVertices(refBox, refAxis, refSign);
+
+	//型を合わせるためにコピー
+	for(const auto& v : initalVerts){
+		poly.push_back(v);
+	}
 
 	// 2) インシデントボックス (incBox) の 6平面を取得
-	std::vector<Plane> incPlanes = GetOBBPlanes(incBox);
+	FixedList<Plane, 8> incPlanes = GetOBBPlanes(incBox);
 
 	// 3) poly を各平面で順にクリップ
 	for (const Plane& pl : incPlanes) {

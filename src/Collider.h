@@ -12,9 +12,42 @@
 #include <unordered_set>
 #include <vector>
 #include "RendererDX11.h"
+#include <array>
 
 class ColliderBox;
 class ColliderSphere;
+
+template <typename T, int Capacity>
+class FixedList {
+public:
+	std::array<T, Capacity> _data;
+	int _size = 0;
+
+	void clear() {
+		_size = 0;
+	}
+
+	void push_back(const T& value) {
+		if (_size < Capacity) {
+			_data[_size] = value;
+			_size++;
+		}
+		else
+			assert(false && "FixedList capacity exceeded");
+	}
+
+	size_t size()const { return _size; }
+	bool empty()const { return _size == 0; }
+
+	T& operator[](int index) { return _data[index]; }
+	const T& operator[](int indedx)const { return _data[indedx]; }
+
+	T* begin() { return _data.data(); }
+	T* end() { return _data.data() + _size; }
+	const T* begin()const { return _data.data(); }
+	const T* end()const { return _data.data() + _size; }
+
+};
 
 class Plane {
 public:
@@ -169,15 +202,13 @@ public:
 
 	bool OverlapOnAxis(const ColliderBox* other, const KTVECTOR3& axis, float& outOverlap)const;
 
-	static std::vector<KTVECTOR3> GetFaceVertices(const ColliderBox* box, int axisIndex, int sign);
+	static FixedList<KTVECTOR3, 4> GetFaceVertices(const ColliderBox* box, int axisIndex, int sign);
 
-	static std::vector<Plane> GetOBBPlanes(const ColliderBox* box);
+	static FixedList<Plane, 8> GetOBBPlanes(const ColliderBox* box);
 
-	static std::vector<KTVECTOR3> ClipPolygonAgainstPlane(const std::vector<KTVECTOR3>& polygon, const Plane& plane, float eps = 1e-6f);
+	static FixedList<KTVECTOR3, 16> ClipPolygonAgainstPlane(const FixedList<KTVECTOR3, 16>& polygon, const Plane& plane, float eps = 1e-6f);
 
-	static KTVECTOR3 ComputePolygonCentroid(const std::vector<KTVECTOR3>& polygon, const KTVECTOR3& refNormal);
-
-	static std::vector<KTVECTOR3> ComputeContactPolygon(const ColliderBox* refBox, const ColliderBox* incBox, const KTVECTOR3& collisionNormal);
+	static FixedList<KTVECTOR3, 16> ComputeContactPolygon(const ColliderBox* refBox, const ColliderBox* incBox, const KTVECTOR3& collisionNormal);
 
 	KTMATRIX3 ComputeLocalInertiaTensor(float mass)override;
 
