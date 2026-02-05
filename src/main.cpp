@@ -7,6 +7,7 @@
 #include "imgui.h"
 
 #include "Manager.h"
+#include "FileBrowser.h"
 #include "Scene.h"
 #include "Input.h"
 
@@ -16,6 +17,7 @@
 // グローバル変数
 HWND hwnd = nullptr;
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);                // Use ImGui::GetCurrentContext()
+FileBrowser fileBrowser;
 
 // ウィンドウプロシージャ
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -78,22 +80,14 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
         Manager::Update(); // Managerの更新
 
 
-        //テスト用Update
-        {
-            //mainCamera.Update();
-        }
-
         RendererDX11::BeginFrame();
 
 		Manager::Render(); // Managerの描画
 
-        //テスト用Render
-        {
-            //test.Render();
-        }
 
         ImGuiLayer::Begin();
         {
+			fileBrowser.Render();
             Manager::GetCurrentScene()->RenderHierarchy();
             Manager::GetCurrentScene()->RenderInspector();
             Manager::GetCurrentScene()->RenderButton();
