@@ -17,7 +17,7 @@ private:
 
 	bool _sleeping = false;
 	float _sleepTimer = 0.0f;
-	float _sleepEpsilon = 0.00009f; // 睡眠判定用の微小値
+	float _sleepEpsilon = 0.001f; // 睡眠判定用の微小値
 
 	KTVECTOR3 _forceAccum = KTVECTOR3(0.0f, 0.0f, 0.0f); // 力の蓄積
 

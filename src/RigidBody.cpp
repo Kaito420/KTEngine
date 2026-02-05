@@ -43,10 +43,15 @@ void RigidBody::WakeUp() {
 
 void RigidBody::CheckSleep() {
 	//sleep”»’è
-	float tmp1 = _velocity.MagnitudeSqr();
-	float tmp2 = _angularVelocity.MagnitudeSqr();
-	if (tmp1 < _sleepEpsilon && _angularVelocity.MagnitudeSqr() < _sleepEpsilon)
-		Sleep();
+	if (_velocity.MagnitudeSqr() < _sleepEpsilon && _angularVelocity.MagnitudeSqr() < _sleepEpsilon) {
+		_sleepTimer += DT;
+		if (_sleepTimer >= 0.45f)//0.45•bˆÈãÃ~‚µ‚Ä‚¢‚ê‚ÎƒXƒŠ[ƒv
+			Sleep();
+	}
+	else {
+		_sleepTimer = 0.0f;
+		WakeUp();
+	}
 }
 
 void RigidBody::Integrate(){
