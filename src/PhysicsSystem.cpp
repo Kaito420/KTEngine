@@ -82,7 +82,7 @@ void PhysicsSystem::Update() {
 	for (auto& manifold : _manifolds) {
 
 		manifold.Render();
-		for (int iter = 0; iter < 10; iter++) {
+		for (int iter = 0; iter < 20; iter++) {
 			ResolveInpulse(manifold);
 		}
 		ResolveCollision(manifold);
