@@ -524,7 +524,7 @@ FixedList<KTVECTOR3, 16> ColliderBox::ClipPolygonAgainstPlane(const FixedList<KT
 
 
 FixedList<KTVECTOR3, 16> ColliderBox::ComputeContactPolygon(const ColliderBox* refBox, const ColliderBox* incBox, const KTVECTOR3& collisionNormal){
-	// 1) 参照ボックス（refBox）および参照面の決定
+	//参照ボックス（refBox）および参照面の決定
 	//参照軸は bestAxis に最も近い軸 (abs dot 最大) を選ぶ
 	int refAxis = 0;
 	float bestDot = fabs(Dot(refBox->_axis[0], collisionNormal));
@@ -533,11 +533,11 @@ FixedList<KTVECTOR3, 16> ColliderBox::ComputeContactPolygon(const ColliderBox* r
 		if (d > bestDot) { bestDot = d; refAxis = i; }
 	}
 
-	// sign: +1 if collisionNormal is in same direction as axis, else -1
+	//法線と軸が同方向→正、逆方向→負
 	float s = Dot(collisionNormal, refBox->_axis[refAxis]);
 	int refSign = (s >= 0.0f) ? +1 : -1;
 
-	// 初期ポリゴン = 参照面の4頂点
+	//初期ポリゴン = 参照面の4頂点
 	FixedList<KTVECTOR3, 16> poly;
 	auto initalVerts =  GetFaceVertices(refBox, refAxis, refSign);
 
@@ -546,10 +546,10 @@ FixedList<KTVECTOR3, 16> ColliderBox::ComputeContactPolygon(const ColliderBox* r
 		poly.push_back(v);
 	}
 
-	// 2) インシデントボックス (incBox) の 6平面を取得
+	//インシデントボックス(incBox)の6平面を取得
 	FixedList<Plane, 8> incPlanes = GetOBBPlanes(incBox);
 
-	// 3) poly を各平面で順にクリップ
+	//polyを各平面で順にクリップ
 	for (const Plane& pl : incPlanes) {
 		poly = ClipPolygonAgainstPlane(poly, pl);
 		if (poly.empty()) break;

@@ -335,67 +335,76 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold)
 
 void PhysicsSystem::ApplyWarmStarting(){
 
-	std::map<uint64_t, CollisionManifold*> oldManifoldMap;
-	for (auto& old : _prevManifolds) {
+	static std::vector<ManifoldKey> searchList;
+	searchList.clear();
+	searchList.reserve(_prevManifolds.size());	//前フレームのマニフォールドと同サイズ分
+
+	//リスト作成
+	for(auto& old : _prevManifolds){
 		uint64_t key = MakePairKey(old.a, old.b);
-		oldManifoldMap[key] = &old;
+		searchList.push_back({ key, old });
 	}
+
+	//ソート
+	std::sort(searchList.begin(), searchList.end());
 
 	for (auto& newManifold : _manifolds) {
 		//前フレームの同じペアのマニフォールドを探す
 		uint64_t key = MakePairKey(newManifold.a, newManifold.b);
 
-		//マップから検索
-		auto it = oldManifoldMap.find(key);
-		if (it == oldManifoldMap.end()) continue;//前フレームで接触していなければスキップ
+		//二分探索
+		ManifoldKey target = { key, nullptr };
+		auto it = std::lower_bound(searchList.begin(), searchList.end(), target);
 
-		CollisionManifold* oldManifold = it->second;
+		if (it != searchList.end() && it->key == key) {//見つかった場合
+			CollisionManifold* oldManifold = &it->manifold;
 
-		//剛体の取得
-		RigidBody* rbA = newManifold.a->GetOwner()->GetComponent<RigidBody>();
-		RigidBody* rbB = newManifold.b->GetOwner()->GetComponent<RigidBody>();
-		if (!rbA && !rbB) continue;
+			//剛体の取得
+			RigidBody* rbA = newManifold.a->GetOwner()->GetComponent<RigidBody>();
+			RigidBody* rbB = newManifold.b->GetOwner()->GetComponent<RigidBody>();
+			if (!rbA && !rbB) continue;
 
-		//接触点のマッチング
-		for (auto& newContact : newManifold.contacts) {
+			//接触点のマッチング
+			for (auto& newContact : newManifold.contacts) {
 
-			float minDistSqr = FLT_MAX;
-			ContactPoint* bestOldContact = nullptr;
+				float minDistSqr = FLT_MAX;
+				ContactPoint* bestOldContact = nullptr;
 
-			for (auto& oldContact : oldManifold->contacts) {
-				float distSqr = (newContact.position - oldContact.position).MagnitudeSqr();
+				for (auto& oldContact : oldManifold->contacts) {
+					float distSqr = (newContact.position - oldContact.position).MagnitudeSqr();
 
-				//距離比較
-				if (distSqr < 0.005f && distSqr < minDistSqr) {
-					minDistSqr = distSqr;
-					bestOldContact = &oldContact;
+					//距離比較
+					if (distSqr < 0.005f && distSqr < minDistSqr) {
+						minDistSqr = distSqr;
+						bestOldContact = &oldContact;
+					}
 				}
-			}
 
-			//マッチする古い点が見つかったら累積インパルスを引き継ぐ
-			if (bestOldContact) {
-				newContact.normalImpulseSum = bestOldContact->normalImpulseSum;
-				newContact.tangentImpulseSum = bestOldContact->tangentImpulseSum;
+				//マッチする古い点が見つかったら累積インパルスを引き継ぐ
+				if (bestOldContact) {
+					newContact.normalImpulseSum = bestOldContact->normalImpulseSum;
+					newContact.tangentImpulseSum = bestOldContact->tangentImpulseSum;
 
-				//引き継いだインパルスを事前に速度に適用
-				KTVECTOR3 rA = newContact.position - newManifold.a->GetOwner()->_transform._position;
-				KTVECTOR3 rB = newContact.position - newManifold.b->GetOwner()->_transform._position;
+					//引き継いだインパルスを事前に速度に適用
+					KTVECTOR3 rA = newContact.position - newManifold.a->GetOwner()->_transform._position;
+					KTVECTOR3 rB = newContact.position - newManifold.b->GetOwner()->_transform._position;
 
-				//法線方向のインパルス復元
-				KTVECTOR3 applyImpulse = newContact.normalImpulseSum * newManifold.normal;
-				//接線方向のインパルス復元
-				applyImpulse += newContact.tangentImpulseSum;
+					//法線方向のインパルス復元
+					KTVECTOR3 applyImpulse = newContact.normalImpulseSum * newManifold.normal;
+					//接線方向のインパルス復元
+					applyImpulse += newContact.tangentImpulseSum;
 
-				float invMassA = (rbA) ? rbA->_invMass : 0.0f;
-				float invMassB = (rbB) ? rbB->_invMass : 0.0f;
+					float invMassA = (rbA) ? rbA->_invMass : 0.0f;
+					float invMassB = (rbB) ? rbB->_invMass : 0.0f;
 
-				if (rbA && !rbA->IsSleeping()) {
-					rbA->_velocity += applyImpulse * invMassA;
-					rbA->_angularVelocity += rbA->_inertiaTensorWorldInv * Cross(rA, applyImpulse);
-				}
-				if (rbB && !rbB->IsSleeping()) {
-					rbB->_velocity -= applyImpulse * invMassB;
-					rbB->_angularVelocity -= rbB->_inertiaTensorWorldInv * Cross(rB, applyImpulse);
+					if (rbA && !rbA->IsSleeping()) {
+						rbA->_velocity += applyImpulse * invMassA;
+						rbA->_angularVelocity += rbA->_inertiaTensorWorldInv * Cross(rA, applyImpulse);
+					}
+					if (rbB && !rbB->IsSleeping()) {
+						rbB->_velocity -= applyImpulse * invMassB;
+						rbB->_angularVelocity -= rbB->_inertiaTensorWorldInv * Cross(rB, applyImpulse);
+					}
 				}
 			}
 		}

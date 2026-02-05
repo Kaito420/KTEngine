@@ -12,6 +12,15 @@
 #include "Collider.h"
 #include "RigidBody.h"
 
+struct ManifoldKey {
+	uint64_t key;
+	CollisionManifold manifold;
+
+	bool operator<(const ManifoldKey& other)const {
+		return key < other.key;
+	}
+};
+
 class PhysicsSystem {
 	std::vector<Collider*> _colliders;
 	std::vector<CollisionManifold> _manifolds;
