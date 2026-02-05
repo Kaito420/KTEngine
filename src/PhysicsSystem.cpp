@@ -5,6 +5,7 @@
 //=====================================================================================
 
 #include "PhysicsSystem.h"
+#include <algorithm>
 
 void PhysicsSystem::Update() {
 
@@ -16,6 +17,12 @@ void PhysicsSystem::Update() {
 		col->BeginFrame();
 	}
 
+	//x軸についてソート
+	std::sort(_colliders.begin(), _colliders.end(),
+		[](Collider* a, Collider* b) {
+			return a->_aabb.min.x < b->_aabb.min.x;
+		});
+
 	//manifoldsのリセット
 	ClearManifold();
 	//慣性テンソルの更新
@@ -25,6 +32,12 @@ void PhysicsSystem::Update() {
 		for (size_t j = i + 1; j < _colliders.size(); j++) {
 			auto* colA = _colliders[i];
 			auto* colB = _colliders[j];
+
+			//x軸で重なっていなかったらbreak
+			if (colA->_aabb.max.x < colB->_aabb.min.x) {
+				break;
+			}
+
 			CollisionManifold manifold;
 
 			if (colA->Collide(colB, manifold)) {	//衝突した際
