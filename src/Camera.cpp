@@ -57,17 +57,17 @@ void Camera::Update() {
 	_viewMatrix = view;
 	_projectionMatrix = projection;
 
-	if (Input::IsMouseButtonDown(Input::MouseButton::Right)) {
+	if (Input::IsMouseButtonDown(Input::MouseButton::Right) && Input::IsGameViewHovered()) {
 		_transform._rotation.y += (float)Input::GetMouseDelta().first * 0.1f;
 		_transform._rotation.x += (float)Input::GetMouseDelta().second * 0.1f;
 	}
 
-	if (Input::IsMouseButtonDown(Input::MouseButton::Middle)) {
+	if (Input::IsMouseButtonDown(Input::MouseButton::Middle) && Input::IsGameViewHovered()) {
 		_transform._position += upKTVec * (float)Input::GetMouseDelta().second * 0.1f;
 		_transform._position += rightKTVec * -(float)Input::GetMouseDelta().first * 0.1f;
 	}
 
-	if (Input::GetMouseWheelDelta() != 0) {
+	if (Input::GetMouseWheelDelta() != 0 && Input::IsGameViewHovered()) {
 		_transform._position += frontKTVec * (float)Input::GetMouseWheelDelta() * 0.03f;
 	}
 

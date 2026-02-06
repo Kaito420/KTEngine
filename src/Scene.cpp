@@ -202,7 +202,7 @@ void Scene::RenderInspector()
 
 void Scene::RenderButton(){
 	ImGui::SetNextWindowSize({ 720,50 });
-	ImGui::Begin("Mode", nullptr, ImGuiWindowFlags_NoResize);
+	ImGui::Begin("Mode", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
 	{
 		if (ImGui::Button("Play")) {
 			Manager::Play();

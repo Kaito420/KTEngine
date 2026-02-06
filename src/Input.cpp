@@ -24,6 +24,18 @@ namespace {
 
 	int _wheelDelta = 0;
 
+	bool _isGameViewHovered = false;
+}
+
+
+
+
+void Input::SetGameViewHovered(bool hovered){
+	_isGameViewHovered = hovered;
+}
+
+bool Input::IsGameViewHovered(){
+	return _isGameViewHovered;
 }
 
 void Input::Initialize(HWND hwnd){

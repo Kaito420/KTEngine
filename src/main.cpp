@@ -93,13 +93,16 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
             Manager::GetCurrentScene()->RenderButton();
 
             void* myTexture = RendererDX11::GetSceneSRV();
-            ImGui::Begin("Game View");
+            ImGui::Begin("Game View",nullptr, ImGuiWindowFlags_NoScrollbar);//ゲームビュー描画
             {
                 ImVec2 size = ImVec2(1280, 720);    //テクスチャサイズと一致させる
                 if (myTexture == nullptr)
                     ImGui::Text("Texture is NULL!");
-                else
+                else {
                     ImGui::Image(RendererDX11::GetSceneSRV(), size);
+                    bool isHovered = ImGui::IsItemHovered();
+                    Input::SetGameViewHovered(isHovered);
+                }
             }
             ImGui::End();
         }
