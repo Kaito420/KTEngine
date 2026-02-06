@@ -61,12 +61,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
     Manager::Initialize();
     Input::Initialize(hwnd);
 
-
-    //テスト用
-    //============================================
-        int num = 0;
-    //============================================
-
+    //シーン用バッファ（一旦サイズ固定）
+    RendererDX11::InitSceneRenderTarget(1280,720);
 
     // メインループ
     MSG msg = {};
@@ -79,10 +75,14 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
 
         Manager::Update(); // Managerの更新
 
+        //ゲームシーンをテクスチャにレンダリング
+        RendererDX11::BeginSceneRender();
+        Manager::Render();
 
+        //ImGuiとウィンドウ全体のレンダリング
         RendererDX11::BeginFrame();
 
-		Manager::Render(); // Managerの描画
+		//Manager::Render(); // Managerの描画
 
 
         ImGuiLayer::Begin();
@@ -91,6 +91,17 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
             Manager::GetCurrentScene()->RenderHierarchy();
             Manager::GetCurrentScene()->RenderInspector();
             Manager::GetCurrentScene()->RenderButton();
+
+            void* myTexture = RendererDX11::GetSceneSRV();
+            ImGui::Begin("Game View");
+            {
+                ImVec2 size = ImVec2(1280, 720);    //テクスチャサイズと一致させる
+                if (myTexture == nullptr)
+                    ImGui::Text("Texture is NULL!");
+                else
+                    ImGui::Image(RendererDX11::GetSceneSRV(), size);
+            }
+            ImGui::End();
         }
         ImGuiLayer::End();
 

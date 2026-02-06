@@ -40,6 +40,12 @@ namespace {
     ID3D11RasterizerState* _cullModeBack = nullptr;
     ID3D11RasterizerState* _cullModeFront = nullptr;
 
+    ID3D11Texture2D* _sceneTexture = nullptr;
+    ID3D11RenderTargetView* _sceneRTV = nullptr;
+    ID3D11ShaderResourceView* _sceneSRV = nullptr;
+    ID3D11Texture2D* _sceneDepthTexture = nullptr;
+    ID3D11DepthStencilView* _sceneDSV = nullptr;
+
 }
 
 bool RendererDX11::Init(HWND hwnd) {
@@ -282,6 +288,12 @@ void RendererDX11::Shutdown() {
     if(_cullModeNone) _cullModeNone->Release();
     if (_cullModeBack) _cullModeBack->Release();
     if(_cullModeFront) _cullModeFront->Release();
+
+    if (_sceneTexture) _sceneTexture->Release();
+    if (_sceneRTV) _sceneRTV->Release();
+    if (_sceneSRV) _sceneRTV->Release();
+    if(_sceneDepthTexture) _sceneDepthTexture->Release();
+    if(_sceneDSV)_sceneDSV->Release();
 }
 
 ID3D11Device* RendererDX11::GetDevice() { return _device; }
@@ -475,5 +487,81 @@ void RendererDX11::ShaderReload(){
 	ShaderManager::Instance().LoadPixelShader("DirectionalLight", "shader/VertexDirectionalLightingPS.cso");
 	ShaderManager::Instance().LoadVertexShader("Toon", "shader/ToonVS.cso");
 	ShaderManager::Instance().LoadPixelShader("Toon", "shader/ToonPS.cso");
+}
+
+bool RendererDX11::InitSceneRenderTarget(int width, int height){
+    HRESULT hr;
+
+    //テクスチャ作成
+    D3D11_TEXTURE2D_DESC texDesc = {};
+    texDesc.Width = width;
+    texDesc.Height = height;
+    texDesc.MipLevels = 1;
+    texDesc.ArraySize = 1;
+    texDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    texDesc.SampleDesc.Count = 1;
+    texDesc.Usage = D3D11_USAGE_DEFAULT;
+    texDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+    texDesc.CPUAccessFlags = 0;
+    texDesc.MiscFlags = 0;
+
+    hr = _device->CreateTexture2D(&texDesc, NULL, &_sceneTexture);
+    if (FAILED(hr)) return false;
+
+    //レンダーターゲットビュー作成
+    D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = {};
+    rtvDesc.Format = texDesc.Format;
+    rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+    hr = _device->CreateRenderTargetView(_sceneTexture, &rtvDesc, &_sceneRTV);
+    if (FAILED(hr)) return false;
+
+    //シェーダーリソースビュー作成（ImGuiで表示用）
+    D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+    srvDesc.Format = texDesc.Format;
+    srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+    srvDesc.Texture2D.MostDetailedMip = 0;
+    srvDesc.Texture2D.MipLevels = 1;
+    hr = _device->CreateShaderResourceView(_sceneTexture, &srvDesc, &_sceneSRV);
+    if (FAILED(hr)) return false;
+
+    //深度バッファ作成（シーン用）
+    //バックバッファ用の深度バッファとは別に用意する必要がある
+    D3D11_TEXTURE2D_DESC depthTexDesc = texDesc; //サイズ等は同じ
+    depthTexDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT; //一般的な深度フォーマット
+    depthTexDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+
+    hr = _device->CreateTexture2D(&depthTexDesc, NULL, &_sceneDepthTexture);
+    if (FAILED(hr)) return false;
+
+    D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
+    dsvDesc.Format = depthTexDesc.Format;
+    dsvDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+    hr = _device->CreateDepthStencilView(_sceneDepthTexture, &dsvDesc, &_sceneDSV);
+    if (FAILED(hr)) return false;
+
+    return true;
+}
+
+void RendererDX11::BeginSceneRender(){
+    float clearColor[4] = { 0.1f, 0.2f, 0.4f, 1.0f }; // シーン背景色（Unityっぽい青）
+
+    //シーン用レンダーターゲットに切り替え
+    _context->OMSetRenderTargets(1, &_sceneRTV, _sceneDSV);
+
+    //クリア
+    _context->ClearRenderTargetView(_sceneRTV, clearColor);
+    _context->ClearDepthStencilView(_sceneDSV, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+
+    //ビューポートも設定しなおすのが安全
+    D3D11_VIEWPORT vp = {};
+    vp.Width = (float)1280;  //※InitSceneRenderTargetで指定したサイズと合わせる
+    vp.Height = (float)720;
+    vp.MinDepth = 0.0f;
+    vp.MaxDepth = 1.0f;
+    _context->RSSetViewports(1, &vp);
+}
+
+void* RendererDX11::GetSceneSRV(){
+    return (void*)_sceneSRV;
 }
 

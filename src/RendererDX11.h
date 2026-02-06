@@ -90,6 +90,10 @@ namespace RendererDX11 {
     
     void SetDefaultShader();
 	void ShaderReload();
+
+    bool InitSceneRenderTarget(int width, int height);  //シーン用バッファ
+    void BeginSceneRender(); //レンダリング開始
+    void* GetSceneSRV(); //ImGuiに渡すテクスチャ取得
 }
 
 #endif // !_RENDERERDX11_H

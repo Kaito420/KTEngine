@@ -12,10 +12,7 @@
 #include "ShaderManager.h"
 
 void Scene::Initialize(){
-	//テスト用
-	//============================================
 
-	//============================================
 }
 
 void Scene::Finalize() {
@@ -87,7 +84,7 @@ void Scene::RenderHierarchy()
 			bool isSelected = (_selectedObjId == gameObject->_id);
 			if (ImGui::Selectable(gameObject->_name.c_str(), isSelected))
 				_selectedObjId = gameObject->_id;
-			// --- Drag Source ---
+			//Drag Source
 			if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None)) {
 				GameObject* srcPtr = gameObject.get(); // shared_ptrの中身の生ポインタ
 				ImGui::SetDragDropPayload("DND_GAMEOBJECT", &srcPtr, sizeof(srcPtr));
@@ -95,7 +92,7 @@ void Scene::RenderHierarchy()
 				ImGui::EndDragDropSource();
 			}
 
-			// --- Drag Target ---
+			//Drag Target
 			if (ImGui::BeginDragDropTarget()) {
 				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_GAMEOBJECT")) {
 					GameObject* srcPtr = *(GameObject**)payload->Data;
@@ -204,9 +201,8 @@ void Scene::RenderInspector()
 }
 
 void Scene::RenderButton(){
-	//ImGui::SetNextWindowSize({ 720,50 });
-	//ImGui::SetWindowPos({ SCREEN_WIDTH / 2, -10 });
-	ImGui::Begin("Mode", nullptr/*, ImGuiWindowFlags_NoMove*/);
+	ImGui::SetNextWindowSize({ 720,50 });
+	ImGui::Begin("Mode", nullptr, ImGuiWindowFlags_NoResize);
 	{
 		if (ImGui::Button("Play")) {
 			Manager::Play();
