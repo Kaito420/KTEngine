@@ -204,9 +204,9 @@ void Scene::RenderInspector()
 }
 
 void Scene::RenderButton(){
-	ImGui::SetNextWindowSize({ 720,50 });
-	ImGui::SetWindowPos({ SCREEN_WIDTH / 2, -10 });
-	ImGui::Begin("mode###MainButtonsBar", nullptr, ImGuiWindowFlags_NoMove);
+	//ImGui::SetNextWindowSize({ 720,50 });
+	//ImGui::SetWindowPos({ SCREEN_WIDTH / 2, -10 });
+	ImGui::Begin("Mode", nullptr/*, ImGuiWindowFlags_NoMove*/);
 	{
 		if (ImGui::Button("Play")) {
 			Manager::Play();

@@ -248,6 +248,7 @@ bool RendererDX11::Init(HWND hwnd) {
 
 void RendererDX11::BeginFrame() {
     float clearColor[4] = { 0.3f, 0.3f, 0.3f, 1.0f };
+    _context->OMSetRenderTargets(1, &_rtv, _dsv);
     _context->ClearRenderTargetView(_rtv, clearColor);
     _context->ClearDepthStencilView(_dsv, D3D11_CLEAR_DEPTH, 1.0f, 0);
 }
