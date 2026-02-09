@@ -12,11 +12,14 @@
 #include <imgui.h>
 #include "Clonable.h"
 
+#include <cereal/types/polymorphic.hpp>
+
 class GameObject;
 class Collider;
 
 class Component {
 	friend class GameObject;
+	friend class cereal::access;
 protected:
 
 	bool _awakened = false;
