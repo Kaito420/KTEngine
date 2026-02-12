@@ -83,24 +83,28 @@ public:
 	std::string GetComponentName() override { return "ModelRenderer"; }
 
 	template <class Archive>
-	void serialize(Archive& ar) {
+	void save(Archive& ar)const {
 		ar(cereal::base_class<Component>(this));
-		std::string fileName;
-		if (Archive::is_saving::value) {
-			//セーブ時の処理
-			for (const auto& pair : m_ModelPool) {
-				if (pair.second == m_Model) {//モデルが見つかった場合そのファイルネームを保存
-					fileName = pair.first;
-					break;
-				}
+
+		std::string filename = "";
+		for (const auto& pair : m_ModelPool) {
+			if (pair.second == m_Model) {
+				filename = pair.first;
+				break;
 			}
 		}
-		ar(cereal::make_nvp("FileName", fileName));
-		if (Archive::is_loading::value) {
-			//ロード時の処理
-			Load(fileName.c_str());
-		}
+		ar(cereal::make_nvp("ModelFileName", filename));
 	}
+
+	template <class Archive>
+	void load(Archive& ar) {
+		ar(cereal::base_class<Component>(this));
+		std::string filename;
+		ar(cereal::make_nvp("ModelFileName", filename));
+		if (!filename.empty())
+			Load(filename.c_str());
+	}
+
 };
 
 #endif // !_MODELRENDERER_H_

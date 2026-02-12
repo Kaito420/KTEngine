@@ -90,6 +90,7 @@
     <ClInclude Include="src\Component.h" />
     <ClInclude Include="src\Cube.h" />
     <ClInclude Include="src\CubeKiller.h" />
+    <ClInclude Include="src\DirectXSerializer.h" />
     <ClInclude Include="src\Explosion.h" />
     <ClInclude Include="src\Fade.h" />
     <ClInclude Include="src\FadeObject.h" />

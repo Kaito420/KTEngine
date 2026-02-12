@@ -12,10 +12,17 @@
 #include <memory>
 #include "Component.h"
 #include <DirectXMath.h>
+#include <string>
+#include <cereal/types/list.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/string.hpp>
+#include <cereal/archives/json.hpp>
+
 using namespace DirectX;
 class Collider;
 
 class GameObject {
+	friend class cereal::access;
 private:
 
 	bool _awakened = false; //Awakeが実行されたかどうか
@@ -34,6 +41,14 @@ public:
 		KTVECTOR3 _scale = { 1.0f, 1.0f, 1.0f };
 		KTVECTOR3 _rotation = { 0.0f, 0.0f, 0.0f };	//Degree
 		KTQUATERNION _quaternion = { 0.0f, 0.0f, 0.0f, 1.0f }; //回転を表すクォータニオン
+		
+		template <class Archive>
+		void serialize(Archive& ar) {
+			ar(cereal::make_nvp("Position", _position));
+			ar(cereal::make_nvp("Scale", _scale));
+			ar(cereal::make_nvp("Rotation", _rotation));
+			ar(cereal::make_nvp("Quaternion", _quaternion));
+		}
 	};
 	Transform _transform; //位置、スケール、回転を保持するTransform構造体
 	virtual ~GameObject() {}
@@ -221,6 +236,22 @@ public:
 		for (auto& component : _components) {
 			if (component->GetActive()) {
 				component->OnCollisionExit(other);
+			}
+		}
+	}
+
+	template <class Archive>
+	void serialize(Archive& ar) {
+		ar(cereal::make_nvp("ID", _id));
+		ar(cereal::make_nvp("Name", _name));
+		ar(cereal::make_nvp("Active", _active));
+		ar(cereal::make_nvp("Transform", _transform));
+		ar(cereal::make_nvp("Components", _components));
+
+		if (std::is_same<Archive, cereal::JSONInputArchive>::value ||
+			std::is_same<Archive, cereal::BinaryInputArchive>::value) {
+			for(auto& component: _components){
+				component->SetOwner(this); //ロード時に_ownerを再設定
 			}
 		}
 	}

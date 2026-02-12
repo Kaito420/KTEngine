@@ -7,6 +7,38 @@
 //Cerealの型登録
 #include <cereal/types/polymorphic.hpp>
 
+//登録したいオブジェクト
+//=====エンジンに必須のオブジェクト=====
+#include "GameObject.h"
+#include "Camera.h"
+#include "Light.h"
+
+//=====ゲーム用に作成したオブジェクト=====
+#include "Block.h"
+#include "Explosion.h"
+#include "FadeObject.h"
+
+//マクロ定義によるオブジェクトの登録
+//=====エンジンに必須のオブジェクト=====
+CEREAL_REGISTER_TYPE(GameObject);
+
+CEREAL_REGISTER_TYPE(Camera);
+CEREAL_REGISTER_POLYMORPHIC_RELATION(GameObject, Camera);
+
+CEREAL_REGISTER_TYPE(Light);
+CEREAL_REGISTER_POLYMORPHIC_RELATION(GameObject, Light);
+
+//=====ゲーム用に作成したオブジェクト=====
+CEREAL_REGISTER_TYPE(Block);
+CEREAL_REGISTER_POLYMORPHIC_RELATION(GameObject, Block);
+
+CEREAL_REGISTER_TYPE(Explosion);
+CEREAL_REGISTER_POLYMORPHIC_RELATION(GameObject, Explosion);
+
+CEREAL_REGISTER_TYPE(FadeObject);
+CEREAL_REGISTER_POLYMORPHIC_RELATION(GameObject, FadeObject);
+
+
 //登録したいコンポーネント
 //=====エンジンに必須のコンポーネント=====
 #include "Component.h"

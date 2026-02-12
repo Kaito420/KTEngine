@@ -9,9 +9,11 @@
 
 #include "GameObject.h"
 #include "RendererDX11.h"
-
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 
 class Camera : public GameObject {
+	friend class cereal::access;
 protected:
 	XMMATRIX _viewMatrix;
 	XMMATRIX _projectionMatrix;
@@ -28,6 +30,11 @@ public:
 	const XMMATRIX GetViewMatrix() { return _viewMatrix; }
 	const XMMATRIX GetProjectionMatrix() { return _projectionMatrix; }
 
+	template <class Archive>
+	void serialize(Archive& ar) {
+		ar(cereal::base_class<GameObject>(this));
+		ar(cereal::make_nvp("Distance", _distance));
+	}
 };
 
 #endif // !_CAMERA_H
