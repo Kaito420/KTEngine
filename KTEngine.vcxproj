@@ -58,6 +58,7 @@
     <ClCompile Include="src\ScenePhysicsTest.cpp" />
     <ClCompile Include="src\SceneResult.cpp" />
     <ClCompile Include="src\SceneTitle.cpp" />
+    <ClCompile Include="src\SerializerRegistry.cpp" />
     <ClCompile Include="src\Shader.cpp" />
     <ClCompile Include="src\ShaderManager.cpp" />
     <ClCompile Include="src\SkyDome.cpp" />

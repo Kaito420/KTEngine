@@ -1,8 +1,16 @@
+//=====================================================================================
+// ktvector.hpp
+// Author:Kaito Aoki
+// Date:2025/06/23
+//=====================================================================================
+
+
 #ifndef _KTVECTOR_HPP_
 #define _KTVECTOR_HPP_
 
 #include <math.h>
 #include <stdexcept>
+#include <cereal/cereal.hpp>
 
 #define DT 0.016f // 60fps想定
 
@@ -751,5 +759,59 @@ struct KTQUATERNION {
     }
 };
 
+//cereal用シリアライズ関数
+
+//KTVECTOR2
+template <class Archive>
+void serialize(Archive& archive, KTVECTOR2& k) {
+    archive(cereal::make_nvp("x", k.x),
+        cereal::make_nvp("y", k.y));
+}
+
+//KTVECTOR3
+template <class Archive>
+void serialize(Archive& archive, KTVECTOR3& k) {
+    archive(cereal::make_nvp("x", k.x),
+        cereal::make_nvp("y", k.y),
+        cereal::make_nvp("z", k.z));
+}
+
+//KTVECTOR4
+template <class Archive>
+void serialize(Archive& archive, KTVECTOR4& k) {
+    archive(cereal::make_nvp("x", k.x),
+        cereal::make_nvp("y", k.y),
+        cereal::make_nvp("z", k.z),
+        cereal::make_nvp("w", k.w));
+}
+
+//KTQUATERNION
+template <class Archive>
+void serialize(Archive& archive, KTQUATERNION& q) {
+    archive(cereal::make_nvp("x", q.x),
+        cereal::make_nvp("y", q.y),
+        cereal::make_nvp("z", q.z),
+        cereal::make_nvp("w", q.w));
+}
+
+//KTMATRIX3
+template <class Archive>
+void serialize(Archive& archive, KTMATRIX3& mat) {
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            archive(cereal::make_nvp("m" + std::to_string(i) + std::to_string(j), mat.m[i][j]));
+        }
+    }
+}
+
+//KTMATRIX4
+template <class Archive>
+void serialize(Archive& archive, KTMATRIX4& mat) {
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            archive(cereal::make_nvp("m" + std::to_string(i) + std::to_string(j), mat.m[i][j]));
+        }
+    }
+}
 
 #endif // !_KTVECTOR_HPP_

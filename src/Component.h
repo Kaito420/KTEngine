@@ -104,6 +104,14 @@ public:
 	/// </summary>
 	virtual void OnCollisionExit(Collider* other) {}
 
+	template <class Archive>
+	void serialize(Archive& ar) {
+		//_owner‚Í•Û‘¶‚¹‚¸‚Éƒ[ƒh‚Ée‚ªÄİ’è‚·‚é
+		ar(cereal::make_nvp("Active", _active));
+		ar(cereal::make_nvp("Awakened", _awakened));
+		ar(cereal::make_nvp("Started", _started));
+	}
+
 };
 
 #endif // !_COMPONENT_H_
