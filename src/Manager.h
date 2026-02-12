@@ -12,11 +12,7 @@
 #include <unordered_map>
 
 class Scene;
-/*
-Editorをクローンした時に継承先の情報が抜けている問題
-Editor中にAwake,Start,Update等が回っている問題
-Awakeで設定している初期設定をゲームループと隔離された関数で行う必要あり
-*/
+
 enum class EngineMode {
 	Editor,
 	Runtime
@@ -24,7 +20,6 @@ enum class EngineMode {
 
 class Manager {
 private:
-	//static std::shared_ptr<Scene> _currentScene;
 	static std::shared_ptr<Scene> _editorScene;
 	static std::shared_ptr<Scene> _runtimeScene;
 	static std::shared_ptr<Scene> _nextScene;

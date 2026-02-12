@@ -21,8 +21,8 @@ void ScenePhysicsTest::Initialize()
 {
 	//テスト用
 	//============================================
-
-	_physicsSystem = new PhysicsSystem();
+	if (!_physicsSystem)
+		_physicsSystem = new PhysicsSystem();
 
 	Camera* camera = AddGameObject<Camera>();
 	camera->_name = "Camera";

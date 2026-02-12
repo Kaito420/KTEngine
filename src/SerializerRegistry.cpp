@@ -7,6 +7,25 @@
 //Cerealの型登録
 #include <cereal/types/polymorphic.hpp>
 
+//登録したいシーン
+#include "Scene.h"
+#include "SceneTitle.h"
+#include "SceneGame.h"
+#include "SceneResult.h"
+#include "ScenePhysicsTest.h"
+
+//マクロ定義によるシーンの登録
+CEREAL_REGISTER_TYPE(Scene);
+CEREAL_REGISTER_TYPE(SceneTitle);
+CEREAL_REGISTER_POLYMORPHIC_RELATION(Scene, SceneTitle);
+CEREAL_REGISTER_TYPE(SceneGame);
+CEREAL_REGISTER_POLYMORPHIC_RELATION(Scene, SceneGame);
+CEREAL_REGISTER_TYPE(SceneResult);
+CEREAL_REGISTER_POLYMORPHIC_RELATION(Scene, SceneResult);
+CEREAL_REGISTER_TYPE(ScenePhysicsTest);
+CEREAL_REGISTER_POLYMORPHIC_RELATION(Scene, ScenePhysicsTest);
+
+
 //登録したいオブジェクト
 //=====エンジンに必須のオブジェクト=====
 #include "GameObject.h"

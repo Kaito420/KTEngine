@@ -6,7 +6,8 @@
 
 void SceneResult::Initialize()
 {
-	_physicsSystem = new PhysicsSystem();
+	if (!_physicsSystem)
+		_physicsSystem = new PhysicsSystem();
 
 	AddGameObject<Camera>()->_name = "Camera";
 

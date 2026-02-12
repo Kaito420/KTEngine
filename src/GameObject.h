@@ -190,7 +190,7 @@ public:
 
 	/// <summary>
 	/// コンポーネントのLateUpdateを呼び出す
-	/// 
+	/// </summary>
 	void LateUpdateComponents() {
 		for (const auto& component : _components) {
 			if (component->GetActive()) {
@@ -252,6 +252,15 @@ public:
 			std::is_same<Archive, cereal::BinaryInputArchive>::value) {
 			for(auto& component: _components){
 				component->SetOwner(this); //ロード時に_ownerを再設定
+			}
+		}
+	}
+
+	void OnLoaded() {
+		for (auto& component : _components) {
+			if (!component->GetAwakened()) {
+				component->Awake();
+				component->Awakened();
 			}
 		}
 	}

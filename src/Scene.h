@@ -12,8 +12,11 @@
 #include <unordered_map>
 #include "PhysicsSystem.h"
 #include "GameObject.h"
+#include <cereal/types/list.hpp>
+#include <cereal/types/memory.hpp>
 
 class Scene {
+	friend class cereal::access;
 private:
 
 
@@ -33,6 +36,8 @@ public:
 	virtual void RenderButton();
 
 	virtual PhysicsSystem* GetPhysicsSystem() { return _physicsSystem; }
+
+	void OnLoaded();
 
 	virtual std::shared_ptr<Scene> Clone()const;
 
@@ -64,6 +69,11 @@ public:
 			}
 		}
 		return nullptr;
+	}
+
+	template <class Archive>
+	void serialize(Archive& ar) {
+		ar(cereal::make_nvp("GameObjects", _gameObjects));
 	}
 
 };

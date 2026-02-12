@@ -116,6 +116,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
     }
 
     // クリーンアップ
+	Manager::Finalize();
     ImGuiLayer::Shutdown();
     RendererDX11::Shutdown();
     UnregisterClass(wc.lpszClassName, hInstance);

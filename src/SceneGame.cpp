@@ -21,7 +21,8 @@
 #include "Particle.h"
 
 void SceneGame::Initialize() {
-	_physicsSystem = new PhysicsSystem();
+	if(!_physicsSystem)
+		_physicsSystem = new PhysicsSystem();
 
 	Camera* camera = AddGameObject<Camera>();
 	camera->_name = "Camera";

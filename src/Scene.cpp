@@ -72,6 +72,17 @@ void Scene::Render()const{
 	}
 }
 
+void Scene::OnLoaded() {
+	//PhysicsSystem‚ÌÄ¶¬
+	if(_physicsSystem)
+		delete _physicsSystem;
+	_physicsSystem = new PhysicsSystem();
+
+	for(auto& gameObject: _gameObjects) {
+		gameObject->OnLoaded();
+	}
+}
+
 void Scene::RenderHierarchy()
 {
 	ImGui::Begin("Hierarchy View"); 

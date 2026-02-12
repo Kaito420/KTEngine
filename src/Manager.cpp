@@ -15,7 +15,9 @@
 #include "ImGuiLayer.h"
 #include "imgui.h"
 
-//std::shared_ptr<Scene> Manager::_currentScene = nullptr;
+#include <fstream>
+#include <cereal/archives/json.hpp>
+
 std::shared_ptr<Scene> Manager::_nextScene = nullptr;
 std::shared_ptr<Scene> Manager::_editorScene = nullptr;
 std::shared_ptr<Scene> Manager::_runtimeScene = nullptr;
@@ -23,24 +25,39 @@ EngineMode Manager::_mode = EngineMode::Editor;
 
 void Manager::Initialize() {
 
-
-	//とりあえずテスト作成
-	//_currentScene = std::make_shared<SceneTitle>();
-
-	//if(_currentScene) {
-	//	_currentScene->Initialize();
-	//}
-
 	_editorScene = std::make_shared<SceneTitle>();
+
+	//ロード処理
+	std::ifstream is("asset/scenes/EditorScene.json");
+	if (is.is_open()) {
+		try {
+			cereal::JSONInputArchive archive(is);
+			archive(cereal::make_nvp("Scene", _editorScene));//ポインタを渡すことで派生クラスを認識させる
+		
+			if (_editorScene) {
+				_editorScene->OnLoaded();//physicsSystemの初期化など
+			}
+		}
+		catch (const std::exception& e) {
+			//読み込み失敗
+			MessageBoxA(NULL, e.what(), "Error", MB_OK | MB_ICONERROR);
+		}
+
+	}
+
 	if (_editorScene)
 		_editorScene->Initialize();
 }
 
 void Manager::Finalize() {
-	//if(_currentScene) {
-	//	_currentScene->Finalize();
-	//	_currentScene.reset();
-	//}
+
+	//セーブ処理
+	if (_editorScene) {
+		std::ofstream os("asset/scenes/EditorScene.json");
+		cereal::JSONOutputArchive archive(os);
+		archive(cereal::make_nvp("Scene", _editorScene));//ポインタを渡すことで派生クラスを認識させる
+	}
+
 	if (_editorScene) {
 		_editorScene->Finalize();
 		_editorScene.reset();
@@ -48,8 +65,6 @@ void Manager::Finalize() {
 }
 
 void Manager::Update() {
-	//if(_currentScene)
-	//	_currentScene->Update();
 
 	if (_mode == EngineMode::Editor) {
 		if (_editorScene)
@@ -62,8 +77,6 @@ void Manager::Update() {
 }
 
 void Manager::Render() {
-	//if(_currentScene)
-	//	_currentScene->Render();
 
 	if (_mode == EngineMode::Editor) {
 		if (_editorScene)
