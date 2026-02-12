@@ -54,10 +54,12 @@ struct MODEL
 #include "RendererDX11.h"
 #include <string>
 #include <unordered_map>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 
 
-class ModelRenderer : public Component
-{
+class ModelRenderer : public Component{
+	friend class cereal::access;
 private:
 
 	static std::unordered_map<std::string, MODEL*> m_ModelPool;
@@ -79,6 +81,26 @@ public:
 	void Load(const char* FileName);
 	void Render()const override;
 	std::string GetComponentName() override { return "ModelRenderer"; }
+
+	template <class Archive>
+	void serialize(Archive& ar) {
+		ar(cereal::base_class<Component>(this));
+		std::string fileName;
+		if (Archive::is_saving::value) {
+			//セーブ時の処理
+			for (const auto& pair : m_ModelPool) {
+				if (pair.second == m_Model) {//モデルが見つかった場合そのファイルネームを保存
+					fileName = pair.first;
+					break;
+				}
+			}
+		}
+		ar(cereal::make_nvp("FileName", fileName));
+		if (Archive::is_loading::value) {
+			//ロード時の処理
+			Load(fileName.c_str());
+		}
+	}
 };
 
 #endif // !_MODELRENDERER_H_

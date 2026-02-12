@@ -10,8 +10,11 @@
 #include "Component.h"
 #include "RendererDX11.h"
 #include <string>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 
 class Shader : public Component {
+	friend class cereal::access;
 private:
 	std::string _vertexShaderID;
 	std::string	_vertexLayoutID;
@@ -27,6 +30,14 @@ public:
 
 	void ShowUI() override;
 	std::string GetComponentName() override { return "Shader"; }
+
+	template <class Archive>
+	void serialize(Archive& ar) {
+		ar(cereal::base_class<Component>(this));
+		ar(cereal::make_nvp("VertexShaderID", _vertexShaderID));
+		ar(cereal::make_nvp("VertexLayoutID", _vertexLayoutID));
+		ar(cereal::make_nvp("PixelShaderID", _pixelShaderID));
+	}
 };
 
 

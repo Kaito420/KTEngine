@@ -10,8 +10,11 @@
 
 #include "Component.h"
 #include "RendererDX11.h"
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 
 class Square : public Component{
+	friend class cereal::access;
 private:
 
 
@@ -26,6 +29,11 @@ public:
 	void Render()const override;
 
 	std::string GetComponentName()override { return "Square"; }
+
+	template <class Archive>
+	void serialize(Archive& ar) {
+		ar(cereal::base_class<Component>(this));
+	}
 };
 
 
