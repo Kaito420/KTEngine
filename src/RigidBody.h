@@ -9,8 +9,11 @@
 
 #include "Component.h"
 #include "ktvector.hpp"
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 
 class RigidBody : public Component {
+	friend class cereal::access;
 private:
 	float _gravity = -9.8f;
 	float _gravityScale = 1.0f;
@@ -77,6 +80,22 @@ public:
 	std::string GetComponentName()override { return "RigidBody"; }
 
 	void ShowUI() override;
+
+	template <class Archive>
+	void serialize(Archive& ar) {
+		ar(cereal::base_class<Component>(this));
+		ar(cereal::make_nvp("Mass", _mass));
+		ar(cereal::make_nvp("UseGravity", _useGravity));
+		ar(cereal::make_nvp("GravityScale", _gravityScale));
+		ar(cereal::make_nvp("Restitution", _restitution));
+		ar(cereal::make_nvp("StaticFriction", _staticFriction));
+		ar(cereal::make_nvp("DynamicFriction", _dynamicFriction));
+		ar(cereal::make_nvp("LinearDamping", _linearDamping));
+		ar(cereal::make_nvp("AngularDamping", _angularDamping));
+		ar(cereal::make_nvp("Velocity", _velocity));
+		ar(cereal::make_nvp("AngularVelocity", _angularVelocity));
+
+	}
 };
 
 #endif // !_RIGIDBODY_H_

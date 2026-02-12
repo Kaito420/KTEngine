@@ -13,6 +13,8 @@
 #include <vector>
 #include "RendererDX11.h"
 #include <array>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 
 class ColliderBox;
 class ColliderSphere;
@@ -85,6 +87,7 @@ struct CollisionManifold {
 };
 
 class Collider : public Component{
+	friend class cereal::access;
 protected:
 	KTVECTOR3 _center;
 
@@ -127,9 +130,16 @@ public:
 
 	std::string GetComponentName() { return "Collider"; }
 
+	template <class Archive>
+	void serialize(Archive& ar) {
+		ar(cereal::base_class<Component>(this));
+		ar(cereal::make_nvp("Center", _center));
+	}
+
 };
 
 class ColliderSphere : public Collider {
+	friend class cereal::access;
 private:
 	float _oldRadius;
 public:
@@ -165,9 +175,16 @@ public:
 	std::string GetComponentName() { return "ColliderSphere"; }
 
 	void ShowUI()override;
+
+	template <class Archive>
+	void serialize(Archive& ar) {
+		ar(cereal::base_class<Collider>(this));
+		ar(cereal::make_nvp("Radius", _radius));
+	}
 };
 
 class ColliderBox : public Collider{
+	friend class cereal::access;
 private:
 	KTVECTOR3 _oldExtents;
 public:
@@ -219,7 +236,12 @@ public:
 
 	void ShowUI()override;
 
+	template <class Archive>
+	void serialize(Archive& ar) {
+		ar(cereal::base_class<Collider>(this));
+		ar(cereal::make_nvp("Extents", _extents));
 
+	}
 };
 
 #endif // !_COLLIDER_H_
