@@ -11,6 +11,20 @@
 #include "Shader.h"
 #include "ShaderManager.h"
 
+std::string Scene::GenerateUniqueName(const std::string& baseName){
+	std::string uniqueName = baseName;
+	int index = 1;
+
+	//重複している名前がある限りループしてインデックスを進める
+	while (FindGameObjectByName<GameObject>(uniqueName) != nullptr) {
+		std::stringstream ss;
+		ss << baseName << "(" << index << ")";
+		uniqueName = ss.str();
+		index++;
+	}
+	return uniqueName;
+}
+
 void Scene::Initialize(){
 
 }
@@ -77,10 +91,14 @@ void Scene::OnLoaded() {
 	if(_physicsSystem)
 		delete _physicsSystem;
 	_physicsSystem = new PhysicsSystem();
-
+	uint32_t maxId = 0;
 	for(auto& gameObject: _gameObjects) {
 		gameObject->OnLoaded();
+		//idの最大値を更新
+		if(maxId < gameObject->_id)
+			maxId = gameObject->_id;
 	}
+	GameObject::_nextId = maxId + 1; //次のIDを最大値+1に設定
 }
 
 void Scene::RenderHierarchy()
@@ -91,6 +109,8 @@ void Scene::RenderHierarchy()
 		for (auto it = _gameObjects.begin(); it != _gameObjects.end(); it++, index++) {
 
 			auto& gameObject = *it;
+
+			ImGui::PushID(gameObject->_id); //一意なIDを設定
 			//選択処理
 			bool isSelected = (_selectedObjId == gameObject->_id);
 			if (ImGui::Selectable(gameObject->_name.c_str(), isSelected))
@@ -103,7 +123,7 @@ void Scene::RenderHierarchy()
 				ImGui::EndDragDropSource();
 			}
 
-			//Drag Target
+			//Drag & Drop Target
 			if (ImGui::BeginDragDropTarget()) {
 				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_GAMEOBJECT")) {
 					GameObject* srcPtr = *(GameObject**)payload->Data;
@@ -132,6 +152,7 @@ void Scene::RenderHierarchy()
 				}
 				ImGui::EndDragDropTarget();
 			}
+			ImGui::PopID();
 		}
 	}
 	ImGui::End();

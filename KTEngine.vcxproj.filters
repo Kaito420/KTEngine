@@ -177,6 +177,9 @@
     <ClCompile Include="src\SerializerRegistry.cpp">
       <Filter>ソース ファイル\Framework</Filter>
     </ClCompile>
+    <ClCompile Include="src\GameObject.cpp">
+      <Filter>ソース ファイル\Object</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ImGuiLayer.h">

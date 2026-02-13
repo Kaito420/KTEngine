@@ -23,10 +23,12 @@ class Collider;
 
 class GameObject {
 	friend class cereal::access;
+	friend class Scene;
 private:
 
 	bool _awakened = false; //Awakeが実行されたかどうか
 	bool _started = false; //Startが実行されたかどうか
+	static uint32_t _nextId; //次に割り当てるID
 protected:
 	bool _destroy = false;
 
@@ -51,6 +53,9 @@ public:
 		}
 	};
 	Transform _transform; //位置、スケール、回転を保持するTransform構造体
+	GameObject() {
+		_id = _nextId++;	//コンストラクタにてID決定し、次回以降のIDをインクリメント
+	}
 	virtual ~GameObject() {}
 
 	bool Active(bool active) { _active = active; return _active; }

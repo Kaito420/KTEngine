@@ -7,6 +7,7 @@
 #ifndef  _SCENE_H
 #define _SCENE_H
 
+#include <string>
 #include <memory>
 #include <list>
 #include <unordered_map>
@@ -18,7 +19,7 @@
 class Scene {
 	friend class cereal::access;
 private:
-
+	std::string GenerateUniqueName(const std::string& baseName);
 
 protected:
 	int _selectedObjId = -1;
@@ -48,8 +49,8 @@ public:
 	T* AddGameObject(Args&&... args) {
 		static_assert(std::is_base_of<GameObject, T>::value, "T must inherit from GameObjcet");
 		auto gameObject = std::make_shared<T>(std::forward<Args>(args)...);
-		gameObject->_id = _gameObjects.size();
-		gameObject->_name = std::string(typeid(T).name()) + std::to_string(_gameObjects.size());
+		std::string baseName = typeid(T).name();
+		gameObject->_name = GenerateUniqueName(baseName);
 		gameObject->Active(true);
 		gameObject->Awake();
 		gameObject->Awakened();
