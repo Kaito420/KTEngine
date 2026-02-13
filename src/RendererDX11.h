@@ -24,6 +24,9 @@ using namespace DirectX;
 #pragma comment(lib,"DirectXTex_Release.lib")
 #endif
 
+#include <d3dcompiler.h>
+#pragma comment(lib,"d3dcompiler.lib")
+
 #define SCREEN_WIDTH (1920)
 #define SCREEN_HEIGHT (1080)
 
