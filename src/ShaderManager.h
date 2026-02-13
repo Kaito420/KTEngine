@@ -11,12 +11,14 @@
 #include <string>
 #include <d3d11.h>
 #include <d3d11shader.h>
+#include <wrl/client.h>
+using Microsoft::WRL::ComPtr;
 
 class ShaderManager {	//ƒVƒ“ƒOƒ‹ƒgƒ“
 private:
-	std::map < std::string, ID3D11VertexShader*> _vertexShaders;
-	std::map < std::string, ID3D11InputLayout*> _vertexLayouts;
-	std::map < std::string, ID3D11PixelShader*> _pixelShaders;
+	std::map < std::string, ComPtr<ID3D11VertexShader>> _vertexShaders;
+	std::map < std::string, ComPtr<ID3D11InputLayout>> _vertexLayouts;
+	std::map < std::string, ComPtr<ID3D11PixelShader>> _pixelShaders;
 
 	DXGI_FORMAT GetDXGIFormat(const D3D11_SIGNATURE_PARAMETER_DESC& paramDesc);
 

@@ -7,7 +7,7 @@
 #include "ShaderManager.h"
 #include "RendererDX11.h"
 #include <io.h>
-
+//生ポインタからComPtrに変更
 void ShaderManager::LoadVertexShader(const std::string& id, const char* fileName){
 	ID3D11VertexShader* vertexShader = nullptr;
 	ID3D11InputLayout* vertexLayout = nullptr;
@@ -75,8 +75,8 @@ void ShaderManager::LoadVertexShader(const std::string& id, const char* fileName
 
     delete[] buffer;
 
-	_vertexLayouts[id] = vertexLayout;
-	_vertexShaders[id] = vertexShader;
+	_vertexLayouts[id] = ComPtr<ID3D11InputLayout>(vertexLayout);
+	_vertexShaders[id] = ComPtr<ID3D11VertexShader>(vertexShader);
 }
 
 void ShaderManager::LoadPixelShader(const std::string& id, const char* fileName){
@@ -103,20 +103,20 @@ void ShaderManager::LoadPixelShader(const std::string& id, const char* fileName)
 
 ID3D11VertexShader* ShaderManager::GetVertexShader(const std::string& id){
     if(_vertexShaders.find(id) != _vertexShaders.end()){
-        return _vertexShaders[id];
+        return _vertexShaders[id].Get();
 	}
     return nullptr;
 }
 
 ID3D11InputLayout* ShaderManager::GetInputLayout(const std::string& id) {
     if (_vertexLayouts.find(id) != _vertexLayouts.end())
-        return _vertexLayouts[id];
+        return _vertexLayouts[id].Get();
     return nullptr;
 }
 
 ID3D11PixelShader* ShaderManager::GetPixelShader(const std::string& id){
     if(_pixelShaders.find(id) != _pixelShaders.end())
-		return _pixelShaders[id];
+		return _pixelShaders[id].Get();
     return nullptr;
 }
 
