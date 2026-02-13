@@ -8,8 +8,8 @@ void main(in VS_IN In, out PS_IN Out)
     matrix wvp;
     wvp = mul(World, View);
     wvp = mul(wvp, Projection);
-    
-    Out.Position = mul(In.Position, wvp);
+    float4 position = float4(In.Position, 1.0f);
+    Out.Position = mul(position, wvp);
    
     //頂点の法線をワールド行列で変換
     float4 worldNormal = float4(In.Normal.xyz, 0.0f);
@@ -21,5 +21,5 @@ void main(in VS_IN In, out PS_IN Out)
     
     Out.TexCoord = In.TexCoord;
     
-    Out.WorldPosition = mul(In.Position, World);
+    Out.WorldPosition = mul(position, World);
 }

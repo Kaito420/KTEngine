@@ -12,9 +12,10 @@ void main(in VS_IN In, out PS_IN Out)
     matrix wvp;     //WorldViewProjectionçsóÒ
     wvp = mul(World, View);
     wvp = mul(wvp, Projection);
-    Out.Position = mul(In.Position, wvp);
-    
-    Out.Normal = In.Normal;
+    float4 position = float4(In.Position, 1.0f);
+    Out.Position = mul(position, wvp);
+    float4 normal = float4(In.Normal.xyz, 0.0f);
+    Out.Normal = normal;
     Out.TexCoord = In.TexCoord;
     Out.Diffuse = In.Diffuse;
 

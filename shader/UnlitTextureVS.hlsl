@@ -11,11 +11,12 @@ void main(in VS_IN In, out PS_IN Out)
     matrix wvp; //WorldViewProjection行列
     wvp = mul(World, View); //wvp = Wolrd * View
     wvp = mul(wvp, Projection); //wp = wvp * Projection
-    
-    Out.Position = mul(In.Position, wvp); //頂点座標を行列で変換
+    float4 position = float4(In.Position, 1.0f);
+    Out.Position = mul(position, wvp);
     
     //座標以外の要素を出力
-    Out.Normal = In.Normal;
+    float4 normal = float4(In.Normal.xyz, 0.0f);
+    Out.Normal = normal;
     Out.TexCoord = In.TexCoord;
     Out.Diffuse = In.Diffuse * Material.Diffuse;
 

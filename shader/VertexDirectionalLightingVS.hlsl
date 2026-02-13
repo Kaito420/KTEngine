@@ -12,8 +12,8 @@ void main(in VS_IN In, out PS_IN Out)
     matrix wvp; //WorldViewProjection行列
     wvp = mul(World, View); //wvp = Wolrd * View
     wvp = mul(wvp, Projection); //wp = wvp * Projection
-    
-    Out.Position = mul(In.Position, wvp); //頂点座標を行列で変換
+    float4 position = float4(In.Position, 1.0f);
+    Out.Position = mul(position, wvp);
     
     //座標以外の要素を出力
 
