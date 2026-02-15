@@ -141,18 +141,7 @@ public:
 	/// </summary>
 	virtual void OnDestroy() {}
 
-	std::shared_ptr<GameObject> Clone()const {
-		auto newObj = std::make_shared<GameObject>(*this);
 
-		//コンポーネントのコピー
-		newObj->_components.clear();
-		for (auto& comp : _components) {
-			auto newComp = comp->Clone();
-			newComp->_owner = newObj.get();	//_ownerはクローンしたGameObjectになるので設定
-			newObj->_components.push_back(newComp);
-		}
-		return newObj;
-	}
 
 	/// <summary>
 	/// コンポーネントを追加する

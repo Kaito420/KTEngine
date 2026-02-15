@@ -41,8 +41,6 @@ public:
 
 	void OnLoaded();
 
-	virtual std::shared_ptr<Scene> Clone()const;
-
 	/// <summary>
 	/// ゲームオブジェクトを追加する
 	/// </summary>

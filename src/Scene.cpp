@@ -264,14 +264,4 @@ void Scene::RenderButton(){
 	ImGui::End();
 }
 
-std::shared_ptr<Scene> Scene::Clone()const
-{
-	auto newScene = std::make_shared<Scene>();
-	newScene->_physicsSystem = new PhysicsSystem();
-	//GameObject‚ÌƒRƒs[
-	for (auto& gameObject : _gameObjects) {
-		newScene->_gameObjects.push_back(gameObject);
-	}
-	return newScene;
 
-}
