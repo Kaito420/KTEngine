@@ -102,7 +102,7 @@ void Particle::Render() const
 	// ƒ}ƒeƒŠƒAƒ‹İ’è
 	MATERIAL material;
 	ZeroMemory(&material, sizeof(material));
-	material.Diffuse = XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f);
+	material.Diffuse = XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f);
 	material.TextureEnable = true;
 	RendererDX11::SetMaterial(material);
 

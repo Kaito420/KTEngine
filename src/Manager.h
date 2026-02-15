@@ -24,6 +24,8 @@ private:
 	static std::shared_ptr<Scene> _runtimeScene;
 	static std::shared_ptr<Scene> _nextScene;
 
+	static std::string _currentScenePath;	//現在シーンのファイルパス（上書き保存用）
+
 	static EngineMode _mode;
 public:
 	static void Initialize();
@@ -38,9 +40,16 @@ public:
 		_nextScene = std::make_shared<T>();
 	}
 
+	static void NewScene();
+
+	static void SaveScene(const std::string& filePath);
+	static void OpenScene(const std::string& filePath);
+
 	static void Play();
 	static void Stop();
 	static EngineMode GetMode() { return _mode; }
+
+	static std::string GetCurrentScenePath() { return _currentScenePath; }
 };
 
 

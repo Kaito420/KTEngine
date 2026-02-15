@@ -26,7 +26,7 @@ std::string Scene::GenerateUniqueName(const std::string& baseName){
 }
 
 void Scene::Initialize(){
-
+	_physicsSystem = new PhysicsSystem();
 }
 
 void Scene::Finalize() {
