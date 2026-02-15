@@ -109,16 +109,28 @@ void ModelRenderer::UnloadAll()
 
 void ModelRenderer::Load(const char* FileName)
 {
-	if (m_ModelPool.count(FileName) > 0)
+	//ファイル名がからなら何もしない
+	if(FileName == nullptr || strlen(FileName) == 0)
+		return;
+
+	//重複読み込み防止
+	if(m_ModelPool.find(FileName) != m_ModelPool.end())
 	{
 		m_Model = m_ModelPool[FileName];
 		return;
 	}
 
-	m_Model = new MODEL;
-	LoadModel(FileName, m_Model);
-
-	m_ModelPool[FileName] = m_Model;
+	//新規ロード
+	MODEL* newModel = new MODEL();
+	LoadModel(FileName, newModel);
+	if (newModel->VertexBuffer != nullptr) {
+		m_ModelPool[FileName] = newModel;
+		m_Model = newModel;
+	}
+	else {
+		delete newModel;
+		m_Model = nullptr;
+	}
 
 }
 

@@ -75,34 +75,31 @@ public:
 	static void Preload(const char* FileName);
 	static void UnloadAll();
 
-
-	using Component::Component;
-
 	void Load(const char* FileName);
 	void Render()const override;
 	std::string GetComponentName() override { return "ModelRenderer"; }
 
 	template <class Archive>
-	void save(Archive& ar)const {
+	void serialize(Archive& ar) {
 		ar(cereal::base_class<Component>(this));
-
+		//現在のモデルポインタからファイル名を逆引き
 		std::string filename = "";
-		for (const auto& pair : m_ModelPool) {
-			if (pair.second == m_Model) {
-				filename = pair.first;
-				break;
+		if (m_Model) {
+			for (const auto& pair : m_ModelPool) {
+				if (pair.second == m_Model) {
+					filename = pair.first;
+					break;
+				}
 			}
 		}
-		ar(cereal::make_nvp("ModelFileName", filename));
-	}
+		//シリアライズ実行(書き込み時は filename を保存、読み込み時は filename にデータが入る)
+		ar(cereal::make_nvp("FileName", filename));
 
-	template <class Archive>
-	void load(Archive& ar) {
-		ar(cereal::base_class<Component>(this));
-		std::string filename;
-		ar(cereal::make_nvp("ModelFileName", filename));
-		if (!filename.empty())
+		//ロード用ロジック:取得したファイル名でロード
+		//(保存時にも呼ばれてしまうが、Load関数内で重複チェックしているため問題ない)
+		if (!filename.empty()) {
 			Load(filename.c_str());
+		}
 	}
 
 };

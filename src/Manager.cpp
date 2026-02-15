@@ -10,6 +10,7 @@
 #include "SceneTitle.h"
 #include "SceneGame.h"
 #include "SceneResult.h"
+#include "ScenePhysicsTest.h"
 
 #include "RendererDX11.h"
 #include "ImGuiLayer.h"
@@ -29,48 +30,10 @@ std::string Manager::_currentScenePath = "";
 EngineMode Manager::_mode = EngineMode::Editor;
 
 void Manager::Initialize() {
-
-	//_editorScene = std::make_shared<SceneTitle>();
-
-	////ロード処理
-	//std::ifstream is("asset/scenes/EditorScene.json");
-	//if (is.is_open()) {
-	//	try {
-	//		cereal::JSONInputArchive archive(is);
-	//		archive(cereal::make_nvp("Scene", _editorScene));//ポインタを渡すことで派生クラスを認識させる
-	//	
-	//		if (_editorScene) {
-	//			_editorScene->OnLoaded();//physicsSystemの初期化など
-	//		}
-	//	}
-	//	catch (const std::exception& e) {
-	//		//読み込み失敗
-	//		MessageBoxA(NULL, e.what(), "Error", MB_OK | MB_ICONERROR);
-	//	}
-
-	//}
-
-	//if (_editorScene)
-	//	_editorScene->Initialize();
-
-	//ForceLinkSerializerRegistry();
-
 	NewScene();
 }
 
 void Manager::Finalize() {
-
-	////セーブ処理
-	//if (_editorScene) {
-	//	std::ofstream os("asset/scenes/EditorScene.json");
-	//	cereal::JSONOutputArchive archive(os);
-	//	archive(cereal::make_nvp("Scene", _editorScene));//ポインタを渡すことで派生クラスを認識させる
-	//}
-
-	//if (_editorScene) {
-	//	_editorScene->Finalize();
-	//	_editorScene.reset();
-	//}
 
 	//終了時にメモリ解放（セーブ処理はユーザーに委ねている）
 	_editorScene.reset();
@@ -105,6 +68,7 @@ void Manager::Render() {
 		//	_runtimeScene->Initialize();
 		//	_nextScene = nullptr;
 		//}
+		//シーン切り替えはjsonからOpenSceneする形に変更
 	}
 
 }
@@ -160,9 +124,6 @@ void Manager::OpenScene(const std::string& filePath){
 void Manager::Play(){
 	if (_mode == EngineMode::Runtime)return;
 	if (!_editorScene)return;
-
-	////現在編集中のシーンをクローンしてランタイムへ
-	//_runtimeScene = _editorScene->Clone();
 
 	//エディタシーンの状態をメモリ上にシリアライズ
 	std::stringstream ss;

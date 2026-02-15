@@ -110,7 +110,7 @@ public:
 	void serialize(Archive& ar) {
 		//_owner‚Í•Û‘¶‚¹‚¸‚Éƒ[ƒh‚Ée‚ªÄİ’è‚·‚é
 		ar(cereal::make_nvp("Active", _active));
-		//ar(cereal::make_nvp("ExecuteInEditor", _executeInEditor));
+		ar(cereal::make_nvp("ExecuteInEditor", _executeInEditor));
 	}
 
 };

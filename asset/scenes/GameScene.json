@@ -1,0 +1,289 @@
+{
+    "Scene": {
+        "polymorphic_id": 2147483649,
+        "polymorphic_name": "SceneGame",
+        "ptr_wrapper": {
+            "id": 2147483649,
+            "data": {
+                "value0": {
+                    "GameObjects": [
+                        {
+                            "polymorphic_id": 2147483650,
+                            "polymorphic_name": "Camera",
+                            "ptr_wrapper": {
+                                "id": 2147483650,
+                                "data": {
+                                    "value0": {
+                                        "ID": 0,
+                                        "Name": "Camera",
+                                        "Active": true,
+                                        "ExecuteInEditor": true,
+                                        "Transform": {
+                                            "Position": {
+                                                "x": -2.098524808883667,
+                                                "y": 6.291932106018066,
+                                                "z": -19.787389755249025
+                                            },
+                                            "Scale": {
+                                                "x": 1.0,
+                                                "y": 1.0,
+                                                "z": 1.0
+                                            },
+                                            "Rotation": {
+                                                "x": 12.399995803833008,
+                                                "y": 1.1000019311904908,
+                                                "z": 0.0
+                                            },
+                                            "Quaternion": {
+                                                "x": 0.0,
+                                                "y": 0.0,
+                                                "z": 0.0,
+                                                "w": 1.0
+                                            }
+                                        },
+                                        "Components": []
+                                    },
+                                    "Distance": 100.0
+                                }
+                            }
+                        },
+                        {
+                            "polymorphic_id": 1073741824,
+                            "ptr_wrapper": {
+                                "id": 2147483651,
+                                "data": {
+                                    "ID": 1,
+                                    "Name": "SkyDome",
+                                    "Active": true,
+                                    "ExecuteInEditor": false,
+                                    "Transform": {
+                                        "Position": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": 0.0
+                                        },
+                                        "Scale": {
+                                            "x": 500.0,
+                                            "y": 500.0,
+                                            "z": 500.0
+                                        },
+                                        "Rotation": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": 0.0
+                                        },
+                                        "Quaternion": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": 0.0,
+                                            "w": 1.0
+                                        }
+                                    },
+                                    "Components": [
+                                        {
+                                            "polymorphic_id": 2147483651,
+                                            "polymorphic_name": "SkyDome",
+                                            "ptr_wrapper": {
+                                                "id": 2147483652,
+                                                "data": {
+                                                    "value0": {
+                                                        "Active": true,
+                                                        "ExecuteInEditor": false
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "polymorphic_id": 1073741824,
+                            "ptr_wrapper": {
+                                "id": 2147483653,
+                                "data": {
+                                    "ID": 2,
+                                    "Name": "BlockSpawner",
+                                    "Active": true,
+                                    "ExecuteInEditor": false,
+                                    "Transform": {
+                                        "Position": {
+                                            "x": 0.0,
+                                            "y": 10.0,
+                                            "z": 0.0
+                                        },
+                                        "Scale": {
+                                            "x": 50.0,
+                                            "y": 50.0,
+                                            "z": 50.0
+                                        },
+                                        "Rotation": {
+                                            "x": 180.0,
+                                            "y": 0.0,
+                                            "z": 0.0
+                                        },
+                                        "Quaternion": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": 0.0,
+                                            "w": 1.0
+                                        }
+                                    },
+                                    "Components": [
+                                        {
+                                            "polymorphic_id": 2147483652,
+                                            "polymorphic_name": "BlockSpawner",
+                                            "ptr_wrapper": {
+                                                "id": 2147483654,
+                                                "data": {
+                                                    "value0": {
+                                                        "Active": true,
+                                                        "ExecuteInEditor": false
+                                                    },
+                                                    "CntSpawn": 0
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "polymorphic_id": 2147483653,
+                                            "polymorphic_name": "ModelRenderer",
+                                            "ptr_wrapper": {
+                                                "id": 2147483655,
+                                                "data": {
+                                                    "value0": {
+                                                        "Active": true,
+                                                        "ExecuteInEditor": false
+                                                    },
+                                                    "FileName": "asset\\model\\Arrow.obj"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "polymorphic_id": 2147483654,
+                                            "polymorphic_name": "Particle",
+                                            "ptr_wrapper": {
+                                                "id": 2147483656,
+                                                "data": {
+                                                    "value0": {
+                                                        "Active": true,
+                                                        "ExecuteInEditor": false
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "polymorphic_id": 1073741824,
+                            "ptr_wrapper": {
+                                "id": 2147483657,
+                                "data": {
+                                    "ID": 3,
+                                    "Name": "Floor1",
+                                    "Active": true,
+                                    "ExecuteInEditor": false,
+                                    "Transform": {
+                                        "Position": {
+                                            "x": 0.0,
+                                            "y": -1.5,
+                                            "z": 0.0
+                                        },
+                                        "Scale": {
+                                            "x": 10.0,
+                                            "y": 1.0,
+                                            "z": 10.0
+                                        },
+                                        "Rotation": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": 0.0
+                                        },
+                                        "Quaternion": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": 0.0,
+                                            "w": 1.0
+                                        }
+                                    },
+                                    "Components": [
+                                        {
+                                            "polymorphic_id": 2147483655,
+                                            "polymorphic_name": "Cube",
+                                            "ptr_wrapper": {
+                                                "id": 2147483658,
+                                                "data": {
+                                                    "value0": {
+                                                        "Active": true,
+                                                        "ExecuteInEditor": false
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "polymorphic_id": 2147483656,
+                                            "polymorphic_name": "ColliderBox",
+                                            "ptr_wrapper": {
+                                                "id": 2147483659,
+                                                "data": {
+                                                    "value0": {
+                                                        "value0": {
+                                                            "Active": true,
+                                                            "ExecuteInEditor": false
+                                                        },
+                                                        "Center": {
+                                                            "x": 0.0,
+                                                            "y": -1.5,
+                                                            "z": 0.0
+                                                        }
+                                                    },
+                                                    "Extents": {
+                                                        "x": 5.0,
+                                                        "y": 0.5,
+                                                        "z": 5.0
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "polymorphic_id": 2147483657,
+                                            "polymorphic_name": "RigidBody",
+                                            "ptr_wrapper": {
+                                                "id": 2147483660,
+                                                "data": {
+                                                    "value0": {
+                                                        "Active": true,
+                                                        "ExecuteInEditor": false
+                                                    },
+                                                    "Mass": 10000.0,
+                                                    "UseGravity": false,
+                                                    "GravityScale": 1.0,
+                                                    "Restitution": 0.0,
+                                                    "StaticFriction": 0.6000000238418579,
+                                                    "DynamicFriction": 0.4000000059604645,
+                                                    "LinearDamping": 0.9900000095367432,
+                                                    "AngularDamping": 0.9800000190734863,
+                                                    "Velocity": {
+                                                        "x": 0.0,
+                                                        "y": 0.0,
+                                                        "z": 0.0
+                                                    },
+                                                    "AngularVelocity": {
+                                                        "x": 0.0,
+                                                        "y": 0.0,
+                                                        "z": 0.0
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

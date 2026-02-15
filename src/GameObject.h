@@ -256,7 +256,7 @@ public:
 		ar(cereal::make_nvp("ID", _id));
 		ar(cereal::make_nvp("Name", _name));
 		ar(cereal::make_nvp("Active", _active));
-		//ar(cereal::make_nvp("ExecuteInEditor", _executeInEditor));
+		ar(cereal::make_nvp("ExecuteInEditor", _executeInEditor));
 		ar(cereal::make_nvp("Transform", _transform));
 		ar(cereal::make_nvp("Components", _components));
 

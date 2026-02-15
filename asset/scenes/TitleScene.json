@@ -1,0 +1,590 @@
+{
+    "Scene": {
+        "polymorphic_id": 2147483649,
+        "polymorphic_name": "SceneTitle",
+        "ptr_wrapper": {
+            "id": 2147483649,
+            "data": {
+                "value0": {
+                    "GameObjects": [
+                        {
+                            "polymorphic_id": 2147483650,
+                            "polymorphic_name": "Camera",
+                            "ptr_wrapper": {
+                                "id": 2147483650,
+                                "data": {
+                                    "value0": {
+                                        "ID": 0,
+                                        "Name": "Camera",
+                                        "Active": true,
+                                        "ExecuteInEditor": true,
+                                        "Transform": {
+                                            "Position": {
+                                                "x": 0.0,
+                                                "y": 0.0,
+                                                "z": -21.0
+                                            },
+                                            "Scale": {
+                                                "x": 1.0,
+                                                "y": 1.0,
+                                                "z": 1.0
+                                            },
+                                            "Rotation": {
+                                                "x": 0.0,
+                                                "y": 0.0,
+                                                "z": 0.0
+                                            },
+                                            "Quaternion": {
+                                                "x": 0.0,
+                                                "y": 0.0,
+                                                "z": 0.0,
+                                                "w": 1.0
+                                            }
+                                        },
+                                        "Components": []
+                                    },
+                                    "Distance": 100.0
+                                }
+                            }
+                        },
+                        {
+                            "polymorphic_id": 1073741824,
+                            "ptr_wrapper": {
+                                "id": 2147483651,
+                                "data": {
+                                    "ID": 1,
+                                    "Name": "SkyDome",
+                                    "Active": true,
+                                    "ExecuteInEditor": false,
+                                    "Transform": {
+                                        "Position": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": 0.0
+                                        },
+                                        "Scale": {
+                                            "x": 500.0,
+                                            "y": 500.0,
+                                            "z": 500.0
+                                        },
+                                        "Rotation": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": 0.0
+                                        },
+                                        "Quaternion": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": 0.0,
+                                            "w": 1.0
+                                        }
+                                    },
+                                    "Components": [
+                                        {
+                                            "polymorphic_id": 2147483651,
+                                            "polymorphic_name": "SkyDome",
+                                            "ptr_wrapper": {
+                                                "id": 2147483652,
+                                                "data": {
+                                                    "value0": {
+                                                        "Active": true,
+                                                        "ExecuteInEditor": false
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "polymorphic_id": 1073741824,
+                            "ptr_wrapper": {
+                                "id": 2147483653,
+                                "data": {
+                                    "ID": 2,
+                                    "Name": "SphereGY",
+                                    "Active": true,
+                                    "ExecuteInEditor": false,
+                                    "Transform": {
+                                        "Position": {
+                                            "x": 2.0,
+                                            "y": 4.0,
+                                            "z": 0.0
+                                        },
+                                        "Scale": {
+                                            "x": 1.0,
+                                            "y": 1.0,
+                                            "z": 1.0
+                                        },
+                                        "Rotation": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": 0.0
+                                        },
+                                        "Quaternion": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": 0.0,
+                                            "w": 1.0
+                                        }
+                                    },
+                                    "Components": [
+                                        {
+                                            "polymorphic_id": 2147483652,
+                                            "polymorphic_name": "Sphere",
+                                            "ptr_wrapper": {
+                                                "id": 2147483654,
+                                                "data": {
+                                                    "value0": {
+                                                        "Active": true,
+                                                        "ExecuteInEditor": false
+                                                    },
+                                                    "Radius": 0.5,
+                                                    "StackCount": 16,
+                                                    "SliceCount": 16
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "polymorphic_id": 2147483653,
+                                            "polymorphic_name": "RigidBody",
+                                            "ptr_wrapper": {
+                                                "id": 2147483655,
+                                                "data": {
+                                                    "value0": {
+                                                        "Active": true,
+                                                        "ExecuteInEditor": false
+                                                    },
+                                                    "Mass": 1.0,
+                                                    "UseGravity": true,
+                                                    "GravityScale": 1.0,
+                                                    "Restitution": 1.0,
+                                                    "StaticFriction": 0.6000000238418579,
+                                                    "DynamicFriction": 0.4000000059604645,
+                                                    "LinearDamping": 0.9900000095367432,
+                                                    "AngularDamping": 0.9800000190734863,
+                                                    "Velocity": {
+                                                        "x": 0.0,
+                                                        "y": 0.0,
+                                                        "z": 0.0
+                                                    },
+                                                    "AngularVelocity": {
+                                                        "x": 0.0,
+                                                        "y": 0.0,
+                                                        "z": 0.0
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "polymorphic_id": 2147483654,
+                                            "polymorphic_name": "ColliderSphere",
+                                            "ptr_wrapper": {
+                                                "id": 2147483656,
+                                                "data": {
+                                                    "value0": {
+                                                        "value0": {
+                                                            "Active": true,
+                                                            "ExecuteInEditor": false
+                                                        },
+                                                        "Center": {
+                                                            "x": 0.0,
+                                                            "y": 0.0,
+                                                            "z": 0.0
+                                                        }
+                                                    },
+                                                    "Radius": 0.5
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "polymorphic_id": 2147483655,
+                                            "polymorphic_name": "KillY",
+                                            "ptr_wrapper": {
+                                                "id": 2147483657,
+                                                "data": {
+                                                    "value0": {
+                                                        "Active": true,
+                                                        "ExecuteInEditor": false
+                                                    },
+                                                    "Threshold": -10.0,
+                                                    "ResetPosition": {
+                                                        "x": 2.0,
+                                                        "y": 4.0,
+                                                        "z": 0.0
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "polymorphic_id": 1073741824,
+                            "ptr_wrapper": {
+                                "id": 2147483658,
+                                "data": {
+                                    "ID": 3,
+                                    "Name": "CubeGY1",
+                                    "Active": true,
+                                    "ExecuteInEditor": false,
+                                    "Transform": {
+                                        "Position": {
+                                            "x": 2.0,
+                                            "y": 2.0,
+                                            "z": 0.0
+                                        },
+                                        "Scale": {
+                                            "x": 10.0,
+                                            "y": 1.0,
+                                            "z": 1.0
+                                        },
+                                        "Rotation": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": 0.0
+                                        },
+                                        "Quaternion": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": -0.04361938685178757,
+                                            "w": 0.9990482330322266
+                                        }
+                                    },
+                                    "Components": [
+                                        {
+                                            "polymorphic_id": 2147483656,
+                                            "polymorphic_name": "Cube",
+                                            "ptr_wrapper": {
+                                                "id": 2147483659,
+                                                "data": {
+                                                    "value0": {
+                                                        "Active": true,
+                                                        "ExecuteInEditor": false
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "polymorphic_id": 2147483657,
+                                            "polymorphic_name": "ColliderBox",
+                                            "ptr_wrapper": {
+                                                "id": 2147483660,
+                                                "data": {
+                                                    "value0": {
+                                                        "value0": {
+                                                            "Active": true,
+                                                            "ExecuteInEditor": false
+                                                        },
+                                                        "Center": {
+                                                            "x": 2.0,
+                                                            "y": 2.0,
+                                                            "z": 0.0
+                                                        }
+                                                    },
+                                                    "Extents": {
+                                                        "x": 5.0,
+                                                        "y": 0.5,
+                                                        "z": 0.5
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "polymorphic_id": 5,
+                                            "ptr_wrapper": {
+                                                "id": 2147483661,
+                                                "data": {
+                                                    "value0": {
+                                                        "Active": true,
+                                                        "ExecuteInEditor": false
+                                                    },
+                                                    "Mass": 10000.0,
+                                                    "UseGravity": false,
+                                                    "GravityScale": 1.0,
+                                                    "Restitution": 0.0,
+                                                    "StaticFriction": 0.6000000238418579,
+                                                    "DynamicFriction": 0.4000000059604645,
+                                                    "LinearDamping": 0.9900000095367432,
+                                                    "AngularDamping": 0.9800000190734863,
+                                                    "Velocity": {
+                                                        "x": 0.0,
+                                                        "y": 0.0,
+                                                        "z": 0.0
+                                                    },
+                                                    "AngularVelocity": {
+                                                        "x": 0.0,
+                                                        "y": 0.0,
+                                                        "z": 0.0
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "polymorphic_id": 1073741824,
+                            "ptr_wrapper": {
+                                "id": 2147483662,
+                                "data": {
+                                    "ID": 4,
+                                    "Name": "CubeGY2",
+                                    "Active": true,
+                                    "ExecuteInEditor": false,
+                                    "Transform": {
+                                        "Position": {
+                                            "x": 4.0,
+                                            "y": -1.0,
+                                            "z": 0.0
+                                        },
+                                        "Scale": {
+                                            "x": 10.0,
+                                            "y": 1.0,
+                                            "z": 1.0
+                                        },
+                                        "Rotation": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": 0.0
+                                        },
+                                        "Quaternion": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": 0.04361938685178757,
+                                            "w": 0.9990482330322266
+                                        }
+                                    },
+                                    "Components": [
+                                        {
+                                            "polymorphic_id": 8,
+                                            "ptr_wrapper": {
+                                                "id": 2147483663,
+                                                "data": {
+                                                    "value0": {
+                                                        "Active": true,
+                                                        "ExecuteInEditor": false
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "polymorphic_id": 9,
+                                            "ptr_wrapper": {
+                                                "id": 2147483664,
+                                                "data": {
+                                                    "value0": {
+                                                        "value0": {
+                                                            "Active": true,
+                                                            "ExecuteInEditor": false
+                                                        },
+                                                        "Center": {
+                                                            "x": 4.0,
+                                                            "y": -1.0,
+                                                            "z": 0.0
+                                                        }
+                                                    },
+                                                    "Extents": {
+                                                        "x": 5.0,
+                                                        "y": 0.5,
+                                                        "z": 0.5
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "polymorphic_id": 5,
+                                            "ptr_wrapper": {
+                                                "id": 2147483665,
+                                                "data": {
+                                                    "value0": {
+                                                        "Active": true,
+                                                        "ExecuteInEditor": false
+                                                    },
+                                                    "Mass": 10000.0,
+                                                    "UseGravity": false,
+                                                    "GravityScale": 1.0,
+                                                    "Restitution": 0.0,
+                                                    "StaticFriction": 0.6000000238418579,
+                                                    "DynamicFriction": 0.4000000059604645,
+                                                    "LinearDamping": 0.9900000095367432,
+                                                    "AngularDamping": 0.9800000190734863,
+                                                    "Velocity": {
+                                                        "x": 0.0,
+                                                        "y": 0.0,
+                                                        "z": 0.0
+                                                    },
+                                                    "AngularVelocity": {
+                                                        "x": 0.0,
+                                                        "y": 0.0,
+                                                        "z": 0.0
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "polymorphic_id": 1073741824,
+                            "ptr_wrapper": {
+                                "id": 2147483666,
+                                "data": {
+                                    "ID": 5,
+                                    "Name": "CubeGY3",
+                                    "Active": true,
+                                    "ExecuteInEditor": false,
+                                    "Transform": {
+                                        "Position": {
+                                            "x": 2.0,
+                                            "y": -4.0,
+                                            "z": 0.0
+                                        },
+                                        "Scale": {
+                                            "x": 10.0,
+                                            "y": 1.0,
+                                            "z": 1.0
+                                        },
+                                        "Rotation": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": 0.0
+                                        },
+                                        "Quaternion": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": -0.04361938685178757,
+                                            "w": 0.9990482330322266
+                                        }
+                                    },
+                                    "Components": [
+                                        {
+                                            "polymorphic_id": 8,
+                                            "ptr_wrapper": {
+                                                "id": 2147483667,
+                                                "data": {
+                                                    "value0": {
+                                                        "Active": true,
+                                                        "ExecuteInEditor": false
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "polymorphic_id": 9,
+                                            "ptr_wrapper": {
+                                                "id": 2147483668,
+                                                "data": {
+                                                    "value0": {
+                                                        "value0": {
+                                                            "Active": true,
+                                                            "ExecuteInEditor": false
+                                                        },
+                                                        "Center": {
+                                                            "x": 2.0,
+                                                            "y": -4.0,
+                                                            "z": 0.0
+                                                        }
+                                                    },
+                                                    "Extents": {
+                                                        "x": 5.0,
+                                                        "y": 0.5,
+                                                        "z": 0.5
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "polymorphic_id": 5,
+                                            "ptr_wrapper": {
+                                                "id": 2147483669,
+                                                "data": {
+                                                    "value0": {
+                                                        "Active": true,
+                                                        "ExecuteInEditor": false
+                                                    },
+                                                    "Mass": 10000.0,
+                                                    "UseGravity": false,
+                                                    "GravityScale": 1.0,
+                                                    "Restitution": 0.0,
+                                                    "StaticFriction": 0.6000000238418579,
+                                                    "DynamicFriction": 0.4000000059604645,
+                                                    "LinearDamping": 0.9900000095367432,
+                                                    "AngularDamping": 0.9800000190734863,
+                                                    "Velocity": {
+                                                        "x": 0.0,
+                                                        "y": 0.0,
+                                                        "z": 0.0
+                                                    },
+                                                    "AngularVelocity": {
+                                                        "x": 0.0,
+                                                        "y": 0.0,
+                                                        "z": 0.0
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "polymorphic_id": 1073741824,
+                            "ptr_wrapper": {
+                                "id": 2147483670,
+                                "data": {
+                                    "ID": 6,
+                                    "Name": "Wave",
+                                    "Active": true,
+                                    "ExecuteInEditor": false,
+                                    "Transform": {
+                                        "Position": {
+                                            "x": -20.0,
+                                            "y": 5.0,
+                                            "z": 20.0
+                                        },
+                                        "Scale": {
+                                            "x": 0.3199999928474426,
+                                            "y": 1.0,
+                                            "z": 0.18000000715255738
+                                        },
+                                        "Rotation": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": 0.0
+                                        },
+                                        "Quaternion": {
+                                            "x": -0.7071067690849304,
+                                            "y": 0.0,
+                                            "z": 0.0,
+                                            "w": 0.7071067690849304
+                                        }
+                                    },
+                                    "Components": [
+                                        {
+                                            "polymorphic_id": 2147483658,
+                                            "polymorphic_name": "Wave",
+                                            "ptr_wrapper": {
+                                                "id": 2147483671,
+                                                "data": {
+                                                    "value0": {
+                                                        "Active": true,
+                                                        "ExecuteInEditor": false
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}
