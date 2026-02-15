@@ -59,7 +59,6 @@
     <ClCompile Include="src\ScenePhysicsTest.cpp" />
     <ClCompile Include="src\SceneResult.cpp" />
     <ClCompile Include="src\SceneTitle.cpp" />
-    <ClCompile Include="src\SerializerRegistry.cpp" />
     <ClCompile Include="src\Shader.cpp" />
     <ClCompile Include="src\ShaderManager.cpp" />
     <ClCompile Include="src\Sky.cpp" />
@@ -116,6 +115,7 @@
     <ClInclude Include="src\ScenePhysicsTest.h" />
     <ClInclude Include="src\SceneResult.h" />
     <ClInclude Include="src\SceneTitle.h" />
+    <ClInclude Include="src\SerializerRegistry.h" />
     <ClInclude Include="src\Shader.h" />
     <ClInclude Include="src\ShaderManager.h" />
     <ClInclude Include="src\Sky.h" />
@@ -268,6 +268,7 @@
       <ConformanceMode>true</ConformanceMode>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -292,6 +293,7 @@
       <ConformanceMode>true</ConformanceMode>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -317,6 +319,7 @@
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -345,6 +348,7 @@
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

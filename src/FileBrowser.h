@@ -66,6 +66,10 @@ public:
 						iconColor = ImVec4(1.0f, 0.8f, 0.2f, 1.0f);//黄色
 						iconLabel = "DIR";
 					}
+					else if (extension == ".json") {
+						iconColor = ImVec4(0.5f, 1.0f, 0.5f, 1.0f);//緑
+						iconLabel = "SCENE";
+					}
 					else if (extension == ".cpp") {
 						iconColor = ImVec4(0.2f, 0.4f, 0.8f, 1.0f);//青
 						iconLabel = "C++";
@@ -81,16 +85,14 @@ public:
 
 					ImGui::PushID(filename.c_str());
 
-					//描画処理
+					//ボタン描画処理
 					ImGui::PushStyleColor(ImGuiCol_Button, iconColor);
-					if (ImGui::Button(iconLabel.c_str(), ImVec2(thumbnailSize, thumbnailSize))) {
-						if (isDir) {
-							//クリックによる処理を記述↓
 
-							//==========================
+					bool clicked = ImGui::Button(iconLabel.c_str(), ImVec2(thumbnailSize, thumbnailSize));
+					
+					if (isDir) {//ディレクトリならクリックで移動
+						if (clicked) {
 							_currentPath /= filename;	//パスを結合
-
-							//ディレクトリ移動したらループを抜ける
 							ImGui::PopStyleColor();
 							ImGui::PopID();
 							ImGui::Columns(1);
@@ -98,6 +100,15 @@ public:
 							return;
 						}
 					}
+					else {//ファイル
+						if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+							if (extension == ".json") {
+								//string()でパス引き渡し
+								Manager::OpenScene(path.string());
+							}
+						}
+					}
+					
 					ImGui::PopStyleColor();
 
 					//下にファイル名表示

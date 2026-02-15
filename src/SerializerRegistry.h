@@ -1,8 +1,11 @@
 //=====================================================================================
-// SerializerRegistry.cpp
+// SerializerRegistry.h
 // Author:Kaito Aoki
 // Date:2026/02/12
 //=====================================================================================
+
+#ifndef _SERIALIZERREGISTRY_H
+#define _SERIALIZERREGISTRY_H
 
 //Cerealの型登録
 #include <cereal/types/polymorphic.hpp>
@@ -30,6 +33,7 @@ CEREAL_REGISTER_POLYMORPHIC_RELATION(Scene, ScenePhysicsTest);
 //=====エンジンに必須のオブジェクト=====
 #include "GameObject.h"
 #include "Camera.h"
+#include "Sky.h"
 #include "Light.h"
 
 //=====ゲーム用に作成したオブジェクト=====
@@ -43,6 +47,9 @@ CEREAL_REGISTER_TYPE(GameObject);
 
 CEREAL_REGISTER_TYPE(Camera);
 CEREAL_REGISTER_POLYMORPHIC_RELATION(GameObject, Camera);
+
+CEREAL_REGISTER_TYPE(Sky);
+CEREAL_REGISTER_POLYMORPHIC_RELATION(GameObject, Sky);
 
 CEREAL_REGISTER_TYPE(Light);
 CEREAL_REGISTER_POLYMORPHIC_RELATION(GameObject, Light);
@@ -82,6 +89,7 @@ CEREAL_REGISTER_POLYMORPHIC_RELATION(GameObject, FadeObject);
 #include "Piece.h"
 #include "ResultManager.h"
 #include "TitleManager.h"
+#include "SerializerRegistry.h"
 
 //マクロ定義によるコンポーネントの登録
 
@@ -150,3 +158,4 @@ CEREAL_REGISTER_POLYMORPHIC_RELATION(Component, ResultManager);
 CEREAL_REGISTER_TYPE(TitleManager);
 CEREAL_REGISTER_POLYMORPHIC_RELATION(Component, TitleManager);
 
+#endif // !_SERIALIZERREGISTRY_H

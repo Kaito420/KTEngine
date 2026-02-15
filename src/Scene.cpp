@@ -10,6 +10,9 @@
 #include "GameObject.h"
 #include "Shader.h"
 #include "ShaderManager.h"
+#include "Camera.h"
+#include "Sky.h"
+#include "Light.h"
 
 std::string Scene::GenerateUniqueName(const std::string& baseName){
 	std::string uniqueName = baseName;
@@ -27,6 +30,10 @@ std::string Scene::GenerateUniqueName(const std::string& baseName){
 
 void Scene::Initialize(){
 	_physicsSystem = new PhysicsSystem();
+
+	AddGameObject<Camera>()->_name = "Camera";
+	AddGameObject<Sky>()->_name = "Sky";
+	AddGameObject<Light>()->_name = "Light";
 }
 
 void Scene::Finalize() {

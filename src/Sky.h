@@ -10,6 +10,7 @@
 #include "GameObject.h"
 #include "Sphere.h"
 #include <string>
+#include <memory>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 
@@ -17,7 +18,7 @@ class Sky : public GameObject {
 	friend class cereal::access;
 
 public:
-	Sphere* _sphere;
+	//std::shared_ptr<Sphere> _sphere;
 	void Awake() override;
 	void Update() override;
 	void Render()const override;

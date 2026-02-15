@@ -15,6 +15,8 @@
 #include "ImGuiLayer.h"
 #include "imgui.h"
 
+#include "SerializerRegistry.h"
+
 #include <fstream>
 #include <sstream>
 #include <cereal/archives/json.hpp>
@@ -50,6 +52,8 @@ void Manager::Initialize() {
 
 	//if (_editorScene)
 	//	_editorScene->Initialize();
+
+	//ForceLinkSerializerRegistry();
 
 	NewScene();
 }
@@ -174,11 +178,11 @@ void Manager::Play(){
 	}
 
 	if (_runtimeScene) {
+		_mode = EngineMode::Runtime;
 		_runtimeScene->OnLoaded(); //ID•œŒ³‚âPhysicsSystemÄ\’z
-		_runtimeScene->Initialize();
+		
 	}
 
-	_mode = EngineMode::Runtime;
 }
 
 void Manager::Stop(){
