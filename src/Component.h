@@ -28,6 +28,8 @@ protected:
 public:
 	bool _active = false;//アクティブ状態（true:有効, false:無効）
 
+	bool _executeInEditor = false; //エディタモードでも実行するかどうか
+
 	virtual ~Component() {}
 
 	bool Active(bool active) { _active = active; return _active; }

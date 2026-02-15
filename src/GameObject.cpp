@@ -7,3 +7,15 @@
 #include "GameObject.h"
 
 uint32_t GameObject::_nextId = 0;
+
+void GameObject::UpdateEditor(){
+
+	if (_executeInEditor) {
+		Update();
+	}
+	for (auto& component : _components) {
+		if (component->GetActive() && component->_executeInEditor) {
+			component->Update();
+		}
+	}
+}

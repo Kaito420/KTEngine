@@ -9,7 +9,7 @@
 #include <Windows.h>
 
 void Camera::Awake() {
-	//一旦初期化
+	_executeInEditor = true;	//エディタモードでも実行する
 }
 
 void Camera::Update() {

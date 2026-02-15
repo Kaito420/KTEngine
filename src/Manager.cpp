@@ -77,7 +77,7 @@ void Manager::Update() {
 
 	if (_mode == EngineMode::Editor) {
 		if (_editorScene)
-			_editorScene->Update();
+			_editorScene->UpdateEditor();
 	}
 	else if (_mode == EngineMode::Runtime) {
 		if (_runtimeScene)

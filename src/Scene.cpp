@@ -64,6 +64,16 @@ void Scene::Update(){
 	});
 }
 
+void Scene::UpdateEditor() {
+	//エディタモードでも実行するオブジェクトの更新
+	//(カメラやスカイドームライトなど、物理システムは更新しない）
+	for (auto& gameObject : _gameObjects) {
+		if (gameObject->GetActive()) {
+			gameObject->UpdateEditor();
+		}
+	}
+}
+
 void Scene::Render()const{
 	for(const auto& gameObject : _gameObjects){
 		if (gameObject->GetActive()) {

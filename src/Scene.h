@@ -31,6 +31,7 @@ public:
 	virtual void Initialize();
 	virtual void Finalize();
 	virtual void Update();
+	virtual void UpdateEditor();
 	virtual void Render()const;
 	virtual void RenderHierarchy();
 	virtual void RenderInspector();

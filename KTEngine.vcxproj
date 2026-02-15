@@ -62,6 +62,7 @@
     <ClCompile Include="src\SerializerRegistry.cpp" />
     <ClCompile Include="src\Shader.cpp" />
     <ClCompile Include="src\ShaderManager.cpp" />
+    <ClCompile Include="src\Sky.cpp" />
     <ClCompile Include="src\SkyDome.cpp" />
     <ClCompile Include="src\Sphere.cpp" />
     <ClCompile Include="src\Square.cpp" />
@@ -117,6 +118,7 @@
     <ClInclude Include="src\SceneTitle.h" />
     <ClInclude Include="src\Shader.h" />
     <ClInclude Include="src\ShaderManager.h" />
+    <ClInclude Include="src\Sky.h" />
     <ClInclude Include="src\SkyDome.h" />
     <ClInclude Include="src\Sphere.h" />
     <ClInclude Include="src\Square.h" />

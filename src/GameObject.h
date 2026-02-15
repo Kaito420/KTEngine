@@ -36,6 +36,7 @@ public:
 	uint32_t _id;
 	std::string _name = "gameObject";
 	bool _active = true; //アクティブ状態（true:有効, false:無効）
+	bool _executeInEditor = false; //エディタモードでも実行するかどうか
 	std::list<std::shared_ptr<Component>> _components; //このGameObjectにアタッチされているコンポーネントのリスト
 
 	struct Transform {
@@ -119,6 +120,11 @@ public:
 	/// 毎フレーム実行（非アクティブの際は無視）
 	/// </summary>
 	virtual void Update() {}
+
+	/// <summary>
+	/// エディタ上で毎フレーム実行（非アクティブの際は無視）
+	/// </summary>
+	virtual void UpdateEditor();
 
 	/// <summary>
 	/// //Update後に実行（非アクティブの際は無視）
