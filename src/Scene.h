@@ -24,6 +24,11 @@ private:
 protected:
 	int _selectedObjId = -1;
 	int _dragSrcIndex = -1;
+
+	bool _openPopup = false;		//ポップアップを開く合図
+	int _renameTargetId = -1;		
+	char _renameBuffer[256] = "";
+
 	std::list<std::shared_ptr<GameObject>> _gameObjects;
 	PhysicsSystem* _physicsSystem;
 

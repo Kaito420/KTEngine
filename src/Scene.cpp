@@ -79,6 +79,13 @@ void Scene::UpdateEditor() {
 			gameObject->UpdateEditor();
 		}
 	}
+
+	//削除処理
+	_gameObjects.remove_if([](const std::shared_ptr<GameObject>& obj) {
+		if (obj->IsDestroy())
+			obj->ProcessDestroyComponents();
+		return obj->IsDestroy();
+		});
 }
 
 void Scene::Render()const{
@@ -135,7 +142,7 @@ void Scene::RenderHierarchy()
 			//Drag Source
 			if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None)) {
 				GameObject* srcPtr = gameObject.get(); // shared_ptrの中身の生ポインタ
-				ImGui::SetDragDropPayload("DND_GAMEOBJECT", &srcPtr, sizeof(srcPtr));
+				ImGui::SetDragDropPayload("DND_GAMEOBJECT", &srcPtr, sizeof(GameObject*));
 				ImGui::Text("%s", gameObject->_name.c_str());
 				ImGui::EndDragDropSource();
 			}
@@ -169,8 +176,64 @@ void Scene::RenderHierarchy()
 				}
 				ImGui::EndDragDropTarget();
 			}
+
+			//右クリックでポップアップ
+			if (ImGui::BeginPopupContextItem()) {
+				//リネーム
+				if (ImGui::MenuItem("Rename")) {
+					_renameTargetId = gameObject->_id;
+					//リネーム対象の名前をバッファにコピー
+					strcpy_s(_renameBuffer, sizeof(_renameBuffer), gameObject->_name.c_str());
+					_openPopup = true;	//ポップアップを開く合図
+				}
+				if (ImGui::MenuItem("Delete")) {
+					gameObject->Destroy();
+				}
+				ImGui::EndPopup();
+			}
 			ImGui::PopID();
 		}
+		//何もない場所での右クリックメニュー
+		if (ImGui::BeginPopupContextWindow(nullptr, 
+			ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems)) {
+			if(ImGui::MenuItem("Create Empty")){
+				GameObject* newObj = AddGameObject<GameObject>();
+				newObj->_name = GenerateUniqueName("GameObject");
+				_selectedObjId = newObj->_id; //新規作成したオブジェクトを選択
+			}
+			ImGui::EndPopup();
+		}
+
+		//リネーム用モーダルウィンドウの処理
+		if(_openPopup) {
+			ImGui::OpenPopup("Rename Object");
+			_openPopup = false; //合図をリセット
+		}
+		ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+		if (ImGui::BeginPopupModal("Rename Object", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+			bool enterPressed = ImGui::InputText("Name", _renameBuffer, sizeof(_renameBuffer), ImGuiInputTextFlags_EnterReturnsTrue);
+			//ボタンエリア
+			if (ImGui::Button("OK", ImVec2(120, 0)) || enterPressed) {
+				//ID空オブジェクトを探して名前を更新
+				for (auto& obj : _gameObjects) {
+					if (obj->_id == _renameTargetId) {
+						obj->_name = GenerateUniqueName(_renameBuffer);
+						break;
+					}
+				}
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::SameLine();
+
+			if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::EndPopup();
+		}
+
 	}
 	ImGui::End();
 
