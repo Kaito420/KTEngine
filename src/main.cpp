@@ -84,6 +84,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
 
         ImGuiLayer::Begin();
         {
+			Manager::RenderMenuBar();
 			fileBrowser.Render();
             Manager::GetCurrentScene()->RenderHierarchy();
             Manager::GetCurrentScene()->RenderInspector();

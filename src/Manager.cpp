@@ -17,7 +17,7 @@
 #include "imgui.h"
 
 #include "SerializerRegistry.h"
-
+#include <commdlg.h>
 #include <fstream>
 #include <sstream>
 #include <cereal/archives/json.hpp>
@@ -28,6 +28,28 @@ std::shared_ptr<Scene> Manager::_editorScene = nullptr;
 std::shared_ptr<Scene> Manager::_runtimeScene = nullptr;
 std::string Manager::_currentScenePath = "";
 EngineMode Manager::_mode = EngineMode::Editor;
+
+//====ヘルパー関数: Windowsのファイル保存ダイアログを開く====
+std::string SaveFileDialog(const char* filter) {
+	OPENFILENAMEA ofn;
+	CHAR szFile[260] = { 0 };
+	ZeroMemory(&ofn, sizeof(ofn));
+	ofn.lStructSize = sizeof(ofn);
+	ofn.hwndOwner = GetActiveWindow(); // メインウィンドウのハンドル
+	ofn.lpstrFile = szFile;
+	ofn.nMaxFile = sizeof(szFile);
+	ofn.lpstrFilter = filter; // 例:"Json File (*.json)\0*.json\0"
+	ofn.nFilterIndex = 1;
+	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
+
+	// デフォルトの拡張子
+	ofn.lpstrDefExt = "json";
+
+	if (GetSaveFileNameA(&ofn) == TRUE) {
+		return std::string(ofn.lpstrFile);
+	}
+	return std::string(); //キャンセルされたら空文字
+}
 
 void Manager::Initialize() {
 	NewScene();
@@ -118,6 +140,55 @@ void Manager::OpenScene(const std::string& filePath){
 			//読み込み失敗
 			MessageBoxA(NULL, e.what(), "Scene Load Error", MB_OK | MB_ICONERROR);
 		}
+	}
+}
+
+void Manager::RenderMenuBar(){
+	if (ImGui::BeginMainMenuBar()) {
+		if (ImGui::BeginMenu("File")) {
+
+			if (ImGui::MenuItem("New Scene")) {
+				NewScene();
+			}
+			
+			if (ImGui::MenuItem("Open Scene")) {
+				//ファイルダイアログを開いてシーンを選択
+
+			}
+
+			ImGui::Separator();
+
+			if (ImGui::MenuItem("Save Scene")) {
+				SaveScene();
+			}
+
+			if (ImGui::MenuItem("Save Scene As")) {
+				SaveSceneAs();
+			}
+
+			if (ImGui::MenuItem("Exit")) {
+				PostQuitMessage(0);
+			}
+		ImGui::EndMenu();
+		}
+	ImGui::EndMainMenuBar();
+	}
+}
+
+void Manager::SaveScene(){
+	if (!_currentScenePath.empty()) {
+		SaveScene(_currentScenePath);
+	}
+	else {
+		SaveSceneAs();
+	}
+}
+
+void Manager::SaveSceneAs(){
+	std::string filePath = SaveFileDialog("Scene File (*.json)\0*.json\0All Files (*.*)\0*.*\0");
+	
+	if (!filePath.empty()) {
+		SaveScene(filePath);
 	}
 }
 

@@ -45,6 +45,21 @@ public:
 	static void SaveScene(const std::string& filePath);
 	static void OpenScene(const std::string& filePath);
 
+	/// <summary>
+	/// メニューバーの描画
+	/// </summary>
+	static void RenderMenuBar();
+
+	/// <summary>
+	/// 現在のパスに上書き保存（パスがなければダイアログ）
+	/// </summary>
+	static void SaveScene();
+
+	/// <summary>
+	/// 名前を付けて保存
+	/// </summary>
+	static void SaveSceneAs();
+
 	static void Play();
 	static void Stop();
 	static EngineMode GetMode() { return _mode; }

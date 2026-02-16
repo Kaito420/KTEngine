@@ -5,8 +5,8 @@
 #include "Camera.h"
 #include "Texture.h"
 
-void SkyDome::Awake()
-{
+void SkyDome::Awake(){
+	_executeInEditor = true;	//エディタモードでも実行する
 	_sphere = new Sphere();
 	_sphere->Awake();
 	_sphere->SetOwner(GetOwner());
