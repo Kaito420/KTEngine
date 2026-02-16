@@ -46,6 +46,8 @@ namespace {
     ID3D11Texture2D* _sceneDepthTexture = nullptr;
     ID3D11DepthStencilView* _sceneDSV = nullptr;
 
+    float _sceneWidth = 1920.0f;    //初期値
+	float _sceneHeight = 1080.0f;   //初期値
 }
 
 bool RendererDX11::Init(HWND hwnd) {
@@ -554,8 +556,8 @@ void RendererDX11::BeginSceneRender(){
 
     //ビューポートも設定しなおすのが安全
     D3D11_VIEWPORT vp = {};
-    vp.Width = (float)1280;  //※InitSceneRenderTargetで指定したサイズと合わせる
-    vp.Height = (float)720;
+    vp.Width = _sceneWidth;  //動的にする
+    vp.Height = _sceneHeight;
     vp.MinDepth = 0.0f;
     vp.MaxDepth = 1.0f;
     _context->RSSetViewports(1, &vp);
@@ -563,5 +565,80 @@ void RendererDX11::BeginSceneRender(){
 
 void* RendererDX11::GetSceneSRV(){
     return (void*)_sceneSRV;
+}
+
+float RendererDX11::GetSceneWidth(){
+    return _sceneWidth;
+}
+
+float RendererDX11::GetSceneHeight(){
+    return _sceneHeight;
+}
+
+void RendererDX11::ResizeSceneBuffer(float width, float height){
+    //サイズが変わっていない、または無効なサイズなら何もしない
+    if ((_sceneWidth == width && _sceneHeight == height) || width <= 0 || height <= 0) {
+        return;
+    }
+
+    //サイズ更新
+    _sceneWidth = width;
+    _sceneHeight = height;
+
+    //古いリソースの解放 (ComPtrでない場合はRelease必須)
+    if (_sceneSRV) { _sceneSRV->Release(); _sceneSRV = nullptr; }
+    if (_sceneRTV) { _sceneRTV->Release(); _sceneRTV = nullptr; }
+    if (_sceneTexture) { _sceneTexture->Release(); _sceneTexture = nullptr; }
+    if (_sceneDSV) { _sceneDSV->Release(); _sceneDSV = nullptr; }
+    if (_sceneDepthTexture) { _sceneDepthTexture->Release(); _sceneDepthTexture = nullptr; }
+
+    //新しいサイズでリソース再生成
+
+    // テクスチャ設定
+    D3D11_TEXTURE2D_DESC texDesc = {};
+    texDesc.Width = (UINT)width;   //新しい幅
+    texDesc.Height = (UINT)height; //新しい高さ
+    texDesc.MipLevels = 1;
+    texDesc.ArraySize = 1;
+    texDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    texDesc.SampleDesc.Count = 1;
+    texDesc.SampleDesc.Quality = 0;
+    texDesc.Usage = D3D11_USAGE_DEFAULT;
+    texDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+    texDesc.CPUAccessFlags = 0;
+    texDesc.MiscFlags = 0;
+
+    //テクスチャ作成
+    HRESULT hr = _device->CreateTexture2D(&texDesc, NULL, &_sceneTexture);
+    if (FAILED(hr)) return;
+
+    //RTV作成
+    D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = {};
+    rtvDesc.Format = texDesc.Format;
+    rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+    hr = _device->CreateRenderTargetView(_sceneTexture, &rtvDesc, &_sceneRTV);
+    if (FAILED(hr)) return;
+
+    //SRV作成
+    D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+    srvDesc.Format = texDesc.Format;
+    srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+    srvDesc.Texture2D.MostDetailedMip = 0;
+    srvDesc.Texture2D.MipLevels = 1;
+    hr = _device->CreateShaderResourceView(_sceneTexture, &srvDesc, &_sceneSRV);
+    if (FAILED(hr)) return;
+
+    //深度バッファ作成
+    D3D11_TEXTURE2D_DESC depthTexDesc = texDesc;
+    depthTexDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    depthTexDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+    hr = _device->CreateTexture2D(&depthTexDesc, NULL, &_sceneDepthTexture);
+    if (FAILED(hr)) return;
+
+    D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
+    dsvDesc.Format = depthTexDesc.Format;
+    dsvDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+    hr = _device->CreateDepthStencilView(_sceneDepthTexture, &dsvDesc, &_sceneDSV);
+    if (FAILED(hr)) return;
 }
 

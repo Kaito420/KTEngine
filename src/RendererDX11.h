@@ -97,6 +97,11 @@ namespace RendererDX11 {
     bool InitSceneRenderTarget(int width, int height);  //シーン用バッファ
     void BeginSceneRender(); //レンダリング開始
     void* GetSceneSRV(); //ImGuiに渡すテクスチャ取得
+
+    float GetSceneWidth();
+    float GetSceneHeight();
+
+    void ResizeSceneBuffer(float width, float height);
 }
 
 #endif // !_RENDERERDX11_H

@@ -49,7 +49,19 @@ void Camera::Update() {
 		position + frontVec * _distance, // 注視点
 		upVec  // 上方向
 	);
-	XMMATRIX projection = XMMatrixPerspectiveFovLH(XMConvertToRadians(60.0f), (float)SCREEN_WIDTH / SCREEN_HEIGHT, 0.1f, 1000.0f);
+
+	//RendererDX11からシーンサイズを取得してアスペクト比を計算
+	float width = RendererDX11::GetSceneWidth();
+	float height = RendererDX11::GetSceneHeight();
+	float aspectRatio = width / height;
+
+	if (height <= 0.0f) aspectRatio = 1.777f; //16:9
+
+	XMMATRIX projection = XMMatrixPerspectiveFovLH(
+		XMConvertToRadians(60.0f),
+		aspectRatio,
+		0.1f,
+		1000.0f);
 
 	RendererDX11::SetViewMatrix(view);
 	RendererDX11::SetProjectionMatrix(projection);
