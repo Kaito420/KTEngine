@@ -29,6 +29,12 @@ std::shared_ptr<Scene> Manager::_runtimeScene = nullptr;
 std::string Manager::_currentScenePath = "";
 EngineMode Manager::_mode = EngineMode::Editor;
 
+//静的メンバの初期化
+bool Manager::_showHierarchy = true;
+bool Manager::_showInspector = true;
+bool Manager::_showContentBrowser = true;
+bool Manager::_showGameView = true;
+
 //====ヘルパー関数: Windowsのファイル保存ダイアログを開く====
 std::string SaveFileDialog(const char* filter) {
 	OPENFILENAMEA ofn;
@@ -145,7 +151,7 @@ void Manager::OpenScene(const std::string& filePath){
 
 void Manager::RenderMenuBar(){
 	if (ImGui::BeginMainMenuBar()) {
-		if (ImGui::BeginMenu("File")) {
+		if (ImGui::BeginMenu("File")) {//Fileメニュー
 
 			if (ImGui::MenuItem("New Scene")) {
 				NewScene();
@@ -170,6 +176,15 @@ void Manager::RenderMenuBar(){
 				PostQuitMessage(0);
 			}
 		ImGui::EndMenu();
+		}
+
+		if (ImGui::BeginMenu("Window")) { //Windowメニュー
+			ImGui::MenuItem("Hierarchy", nullptr, &_showHierarchy);
+			ImGui::MenuItem("Inspector", nullptr, &_showInspector);
+			ImGui::MenuItem("Content Browser", nullptr, &_showContentBrowser);
+			ImGui::MenuItem("Game View", nullptr, &_showGameView);
+			
+			ImGui::EndMenu();
 		}
 	ImGui::EndMainMenuBar();
 	}

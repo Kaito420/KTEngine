@@ -27,11 +27,22 @@ private:
 	static std::string _currentScenePath;	//現在シーンのファイルパス（上書き保存用）
 
 	static EngineMode _mode;
+
+	static bool _showHierarchy;
+	static bool _showInspector;
+	static bool _showContentBrowser;
+	static bool _showGameView;
+
 public:
 	static void Initialize();
 	static void Finalize();
 	static void Update();
 	static void Render();
+
+	static bool IsShowHierarchy() { return _showHierarchy; }
+	static bool IsShowInspector() { return _showInspector; }
+	static bool IsShowContentBrowser() { return _showContentBrowser; }
+	static bool IsShowGameView() { return _showGameView; }
 
 	static std::shared_ptr<Scene> GetCurrentScene();
 

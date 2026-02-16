@@ -85,24 +85,29 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
         ImGuiLayer::Begin();
         {
 			Manager::RenderMenuBar();
-			fileBrowser.Render();
-            Manager::GetCurrentScene()->RenderHierarchy();
-            Manager::GetCurrentScene()->RenderInspector();
+            if (Manager::IsShowContentBrowser())
+                fileBrowser.Render();
+            if (Manager::IsShowHierarchy())
+                Manager::GetCurrentScene()->RenderHierarchy();
+            if (Manager::IsShowInspector())
+                Manager::GetCurrentScene()->RenderInspector();
             Manager::GetCurrentScene()->RenderButton();
 
-            void* myTexture = RendererDX11::GetSceneSRV();
-            ImGui::Begin("Game View",nullptr, ImGuiWindowFlags_NoScrollbar);//ゲームビュー描画
-            {
-                ImVec2 size = ImVec2(1280, 720);    //テクスチャサイズと一致させる
-                if (myTexture == nullptr)
-                    ImGui::Text("Texture is NULL!");
-                else {
-                    ImGui::Image(RendererDX11::GetSceneSRV(), size);
-                    bool isHovered = ImGui::IsItemHovered();
-                    Input::SetGameViewHovered(isHovered);
+            if (Manager::IsShowGameView()) {
+                void* myTexture = RendererDX11::GetSceneSRV();
+                ImGui::Begin("Game View", nullptr, ImGuiWindowFlags_NoScrollbar);//ゲームビュー描画
+                {
+                    ImVec2 size = ImVec2(1280, 720);    //テクスチャサイズと一致させる
+                    if (myTexture == nullptr)
+                        ImGui::Text("Texture is NULL!");
+                    else {
+                        ImGui::Image(RendererDX11::GetSceneSRV(), size);
+                        bool isHovered = ImGui::IsItemHovered();
+                        Input::SetGameViewHovered(isHovered);
+                    }
                 }
-            }
             ImGui::End();
+            }
         }
         ImGuiLayer::End();
 
