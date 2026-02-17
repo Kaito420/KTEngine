@@ -13,6 +13,9 @@
 
 
 void ColliderSphere::Awake(){
+}
+
+void ColliderSphere::Start(){
 	Manager::GetCurrentScene()->GetPhysicsSystem()->RegisterCollider(this);
 }
 
@@ -141,7 +144,7 @@ void ColliderSphere::ShowUI(){
 
 
 void ColliderBox::Awake() {
-	Manager::GetCurrentScene()->GetPhysicsSystem()->RegisterCollider(this);
+
 	_center = _owner->_transform._position;
 	_axis[0] = _owner->GetRight();
 	_axis[1] = _owner->GetUp();
@@ -205,8 +208,11 @@ void ColliderBox::Awake() {
 
 }
 
-void ColliderBox::OnDestroy()
-{
+void ColliderBox::Start(){
+	Manager::GetCurrentScene()->GetPhysicsSystem()->RegisterCollider(this);
+}
+
+void ColliderBox::OnDestroy(){
 	Manager::GetCurrentScene()->GetPhysicsSystem()->RemoveCollider(this);
 }
 

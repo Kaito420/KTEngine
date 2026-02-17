@@ -70,7 +70,10 @@ public:
 	/// </summary>
 	virtual void OnDestroy() {}
 
-
+	/// <summary>
+	///	エディタ上で削除された場合に実行（システム面でOnDestroyと分ける必要があるため）
+	/// </summary>
+	virtual void OnDestroyOnEditor() {}
 
 	/// <summary>
 	/// コンポーネントの情報をインスペクター上に表示

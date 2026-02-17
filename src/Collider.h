@@ -146,7 +146,7 @@ public:
 	float _radius = 0.5;
 
 	void Awake() override;
-
+	void Start() override;
 	void OnDestroy() override;
 
 	// GameObjectの情報で更新する
@@ -193,7 +193,7 @@ public:
 
 
 	void Awake() override;
-
+	void Start() override;
 	void OnDestroy() override;
 
 	// GameObjectの情報で更新する

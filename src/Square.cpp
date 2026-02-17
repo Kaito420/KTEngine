@@ -34,12 +34,10 @@ void Square::Awake()
 	_texture = Texture::Load("asset/texture/Brick.jpg");
 }
 
-void Square::Update()
-{
+void Square::Update(){
 }
 
-void Square::Render()const
-{
+void Square::Render()const{
 
 	//頂点バッファ設定
 	UINT stride = sizeof(Vertex);

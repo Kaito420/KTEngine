@@ -210,11 +210,7 @@ public:
 		}
 	}
 
-	void ProcessDestroyComponents() {
-		for (auto& component : _components) {
-			component->OnDestroy();
-		}
-	}
+	void ProcessDestroyComponents();
 
 	void DispatchOnCollisionEnter(Collider* other) {
 		for (auto& component : _components) {
