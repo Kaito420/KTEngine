@@ -13,6 +13,8 @@
 #include "Camera.h"
 #include "Sky.h"
 #include "Light.h"
+#include "CubeObject.h"
+#include "SphereObject.h"
 
 std::string Scene::GenerateUniqueName(const std::string& baseName){
 	std::string uniqueName = baseName;
@@ -200,6 +202,16 @@ void Scene::RenderHierarchy()
 				GameObject* newObj = AddGameObject<GameObject>();
 				newObj->_name = GenerateUniqueName("GameObject");
 				_selectedObjId = newObj->_id; //新規作成したオブジェクトを選択
+			}
+			if (ImGui::MenuItem("Cube")) {
+				GameObject* newObj = AddGameObject<CubeObject>();
+				newObj->_name = GenerateUniqueName("Cube");
+				_selectedObjId = newObj->_id;
+			}
+			if (ImGui::MenuItem("Sphere")) {
+				GameObject* newObj = AddGameObject<SphereObject>();
+				newObj->_name = GenerateUniqueName("Sphere");
+				_selectedObjId = newObj->_id;
 			}
 			ImGui::EndPopup();
 		}
