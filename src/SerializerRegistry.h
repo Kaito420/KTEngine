@@ -7,6 +7,8 @@
 #ifndef _SERIALIZERREGISTRY_H
 #define _SERIALIZERREGISTRY_H
 
+void RegisterAllComponents();
+
 //Cerealの型登録
 #include <cereal/types/polymorphic.hpp>
 
@@ -97,7 +99,6 @@ CEREAL_REGISTER_POLYMORPHIC_RELATION(GameObject, FadeObject);
 #include "Piece.h"
 #include "ResultManager.h"
 #include "TitleManager.h"
-#include "SerializerRegistry.h"
 
 //マクロ定義によるコンポーネントの登録
 

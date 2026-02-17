@@ -4,8 +4,8 @@
 // Date:2026/02/17
 //=====================================================================================
 
-#ifndef _CUBEOBJECT_H_
-#define _CUBEOBJECT_H_
+#ifndef _CUBEOBJECT_H
+#define _CUBEOBJECT_H
 
 #include "GameObject.h"
 
@@ -14,4 +14,4 @@ class CubeObject : public GameObject {
 	virtual void Awake() override;
 };
 
-#endif // _CUBEOBJECT_H_
+#endif // _CUBEOBJECT_H

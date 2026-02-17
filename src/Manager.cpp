@@ -17,6 +17,7 @@
 #include "imgui.h"
 
 #include "SerializerRegistry.h"
+#include "ComponentRegistry.h"
 #include <commdlg.h>
 #include <fstream>
 #include <sstream>
@@ -58,6 +59,7 @@ std::string SaveFileDialog(const char* filter) {
 }
 
 void Manager::Initialize() {
+	RegisterAllComponents();
 	NewScene();
 }
 

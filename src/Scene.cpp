@@ -4,6 +4,7 @@
 // Date:2025/07/04
 //=====================================================================================
 
+#include "ComponentRegistry.h"
 #include "Scene.h"
 #include <imgui.h>
 #include "Manager.h"
@@ -255,12 +256,21 @@ void Scene::RenderInspector()
 {
 	ImGui::Begin("Inspector");
 	{
-		for (auto& gameObject : _gameObjects) {
-			if (_selectedObjId == gameObject->_id) {
-				ImGui::Text("%s", gameObject->_name.c_str());
-				ImGui::Checkbox("Active", &gameObject->_active);
+		if (_selectedObjId != -1) {
+			//IDからオブジェクトのポインタ取得
+			std::shared_ptr<GameObject> selectedObj = nullptr;
+			for (auto& gameObject : _gameObjects) {
+				if (gameObject->_id == _selectedObjId) {
+					selectedObj = gameObject;
+					break;
+				}
+			}
+
+			if (selectedObj) {
+				ImGui::Text("%s", selectedObj->_name.c_str());
+				ImGui::Checkbox("Active", &selectedObj->_active);
 				//Transform
-				if(ImGui::BeginTable("Transform", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg))
+				if (ImGui::BeginTable("Transform", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg))
 				{
 					bool changed = false;
 					ImGui::TableSetupColumn("Property");
@@ -276,7 +286,7 @@ void Scene::RenderInspector()
 					for (int i = 0; i < 3; i++) {
 						ImGui::TableSetColumnIndex(i + 1);
 						ImGui::PushID(i);
-						ImGui::InputFloat("", &((&gameObject->_transform._position.x)[i]));
+						ImGui::InputFloat("", &((&selectedObj->_transform._position.x)[i]));
 						ImGui::PopID();
 					}
 
@@ -287,7 +297,7 @@ void Scene::RenderInspector()
 					for (int i = 0; i < 3; i++) {
 						ImGui::TableSetColumnIndex(i + 1);
 						ImGui::PushID(i + 4);
-						ImGui::InputFloat("", &((&gameObject->_transform._scale.x)[i]));
+						ImGui::InputFloat("", &((&selectedObj->_transform._scale.x)[i]));
 						ImGui::PopID();
 					}
 					changed = false;
@@ -297,29 +307,37 @@ void Scene::RenderInspector()
 					for (int i = 0; i < 3; i++) {
 						ImGui::TableSetColumnIndex(i + 1);
 						ImGui::PushID(i + 7);
-						changed |= ImGui::InputFloat("", &((&gameObject->_transform._rotation.x)[i]));
+						changed |= ImGui::InputFloat("", &((&selectedObj->_transform._rotation.x)[i]));
 						ImGui::PopID();
 					}
 					if (changed) {
-						gameObject->_transform._quaternion = KTQUATERNION::FromEulerAngles(gameObject->_transform._rotation.x, gameObject->_transform._rotation.y, gameObject->_transform._rotation.z);
-						if (gameObject->GetComponent<RigidBody>()) {
-							gameObject->GetComponent<RigidBody>()->_orientation = gameObject->_transform._quaternion;
-							gameObject->GetComponent<RigidBody>()->_angularVelocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
+						selectedObj->_transform._quaternion = KTQUATERNION::FromEulerAngles(selectedObj->_transform._rotation.x, selectedObj->_transform._rotation.y, selectedObj->_transform._rotation.z);
+						if (selectedObj->GetComponent<RigidBody>()) {
+							selectedObj->GetComponent<RigidBody>()->_orientation = selectedObj->_transform._quaternion;
+							selectedObj->GetComponent<RigidBody>()->_angularVelocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
 						}
 					}
 
 					ImGui::EndTable();
 				}
 
-				for (auto& component : gameObject->_components) {
-					if(ImGui::TreeNode(component->GetComponentName().c_str())){
+				for (auto& component : selectedObj->_components) {
+					if (ImGui::TreeNode(component->GetComponentName().c_str())) {
 						ImGui::Checkbox("Active", &component->_active);
 						component->ShowUI();
 						ImGui::TreePop();
 					}
 				}
+
+				ImGui::Separator();
+				ImGui::Spacing();
+
+				ComponentRegistry::RenderAddComponentMenu(selectedObj.get());
+			
+				ImGui::Spacing();
 			}
 		}
+
 	}
 	ImGui::End();
 }

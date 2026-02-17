@@ -4,8 +4,8 @@
 // Date:2026/02/17
 //=====================================================================================
 
-#ifndef _SPHEREOBJECT_H_
-#define _SPHEREOBJECT_H_
+#ifndef _SPHEREOBJECT_H
+#define _SPHEREOBJECT_H
 
 #include "GameObject.h"
 
@@ -14,4 +14,4 @@ class SphereObject : public GameObject {
 	virtual void Awake() override;
 };
 
-#endif // _SPHEREOBJECT_H_
+#endif // _SPHEREOBJECT_H
