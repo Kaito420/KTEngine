@@ -35,6 +35,8 @@ CEREAL_REGISTER_POLYMORPHIC_RELATION(Scene, ScenePhysicsTest);
 #include "Camera.h"
 #include "Sky.h"
 #include "Light.h"
+#include "CubeObject.h"
+#include "SphereObject.h"
 
 //=====ゲーム用に作成したオブジェクト=====
 #include "Block.h"
@@ -53,6 +55,12 @@ CEREAL_REGISTER_POLYMORPHIC_RELATION(GameObject, Sky);
 
 CEREAL_REGISTER_TYPE(Light);
 CEREAL_REGISTER_POLYMORPHIC_RELATION(GameObject, Light);
+
+CEREAL_REGISTER_TYPE(CubeObject);
+CEREAL_REGISTER_POLYMORPHIC_RELATION(GameObject, CubeObject);
+
+CEREAL_REGISTER_TYPE(SphereObject);
+CEREAL_REGISTER_POLYMORPHIC_RELATION(GameObject, SphereObject);
 
 //=====ゲーム用に作成したオブジェクト=====
 CEREAL_REGISTER_TYPE(Block);

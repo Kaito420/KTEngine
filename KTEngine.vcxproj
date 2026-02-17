@@ -37,6 +37,7 @@
     <ClCompile Include="src\Collider.cpp" />
     <ClCompile Include="src\Cube.cpp" />
     <ClCompile Include="src\CubeKiller.cpp" />
+    <ClCompile Include="src\CubeObject.cpp" />
     <ClCompile Include="src\Explosion.cpp" />
     <ClCompile Include="src\Fade.cpp" />
     <ClCompile Include="src\FadeObject.cpp" />
@@ -64,6 +65,7 @@
     <ClCompile Include="src\Sky.cpp" />
     <ClCompile Include="src\SkyDome.cpp" />
     <ClCompile Include="src\Sphere.cpp" />
+    <ClCompile Include="src\SphereObject.cpp" />
     <ClCompile Include="src\Square.cpp" />
     <ClCompile Include="src\Texture.cpp" />
     <ClCompile Include="src\TitleManager.cpp" />
@@ -90,6 +92,7 @@
     <ClInclude Include="src\Component.h" />
     <ClInclude Include="src\Cube.h" />
     <ClInclude Include="src\CubeKiller.h" />
+    <ClInclude Include="src\CubeObject.h" />
     <ClInclude Include="src\DirectXSerializer.h" />
     <ClInclude Include="src\Explosion.h" />
     <ClInclude Include="src\Fade.h" />
@@ -120,6 +123,7 @@
     <ClInclude Include="src\Sky.h" />
     <ClInclude Include="src\SkyDome.h" />
     <ClInclude Include="src\Sphere.h" />
+    <ClInclude Include="src\SphereObject.h" />
     <ClInclude Include="src\Square.h" />
     <ClInclude Include="src\Texture.h" />
     <ClInclude Include="src\TitleManager.h" />
