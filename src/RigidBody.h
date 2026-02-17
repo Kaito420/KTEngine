@@ -74,8 +74,9 @@ public:
 	void Integrate();
 
 	void Awake() override;
-
+	void Start() override;
 	void Update() override;
+	void OnDestroy()override;
 
 	std::string GetComponentName()override { return "RigidBody"; }
 

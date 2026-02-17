@@ -8,6 +8,8 @@
 #include "GameObject.h"
 #include <imgui.h>
 #include "Collider.h"
+#include "Manager.h"
+#include "Scene.h"
 
 KTMATRIX3 RigidBody::InertiaTensorSphere(float mass, float radius){
 	float v = (2.0f / 5.0f) * mass * radius * radius;
@@ -118,8 +120,17 @@ void RigidBody::Awake(){
 
 }
 
+void RigidBody::Start(){
+	Manager::GetCurrentScene()->GetPhysicsSystem()->RegisterRigidBody(this);
+}
+
 void RigidBody::Update() {
 	_invMass = (_mass != 0.0f) ? 1.0f / _mass : 0.0f; // ‹tŽ¿—Ê
+
+}
+
+void RigidBody::OnDestroy(){
+	Manager::GetCurrentScene()->GetPhysicsSystem()->RemoveRigidBody(this);
 
 }
 

@@ -10,8 +10,15 @@
 
 void PhysicsSystem::Update() {
 
-	if (_colliders.size() < 2) return; //衝突判定するものが2つ未満ならスキップ
+	//剛体運動
+	for (auto* rb : _rigidBodys) {
+		if (rb->GetActive()) {
+			rb->Integrate();
+		}
+	}
 
+	//以下衝突判定
+	if (_colliders.size() < 2) return; //衝突判定するものが2つ未満ならスキップ
 
 	//各Colliderの現在フレームの情報をリセット
 	for (auto* col : _colliders) {
@@ -80,14 +87,6 @@ void PhysicsSystem::Update() {
 				if(col->GetOwner()->GetComponent<RigidBody>())
 					col->GetOwner()->GetComponent<RigidBody>()->WakeUp();
 			}
-		}
-	}
-
-	//剛体運動
-	for (auto* col : _colliders) {
-		auto* rb = col->GetOwner()->GetComponent<RigidBody>();
-		if (rb && rb->GetActive()) {
-			rb->Integrate();
 		}
 	}
 
