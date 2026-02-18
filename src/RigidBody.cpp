@@ -171,6 +171,7 @@ void RigidBody::ShowUI() {
 		ImGui::EndTable();
 	}
 	ImGui::InputFloat("Mass", &_mass);
+	ImGui::SliderFloat("Restitution", &_restitution, 0.0f, 1.0f);
 	ImGui::Checkbox("UseGravity", &_useGravity);
 	ImGui::Checkbox("Sleeping", &_sleeping);
 }
