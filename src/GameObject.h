@@ -160,6 +160,12 @@ public:
 	}
 
 	/// <summary>
+	/// コンポーネントを削除する
+	/// </summary>
+	/// <param name="component"></param>
+	void RemoveComponent(Component* component);
+
+	/// <summary>
 	/// 指定した型のコンポーネントを取得する
 	/// </summary>
 	template <typename T>

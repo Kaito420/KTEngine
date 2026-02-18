@@ -321,12 +321,33 @@ void Scene::RenderInspector()
 					ImGui::EndTable();
 				}
 
+				ImGui::Separator();
+
+				Component* componentToRemove = nullptr;
+
 				for (auto& component : selectedObj->_components) {
-					if (ImGui::TreeNode(component->GetComponentName().c_str())) {
+					ImGui::PushID(component.get()); //IDÕ“Ë–hŽ~
+
+					bool open = ImGui::TreeNode(component->GetComponentName().c_str());
+
+					if (ImGui::BeginPopupContextItem()) {
+						if (ImGui::MenuItem("Remove Component")) {
+							componentToRemove = component.get(); //íœ—\–ñ
+						}
+						ImGui::EndPopup();
+					}
+
+					if (open) {
 						ImGui::Checkbox("Active", &component->_active);
 						component->ShowUI();
 						ImGui::TreePop();
 					}
+					ImGui::PopID();
+				}
+
+				//ƒ‹[ƒvŒã‚Éíœ
+				if (componentToRemove) {
+					selectedObj->RemoveComponent(componentToRemove);
 				}
 
 				ImGui::Separator();
@@ -337,7 +358,6 @@ void Scene::RenderInspector()
 				ImGui::Spacing();
 			}
 		}
-
 	}
 	ImGui::End();
 }

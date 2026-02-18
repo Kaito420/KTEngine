@@ -186,6 +186,12 @@
     <ClCompile Include="src\SphereObject.cpp">
       <Filter>ソース ファイル\Object</Filter>
     </ClCompile>
+    <ClCompile Include="src\ComponentRegistry.cpp">
+      <Filter>ソース ファイル\Framework</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SerializerRegistry.cpp">
+      <Filter>ソース ファイル\Framework</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ImGuiLayer.h">
@@ -346,6 +352,9 @@
     </ClInclude>
     <ClInclude Include="src\SphereObject.h">
       <Filter>ヘッダー ファイル\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ComponentRegistry.h">
+      <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

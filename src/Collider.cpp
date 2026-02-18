@@ -13,6 +13,7 @@
 
 
 void ColliderSphere::Awake(){
+	_executeInEditor = true;
 }
 
 void ColliderSphere::Start(){
@@ -144,6 +145,7 @@ void ColliderSphere::ShowUI(){
 
 
 void ColliderBox::Awake() {
+	_executeInEditor = true;
 
 	_center = _owner->_transform._position;
 	_axis[0] = _owner->GetRight();
