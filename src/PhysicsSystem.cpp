@@ -328,8 +328,8 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold)
 			}
 		}
 	}
-	rbA->CheckSleep();
-	rbB->CheckSleep();
+	if(rbA)rbA->CheckSleep();
+	if(rbB)rbB->CheckSleep();
 }
 
 void PhysicsSystem::ApplyWarmStarting(){
