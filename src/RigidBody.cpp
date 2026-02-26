@@ -58,6 +58,11 @@ void RigidBody::CheckSleep() {
 
 void RigidBody::Integrate(){
 
+	//ワールド空間の慣性テンソルに変換（isKinematicがtrueでもこの計算は行う）
+	_orientation = _owner->_transform._quaternion;
+	KTMATRIX3 R = _orientation.ToMatrix().ToMatrix3();//回転行列
+	_inertiaTensorWorldInv = R * _inertiaTensorBodyInv * R.Transpose();
+
 	if (_sleeping) {
 		_sleepTimer += DT;
 		return;
@@ -82,12 +87,6 @@ void RigidBody::Integrate(){
 
 	//位置の更新
 	_owner->_transform._position += _velocity * DT;
-
-	_orientation = _owner->_transform._quaternion;
-
-	//ワールド空間の慣性テンソルに変換
-	KTMATRIX3 R = _orientation.ToMatrix().ToMatrix3();//回転行列
-	_inertiaTensorWorldInv = R * _inertiaTensorBodyInv * R.Transpose();
 
 	//角加速度の計算 = Inverse * トルク
 	KTVECTOR3 angularAcceleration = _inertiaTensorWorldInv * _torqueAccum;

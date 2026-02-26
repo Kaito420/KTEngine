@@ -148,9 +148,9 @@ void PhysicsSystem::SetLocalInertiaTensor(){
 	for (auto& col : _colliders) {
 		RigidBody* rb = col->GetOwner()->GetComponent<RigidBody>();
 		if (rb == nullptr)continue;
+		bool massChanged = ((rb->_oldMass - rb->_mass) * (rb->_oldMass - rb->_mass) > 1e-6f);
+		if (!col->_hasChangedScale && !massChanged) continue; //スケールか質量が変化していなければスキップ
 		if (rb->_mass > 0.0f && !rb->_isKinematic) {
-			bool massChanged = ((rb->_oldMass - rb->_mass) * (rb->_oldMass - rb->_mass) > 1e-6f);
-			if (!col->_hasChangedScale && !massChanged) continue; //スケールか質量が変化していなければスキップ
 			rb->_inertiaTensorBody = col->ComputeLocalInertiaTensor(rb->_mass);
 			rb->_inertiaTensorBodyInv = rb->_inertiaTensorBody.Inverse();
 		}

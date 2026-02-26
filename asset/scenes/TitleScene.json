@@ -60,7 +60,7 @@
                                         "Position": {
                                             "x": 0.0,
                                             "y": 0.0,
-                                            "z": 0.0
+                                            "z": -21.0
                                         },
                                         "Scale": {
                                             "x": 500.0,
@@ -88,7 +88,7 @@
                                                 "data": {
                                                     "value0": {
                                                         "Active": true,
-                                                        "ExecuteInEditor": false
+                                                        "ExecuteInEditor": true
                                                     }
                                                 }
                                             }
@@ -108,8 +108,8 @@
                                     "ExecuteInEditor": false,
                                     "Transform": {
                                         "Position": {
-                                            "x": 2.0,
-                                            "y": 4.0,
+                                            "x": 1.0,
+                                            "y": 5.0,
                                             "z": 0.0
                                         },
                                         "Scale": {
@@ -159,6 +159,7 @@
                                                     "Mass": 1.0,
                                                     "UseGravity": true,
                                                     "GravityScale": 1.0,
+                                                    "IsKinematic": false,
                                                     "Restitution": 1.0,
                                                     "StaticFriction": 0.6000000238418579,
                                                     "DynamicFriction": 0.4000000059604645,
@@ -186,7 +187,7 @@
                                                     "value0": {
                                                         "value0": {
                                                             "Active": true,
-                                                            "ExecuteInEditor": false
+                                                            "ExecuteInEditor": true
                                                         },
                                                         "Center": {
                                                             "x": 0.0,
@@ -208,10 +209,10 @@
                                                         "Active": true,
                                                         "ExecuteInEditor": false
                                                     },
-                                                    "Threshold": -10.0,
+                                                    "Threshold": -15.0,
                                                     "ResetPosition": {
-                                                        "x": 2.0,
-                                                        "y": 4.0,
+                                                        "x": 1.0,
+                                                        "y": 5.0,
                                                         "z": 0.0
                                                     }
                                                 }
@@ -244,13 +245,13 @@
                                         "Rotation": {
                                             "x": 0.0,
                                             "y": 0.0,
-                                            "z": 0.0
+                                            "z": -10.0
                                         },
                                         "Quaternion": {
                                             "x": 0.0,
                                             "y": 0.0,
-                                            "z": -0.04361938685178757,
-                                            "w": 0.9990482330322266
+                                            "z": -0.08715573698282242,
+                                            "w": 0.9961947202682495
                                         }
                                     },
                                     "Components": [
@@ -276,7 +277,7 @@
                                                     "value0": {
                                                         "value0": {
                                                             "Active": true,
-                                                            "ExecuteInEditor": false
+                                                            "ExecuteInEditor": true
                                                         },
                                                         "Center": {
                                                             "x": 2.0,
@@ -301,10 +302,11 @@
                                                         "Active": true,
                                                         "ExecuteInEditor": false
                                                     },
-                                                    "Mass": 10000.0,
-                                                    "UseGravity": false,
+                                                    "Mass": 1.0,
+                                                    "UseGravity": true,
                                                     "GravityScale": 1.0,
-                                                    "Restitution": 0.0,
+                                                    "IsKinematic": true,
+                                                    "Restitution": 1.0,
                                                     "StaticFriction": 0.6000000238418579,
                                                     "DynamicFriction": 0.4000000059604645,
                                                     "LinearDamping": 0.9900000095367432,
@@ -338,7 +340,7 @@
                                     "Transform": {
                                         "Position": {
                                             "x": 4.0,
-                                            "y": -1.0,
+                                            "y": -2.0,
                                             "z": 0.0
                                         },
                                         "Scale": {
@@ -349,13 +351,13 @@
                                         "Rotation": {
                                             "x": 0.0,
                                             "y": 0.0,
-                                            "z": 0.0
+                                            "z": 10.0
                                         },
                                         "Quaternion": {
                                             "x": 0.0,
                                             "y": 0.0,
-                                            "z": 0.04361938685178757,
-                                            "w": 0.9990482330322266
+                                            "z": 0.08715573698282242,
+                                            "w": 0.9961947202682495
                                         }
                                     },
                                     "Components": [
@@ -379,11 +381,11 @@
                                                     "value0": {
                                                         "value0": {
                                                             "Active": true,
-                                                            "ExecuteInEditor": false
+                                                            "ExecuteInEditor": true
                                                         },
                                                         "Center": {
                                                             "x": 4.0,
-                                                            "y": -1.0,
+                                                            "y": -2.0,
                                                             "z": 0.0
                                                         }
                                                     },
@@ -404,9 +406,10 @@
                                                         "Active": true,
                                                         "ExecuteInEditor": false
                                                     },
-                                                    "Mass": 10000.0,
+                                                    "Mass": 1.0,
                                                     "UseGravity": false,
                                                     "GravityScale": 1.0,
+                                                    "IsKinematic": true,
                                                     "Restitution": 0.0,
                                                     "StaticFriction": 0.6000000238418579,
                                                     "DynamicFriction": 0.4000000059604645,
@@ -441,7 +444,7 @@
                                     "Transform": {
                                         "Position": {
                                             "x": 2.0,
-                                            "y": -4.0,
+                                            "y": -6.0,
                                             "z": 0.0
                                         },
                                         "Scale": {
@@ -452,13 +455,13 @@
                                         "Rotation": {
                                             "x": 0.0,
                                             "y": 0.0,
-                                            "z": 0.0
+                                            "z": -10.0
                                         },
                                         "Quaternion": {
                                             "x": 0.0,
                                             "y": 0.0,
-                                            "z": -0.04361938685178757,
-                                            "w": 0.9990482330322266
+                                            "z": -0.08715573698282242,
+                                            "w": 0.9961947202682495
                                         }
                                     },
                                     "Components": [
@@ -482,11 +485,11 @@
                                                     "value0": {
                                                         "value0": {
                                                             "Active": true,
-                                                            "ExecuteInEditor": false
+                                                            "ExecuteInEditor": true
                                                         },
                                                         "Center": {
                                                             "x": 2.0,
-                                                            "y": -4.0,
+                                                            "y": -6.0,
                                                             "z": 0.0
                                                         }
                                                     },
@@ -507,9 +510,10 @@
                                                         "Active": true,
                                                         "ExecuteInEditor": false
                                                     },
-                                                    "Mass": 10000.0,
+                                                    "Mass": 1.0,
                                                     "UseGravity": false,
                                                     "GravityScale": 1.0,
+                                                    "IsKinematic": true,
                                                     "Restitution": 0.0,
                                                     "StaticFriction": 0.6000000238418579,
                                                     "DynamicFriction": 0.4000000059604645,
