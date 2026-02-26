@@ -26,6 +26,7 @@ private:
 
 public:
 	bool _useGravity = true;
+	bool _isKinematic = false;
 	float _mass = 1.0f;
 	float _oldMass;
 	float _invMass = (_mass != 0.0f) ? 1.0f / _mass : 0.0f; // ‹tŽ¿—Ê
@@ -88,6 +89,7 @@ public:
 		ar(cereal::make_nvp("Mass", _mass));
 		ar(cereal::make_nvp("UseGravity", _useGravity));
 		ar(cereal::make_nvp("GravityScale", _gravityScale));
+		ar(cereal::make_nvp("IsKinematic", _isKinematic));
 		ar(cereal::make_nvp("Restitution", _restitution));
 		ar(cereal::make_nvp("StaticFriction", _staticFriction));
 		ar(cereal::make_nvp("DynamicFriction", _dynamicFriction));
@@ -95,7 +97,6 @@ public:
 		ar(cereal::make_nvp("AngularDamping", _angularDamping));
 		ar(cereal::make_nvp("Velocity", _velocity));
 		ar(cereal::make_nvp("AngularVelocity", _angularVelocity));
-
 	}
 };
 

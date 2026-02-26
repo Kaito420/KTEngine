@@ -63,6 +63,8 @@ void RigidBody::Integrate(){
 		return;
 	}
 
+	if (_isKinematic) return;
+
 	//•½sˆÚ“®‚ÌŒvZ
 	if (_invMass <= 0.0f)return;//Ã“I‚Èê‡‚Í–³‹
 
@@ -112,7 +114,13 @@ void RigidBody::Integrate(){
 }
 
 void RigidBody::Awake(){
-	_invMass = (_mass != 0.0f) ? 1.0f / _mass : 0.0f; // ‹t¿—Ê
+
+	if (_isKinematic) {
+		_invMass = 0.0f;
+	}
+	else {
+		_invMass = (_mass != 0.0f) ? 1.0f / _mass : 0.0f; // ‹t¿—Ê
+	}
 
 	//Šµ«ƒeƒ“ƒ\ƒ‹‚Ì‰Šú‰»
 	_inertiaTensorBody = KTMATRIX3::Identity();
@@ -125,7 +133,16 @@ void RigidBody::Start(){
 }
 
 void RigidBody::Update() {
-	_invMass = (_mass != 0.0f) ? 1.0f / _mass : 0.0f; // ‹t¿—Ê
+	if (_isKinematic) {
+		_invMass = 0.0f;
+		_velocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
+		_angularVelocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
+		_forceAccum = KTVECTOR3(0.0f, 0.0f, 0.0f);
+		_torqueAccum = KTVECTOR3(0.0f, 0.0f, 0.0f);
+	}
+	else {
+		_invMass = (_mass != 0.0f) ? 1.0f / _mass : 0.0f; // ‹t¿—Ê
+	}
 
 }
 
@@ -175,5 +192,6 @@ void RigidBody::ShowUI() {
 	ImGui::SliderFloat("LinearDamping", &_linearDamping, 0.0f, 1.0f);
 	ImGui::SliderFloat("AngularDamping", &_angularDamping, 0.0f, 1.0f);
 	ImGui::Checkbox("UseGravity", &_useGravity);
+	ImGui::Checkbox("IsKinematic", &_isKinematic);
 	ImGui::Checkbox("Sleeping", &_sleeping);
 }
