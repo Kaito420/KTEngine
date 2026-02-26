@@ -19,6 +19,7 @@ void RegisterAllComponents() {
 	ComponentRegistry::Register<ColliderSphere>("ColliderSphere");
 	ComponentRegistry::Register<Cube>("Cube");
 	ComponentRegistry::Register<Sphere>("Sphere");
+	ComponentRegistry::Register<Capsule>("Capsule");
 	ComponentRegistry::Register<Shader>("Shader");
 	ComponentRegistry::Register<Square>("Square");
 	ComponentRegistry::Register<SkyDome>("SkyDome");

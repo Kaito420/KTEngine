@@ -82,6 +82,7 @@ CEREAL_REGISTER_POLYMORPHIC_RELATION(GameObject, FadeObject);
 #include "Collider.h"
 #include "Cube.h"
 #include "Sphere.h"
+#include "Capsule.h"
 #include "Shader.h"
 #include "Square.h"
 #include "SkyDome.h"
@@ -120,6 +121,9 @@ CEREAL_REGISTER_POLYMORPHIC_RELATION(Component, Cube);
 
 CEREAL_REGISTER_TYPE(Sphere);
 CEREAL_REGISTER_POLYMORPHIC_RELATION(Component, Sphere);
+
+CEREAL_REGISTER_TYPE(Capsule);
+CEREAL_REGISTER_POLYMORPHIC_RELATION(Component, Capsule);
 
 CEREAL_REGISTER_TYPE(Shader);
 CEREAL_REGISTER_POLYMORPHIC_RELATION(Component, Shader);

@@ -1,52 +1,44 @@
 //=====================================================================================
-// Sphere.h
+// Capsule.h
 // Author:Kaito Aoki
-// Date:2025/09/05
+// Date:2026/02/26
 //=====================================================================================
 
-#ifndef _SPHERE_H_
-#define _SPHERE_H_
+#ifndef _CAPSULE_H
+#define _CAPSULE_H
 
 #include "Component.h"
 #include "RendererDX11.h"
-#include <vector>
-#include <string>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 
-class Sphere : public Component {
+class Capsule : public Component {
 	friend class cereal::access;
 private:
 	ComPtr<ID3D11Buffer> _vertexBuffer;
 	ComPtr<ID3D11Buffer> _indexBuffer;
 	int _indexCount = 0;
-
-	void CreateSphereMesh(float radius, int sliceCount, int stackCount,
+	void CreateCapsuleMesh(float height, float radius, int latiudes, int longitudes,
 		std::vector<Vertex>& vertices, std::vector<UINT>& indices);
-	float _radius = 0.5f;	//Œ©‚½–Ú‚É”½‰f‚³‚ê‚È‚¢
-	int _stackCount = 16;
-	int _sliceCount = 16;
 
 public:
-
 	ComPtr<ID3D11ShaderResourceView> _texture = nullptr;
+	int _latiudes = 16;
+	int _longitudes = 16;
 
+	float _height = 2.0f;
+	float _radius = 0.5f;
 	void Awake() override;
 	void Render()const override;
 
 	void ShowUI() override;
 
-	std::string GetComponentName() override { return "Sphere"; }
+	std::string GetComponentName()override { return "Capsule"; }
 
 	template <class Archive>
 	void serialize(Archive& ar) {
 		ar(cereal::base_class<Component>(this));
-		ar(cereal::make_nvp("Radius", _radius));
-		ar(cereal::make_nvp("StackCount", _stackCount));
-		ar(cereal::make_nvp("SliceCount", _sliceCount));
 	}
-
 };
 
-
-#endif // !_SPHERE_H_
+#endif //!_CAPSULE_H

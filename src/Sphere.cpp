@@ -156,7 +156,7 @@ void Sphere::Render()const {
 	RendererDX11::SetMaterial(material);
 
 	// シェーダーリソースビュー設定
-	RendererDX11::GetContext()->PSSetShaderResources(0, 1, &_texture);
+	RendererDX11::GetContext()->PSSetShaderResources(0, 1, _texture.GetAddressOf());
 
 	// ポリゴン描画
 	RendererDX11::GetContext()->DrawIndexed(_indexCount, 0, 0);
