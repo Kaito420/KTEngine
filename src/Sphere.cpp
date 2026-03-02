@@ -93,7 +93,7 @@ void Sphere::CreateSphereMesh(float radius, int sliceCount, int stackCount, std:
 
 }
 
-void Sphere::Awake() {
+void Sphere::RebuildBuffers() {
 	std::vector<Vertex> vertices;
 	std::vector<UINT> indices;
 	CreateSphereMesh(_radius, _stackCount, _sliceCount, vertices, indices);
@@ -101,10 +101,10 @@ void Sphere::Awake() {
 
 	//頂点バッファ生成
 	D3D11_BUFFER_DESC bd = {};
-	bd.Usage = D3D11_USAGE_DEFAULT;
+	bd.Usage = D3D11_USAGE_DYNAMIC;
 	bd.ByteWidth = sizeof(Vertex) * vertices.size();
 	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	bd.CPUAccessFlags = 0;
+	bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 
 	D3D11_SUBRESOURCE_DATA sd = {};
 	sd.pSysMem = vertices.data();
@@ -119,6 +119,36 @@ void Sphere::Awake() {
 
 	RendererDX11::GetDevice()->CreateBuffer(&bd, &sd, &_indexBuffer);
 
+}
+
+void Sphere::UpdateBuffers() {
+	std::vector<Vertex> vertices;
+	std::vector<UINT> indices;
+
+	//新しいパラメータで頂点配列を作り直す
+	CreateSphereMesh(_radius, _stackCount, _sliceCount, vertices, indices);
+
+	//MapしてGPUメモリのポインタを取得
+	D3D11_MAPPED_SUBRESOURCE mappedResource;
+	HRESULT hr = RendererDX11::GetContext()->Map(
+		_vertexBuffer.Get(),
+		0,
+		D3D11_MAP_WRITE_DISCARD,
+		0,
+		&mappedResource
+	);
+
+	if (SUCCEEDED(hr)) {
+		//メモリコピーで新しい頂点データを流し込む
+		memcpy(mappedResource.pData, vertices.data(), sizeof(Vertex) * vertices.size());
+
+		//Unmapして変更を確定させる
+		RendererDX11::GetContext()->Unmap(_vertexBuffer.Get(), 0);
+	}
+}
+
+void Sphere::Awake() {
+	RebuildBuffers();
 	_texture = Texture::Load("asset\\texture\\default.png");
 }
 
@@ -163,5 +193,32 @@ void Sphere::Render()const {
 }
 
 void Sphere::ShowUI() {
-	
+	bool shapeChanged = false;
+	bool topologyChanged = false;
+
+	if (ImGui::InputFloat("Radius", &_radius, 0.1f, 1.0f, "%.3f")) {
+		if (_radius < 0.01f) _radius = 0.01f;
+		shapeChanged = true;
+	}
+
+	//Int型の入力
+	if (ImGui::InputInt("Latitudes", &_stackCount, 1, 5)) {
+		// 緯度の分割数は最低でも4
+		if (_stackCount < 4) _stackCount = 4;
+		topologyChanged = true;
+	}
+
+	if (ImGui::InputInt("Longitudes", &_sliceCount, 1, 5)) {
+		// 経度の分割数は最低でも4
+		if (_sliceCount < 4) _sliceCount = 4;
+		topologyChanged = true;
+	}
+
+	//バッファの更新
+	if (topologyChanged) {
+		RebuildBuffers();
+	}
+	else if (shapeChanged) {
+		UpdateBuffers();
+	}
 }

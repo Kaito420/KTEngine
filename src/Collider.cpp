@@ -5,6 +5,7 @@
 //=====================================================================================
 
 #include "Collider.h"
+#include "Sphere.h"
 #include "GameObject.h"
 #include "Manager.h"
 #include "Scene.h"
@@ -33,7 +34,13 @@ void ColliderSphere::Update(){
 	if (tempScale < _owner->_transform._scale.z) {
 		tempScale = _owner->_transform._scale.z;
 	}
-	_radius = tempScale * 0.5f;
+	//Œ©‚½–ÚiSphereMesh‚©‚ç”¼Œa‚ð”½‰fj
+	Sphere* sp;
+	if (sp = _owner->GetComponent<Sphere>()) {
+		_radius = sp->GetRadius() * tempScale;
+	}
+	else
+		_radius = tempScale * 0.5f;
 
 	//AABBXV
 	_aabb.min = _owner->_transform._position - KTVECTOR3(_radius, _radius, _radius);

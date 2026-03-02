@@ -21,9 +21,11 @@ private:
 	void CreateCapsuleMesh(float height, float radius, int latiudes, int longitudes,
 		std::vector<Vertex>& vertices, std::vector<UINT>& indices);
 
+	void RebuildBuffers();
+	void UpdateBuffers();
 public:
 	ComPtr<ID3D11ShaderResourceView> _texture = nullptr;
-	int _latiudes = 16;
+	int _latitudes = 16;
 	int _longitudes = 16;
 
 	float _height = 2.0f;
@@ -38,6 +40,10 @@ public:
 	template <class Archive>
 	void serialize(Archive& ar) {
 		ar(cereal::base_class<Component>(this));
+		ar(cereal::make_nvp("Radius", _radius));
+		ar(cereal::make_nvp("Height", _height));
+		ar(cereal::make_nvp("Latitudes", _latitudes));
+		ar(cereal::make_nvp("Longitudes", _longitudes));
 	}
 };
 

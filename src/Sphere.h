@@ -23,10 +23,11 @@ private:
 
 	void CreateSphereMesh(float radius, int sliceCount, int stackCount,
 		std::vector<Vertex>& vertices, std::vector<UINT>& indices);
-	float _radius = 0.5f;	//Œ©‚½–Ú‚É”½‰f‚³‚ê‚È‚¢
+	float _radius = 0.5f;
 	int _stackCount = 16;
 	int _sliceCount = 16;
-
+	void RebuildBuffers();
+	void UpdateBuffers();
 public:
 
 	ComPtr<ID3D11ShaderResourceView> _texture = nullptr;
@@ -35,7 +36,7 @@ public:
 	void Render()const override;
 
 	void ShowUI() override;
-
+	float GetRadius()const { return _radius; }
 	std::string GetComponentName() override { return "Sphere"; }
 
 	template <class Archive>

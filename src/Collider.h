@@ -18,6 +18,7 @@
 
 class ColliderBox;
 class ColliderSphere;
+class ColliderCapsule;
 
 template <typename T, int Capacity>
 class FixedList {
@@ -243,5 +244,9 @@ public:
 
 	}
 };
+
+//class CollideCapsule : public Collider {
+//
+//};
 
 #endif // !_COLLIDER_H_

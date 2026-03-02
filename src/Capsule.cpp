@@ -68,18 +68,18 @@ void Capsule::CreateCapsuleMesh(float height, float radius, int latiudes, int lo
 	}
 }
 
-void Capsule::Awake(){
+void Capsule::RebuildBuffers(){
 	std::vector<Vertex> vertices;
 	std::vector<UINT> indices;
-	CreateCapsuleMesh(_height, _radius, _latiudes, _longitudes, vertices, indices);
+	CreateCapsuleMesh(_height, _radius, _latitudes, _longitudes, vertices, indices);
 	_indexCount = indices.size();
 
 	//頂点バッファ生成
 	D3D11_BUFFER_DESC bd = {};
-	bd.Usage = D3D11_USAGE_DEFAULT;
+	bd.Usage = D3D11_USAGE_DYNAMIC;
 	bd.ByteWidth = sizeof(Vertex) * vertices.size();
 	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	bd.CPUAccessFlags = 0;
+	bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 
 	D3D11_SUBRESOURCE_DATA sd = {};
 	sd.pSysMem = vertices.data();
@@ -93,8 +93,38 @@ void Capsule::Awake(){
 	sd.pSysMem = indices.data();
 
 	RendererDX11::GetDevice()->CreateBuffer(&bd, &sd, &_indexBuffer);
-	_texture = Texture::Load("asset\\texture\\default.png");
 
+}
+
+void Capsule::UpdateBuffers(){
+	std::vector<Vertex> vertices;
+	std::vector<UINT> indices;
+
+	//新しいパラメータで頂点配列を作り直す
+	CreateCapsuleMesh(_height, _radius, _latitudes, _longitudes, vertices, indices);
+
+	//MapしてGPUメモリのポインタを取得
+	D3D11_MAPPED_SUBRESOURCE mappedResource;
+	HRESULT hr = RendererDX11::GetContext()->Map(
+		_vertexBuffer.Get(),
+		0,
+		D3D11_MAP_WRITE_DISCARD,
+		0,
+		&mappedResource
+	);
+
+	if (SUCCEEDED(hr)) {
+		//メモリコピーで新しい頂点データを流し込む
+		memcpy(mappedResource.pData, vertices.data(), sizeof(Vertex) * vertices.size());
+
+		//Unmapして変更を確定させる
+		RendererDX11::GetContext()->Unmap(_vertexBuffer.Get(), 0);
+	}
+}
+
+void Capsule::Awake(){
+	RebuildBuffers();	//初期構築
+	_texture = Texture::Load("asset\\texture\\default.png");
 }
 
 void Capsule::Render() const{
@@ -139,5 +169,35 @@ void Capsule::Render() const{
 }
 
 void Capsule::ShowUI(){
+	bool shapeChanged = false;
+	bool topologyChanged = false;
+	if (ImGui::InputFloat("Height", &_height, 0.1f, 1.0f, "%.3f")) {
+		if (_height < 0.0f) _height = 0.0f;
+		shapeChanged = true;
+	}
+	if (ImGui::InputFloat("Radius", &_radius, 0.1f, 1.0f, "%.3f")) {
+		if (_radius < 0.01f) _radius = 0.01f;
+		shapeChanged = true;
+	}
 
+	//Int型の入力
+	if (ImGui::InputInt("Latitudes", &_latitudes, 1, 5)) {
+		// 緯度の分割数は最低でも4（上下半球を作るため）を確保
+		if (_latitudes < 4) _latitudes = 4;
+		topologyChanged = true;
+	}
+
+	if (ImGui::InputInt("Longitudes", &_longitudes, 1, 5)) {
+		// 経度の分割数は最低でも3（立体を形成するため）を確保
+		if (_longitudes < 3) _longitudes = 3;
+		topologyChanged = true;
+	}
+
+	//バッファの更新
+	if (topologyChanged) {
+		RebuildBuffers();
+	}
+	else if (shapeChanged) {
+		UpdateBuffers();
+	}
 }
