@@ -661,5 +661,9 @@ void ColliderCapsule::Update() {
 }
 
 bool ColliderCapsule::CheckVSCapsule(const ColliderCapsule* other, CollisionManifold& outCollisionManifold) const{
+	
+	float cylinderHeightA = (std::max)(0.0f, this->_height - 2.0f * this->_radius);
+	float cylinderHeightB = (std::max)(0.0f, other->_height - 2.0f * other->_radius);
+	
 	return false;
 }
