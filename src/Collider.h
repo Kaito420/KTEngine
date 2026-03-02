@@ -126,6 +126,7 @@ public:
 	virtual bool Collide(Collider* other, CollisionManifold& outCollisionManifold) = 0;
 	virtual bool CollideWith(ColliderBox* other, CollisionManifold& outCollisionManifold) = 0;
 	virtual bool CollideWith(ColliderSphere* other, CollisionManifold& outCollisionManifold) = 0;
+	virtual bool CollideWith(ColliderCapsule* other, CollisionManifold& outCollisionManifold) = 0;
 
 	virtual KTMATRIX3 ComputeLocalInertiaTensor(float mass) = 0;
 
@@ -168,8 +169,13 @@ public:
 		return CheckVSSphere(other, outCollisionManifold);
 	}
 
+	bool CollideWith(ColliderCapsule* other, CollisionManifold& outCollisionManifold) {
+		return CheckVSCapsule(other, outCollisionManifold);
+	}
+
 	bool CheckVSSphere(const ColliderSphere* other, CollisionManifold& outCollisionManifold)const;
 	bool CheckVSOBB(const ColliderBox* other, CollisionManifold& outCollisionManifold)const;
+	bool CheckVSCapsule(const ColliderCapsule* other, CollisionManifold& outCollisionManifold)const { return false; }
 
 	KTMATRIX3 ComputeLocalInertiaTensor(float mass)override;
 
@@ -215,9 +221,12 @@ public:
 	bool CollideWith(ColliderSphere* other, CollisionManifold& outCollisionManifold) {
 		return CheckVSSphere(other, outCollisionManifold);
 	}
-
+	bool CollideWith(ColliderCapsule* other, CollisionManifold& outCollisionManifold) {
+		return CheckVSCapsule(other, outCollisionManifold);
+	}
 	bool CheckVSOBB(const ColliderBox* other, CollisionManifold& outCollisionManifold)const;
 	bool CheckVSSphere(const ColliderSphere* other, CollisionManifold& outCollisionManifold)const;
+	bool CheckVSCapsule(const ColliderCapsule* other, CollisionManifold& outCollisionManifold)const { return false; }
 
 	bool OverlapOnAxis(const ColliderBox* other, const KTVECTOR3& axis)const;
 
@@ -245,8 +254,31 @@ public:
 	}
 };
 
-//class CollideCapsule : public Collider {
-//
-//};
+class ColliderCapsule : public Collider {
+	friend class cereal::access;
+private:
+	float _height = 2.0f;
+	float _radius = 0.5f;
+public:
+	bool Collide(Collider* other, CollisionManifold& outCollisionManifold) {
+		return other->CollideWith(this, outCollisionManifold);	//Ç±Ç±Ç≈é©êgÇ∆ëäéËÇ™ì¸ÇÍë÷ÇÌÇÈ
+	}
+
+	bool CollideWith(ColliderBox* other, CollisionManifold& outCollisionManifold) {
+		return CheckVSOBB(other, outCollisionManifold);
+	}
+
+	bool CollideWith(ColliderSphere* other, CollisionManifold& outCollisionManifold) {
+		return CheckVSSphere(other, outCollisionManifold);
+	}
+
+	bool CollideWith(ColliderCapsule* other, CollisionManifold& outCollisionManifold) {
+		return CheckVSCapsule(other, outCollisionManifold);
+	}
+
+	bool CheckVSSphere(const ColliderSphere* other, CollisionManifold& outCollisionManifold)const;
+	bool CheckVSOBB(const ColliderBox* other, CollisionManifold& outCollisionManifold)const;
+	bool CheckVSCapsule(const ColliderCapsule* other, CollisionManifold& outCollisionManifold)const;
+};
 
 #endif // !_COLLIDER_H_

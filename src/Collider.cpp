@@ -588,3 +588,23 @@ KTMATRIX3 ColliderBox::ComputeLocalInertiaTensor(float mass)
 void ColliderBox::ShowUI() {
 	ImGui::Checkbox("_wasOverlap", &_wasOverlap);
 }
+
+void ColliderCapsule::Awake() {
+	_executeInEditor = true;
+}
+
+void ColliderCapsule::Start() {
+	Manager::GetCurrentScene()->GetPhysicsSystem()->RegisterCollider(this);
+}
+
+void ColliderCapsule::OnDestroy() {
+	Manager::GetCurrentScene()->GetPhysicsSystem()->RemoveCollider(this);
+}
+
+void ColliderCapsule::Update() {
+
+}
+
+bool ColliderCapsule::CheckVSCapsule(const ColliderCapsule* other, CollisionManifold& outCollisionManifold) const{
+
+}
