@@ -606,5 +606,5 @@ void ColliderCapsule::Update() {
 }
 
 bool ColliderCapsule::CheckVSCapsule(const ColliderCapsule* other, CollisionManifold& outCollisionManifold) const{
-
+	return false;
 }

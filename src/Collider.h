@@ -260,6 +260,15 @@ private:
 	float _height = 2.0f;
 	float _radius = 0.5f;
 public:
+	void Awake() override;
+	void Start() override;
+	void OnDestroy() override;
+
+	// GameObjectの情報で更新する
+	void Update() override;
+
+	//デバッグ描画用
+	void Render()const override;
 	bool Collide(Collider* other, CollisionManifold& outCollisionManifold) {
 		return other->CollideWith(this, outCollisionManifold);	//ここで自身と相手が入れ替わる
 	}
