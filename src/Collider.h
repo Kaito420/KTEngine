@@ -87,6 +87,19 @@ struct CollisionManifold {
 
 };
 
+/// <summary>
+/// 線分間の最近接点二点を返す関数
+/// </summary>
+/// <param name="s1">線分1の始点</param>
+/// <param name="e1">線分1の終点</param>
+/// <param name="s2">線分2の始点</param>
+/// <param name="e2">線分2の終点</param>
+/// <param name="c1">最近接点</param>
+/// <param name="c2">最近接点</param>
+void ClosestPointSegSeg(const KTVECTOR3& s1, const KTVECTOR3& e1,
+	const KTVECTOR3& s2, const KTVECTOR3& e2,
+	KTVECTOR3& c1, KTVECTOR3& c2);
+
 class Collider : public Component{
 	friend class cereal::access;
 protected:

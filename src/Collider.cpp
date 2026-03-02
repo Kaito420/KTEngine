@@ -12,6 +12,61 @@
 #include "RendererDX11.h"
 #include "Texture.h"
 
+void ClosestPointSegSeg(const KTVECTOR3& s1, const KTVECTOR3& e1, const KTVECTOR3& s2, const KTVECTOR3& e2, KTVECTOR3& c1, KTVECTOR3& c2){
+	float s, t;//媒介変数
+
+	KTVECTOR3 d1 = e1 - s1;	//線分の方向ベクトル
+	KTVECTOR3 d2 = e2 - s2;
+	KTVECTOR3 r = s1 - s2;	//始点同士のベクトル（2→1方向）
+
+	float lenSqD1 = d1.MagnitudeSqr();//線分の長さの2乗
+	float lenSqD2 = d2.MagnitudeSqr();
+	float f = Dot(d2, r);
+
+	const float EPSILON = 1e-6f;
+
+	if (lenSqD1 <= EPSILON && lenSqD2 <= EPSILON) {//両線分が点に退化している場合
+		s = t = 0.0f;
+		c1 = s1;
+		c2 = s2;
+		return;
+	}
+	if (lenSqD1 <= EPSILON) {	//線分1が点に退化している場合
+		s = 0.0f;
+		t = Clamp(f / lenSqD2, 0.0f, 1.0f);
+	}
+	else {	//線分1は点じゃない
+		float c = Dot(d1, r);
+		if (lenSqD2 <= EPSILON) {	//線分2が点に退化
+			t = 0.0f;
+			s = Clamp(-c / lenSqD1, 0.0f, 1.0f);
+		}
+		else {	//どちらも線分のまま
+			float b = Dot(d1, d2);	//線分の方向ベクトル同士の内積
+			float denom = lenSqD1 * lenSqD2 - b * b;	//クラメルの公式の分母
+
+			if (denom != 0.0f) {//線分が平行でない場合
+				s = Clamp((b * f - c * lenSqD2) / denom, 0.0f, 1.0f);
+			}
+			else {//線分は平行
+				s = 0.0f;
+			}
+			t = (b * s + f) / lenSqD2;
+
+			//tが0~1から出た場合の再計算
+			if (t < 0.0f) {
+				t = 0.0f;
+				s = Clamp(-c / lenSqD1, 0.0f, 1.0f);
+			}
+			else if (t > 1.0f) {
+				t = 1.0f;
+				s = Clamp((b - c) / lenSqD1, 0.0f, 1.0f);
+			}
+		}
+	}
+	c1 = s1 + d1 * s;
+	c2 = s2 + d2 * t;
+}
 
 void ColliderSphere::Awake(){
 	_executeInEditor = true;
