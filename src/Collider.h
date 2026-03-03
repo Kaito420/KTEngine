@@ -188,7 +188,7 @@ public:
 
 	bool CheckVSSphere(const ColliderSphere* other, CollisionManifold& outCollisionManifold)const;
 	bool CheckVSOBB(const ColliderBox* other, CollisionManifold& outCollisionManifold)const;
-	bool CheckVSCapsule(const ColliderCapsule* other, CollisionManifold& outCollisionManifold)const { return false; }
+	bool CheckVSCapsule(const ColliderCapsule* other, CollisionManifold& outCollisionManifold)const;
 
 	KTMATRIX3 ComputeLocalInertiaTensor(float mass)override;
 

@@ -193,6 +193,10 @@ bool ColliderSphere::CheckVSOBB(const ColliderBox* other, CollisionManifold& out
 	return false;
 }
 
+bool ColliderSphere::CheckVSCapsule(const ColliderCapsule* other, CollisionManifold& outCollisionManifold)const {
+	return other->CheckVSSphere(this, outCollisionManifold);
+}
+
 KTMATRIX3 ColliderSphere::ComputeLocalInertiaTensor(float mass){
 	float v = (2.0f / 5.0f) * mass * _radius * _radius;
 	return KTMATRIX3(
@@ -731,6 +735,67 @@ bool ColliderCapsule::CheckVSCapsule(const ColliderCapsule* other, CollisionMani
 }
 
 bool ColliderCapsule::CheckVSSphere(const ColliderSphere* other, CollisionManifold& outCollisionManifold)const {
+	//カプセルの内部線分の始点(A)と終点(B)を求める
+	float cylinderHeight = (std::max)(0.0f, this->_height - 2.0f * this->_radius);
+	GameObject* capsuleObj = this->GetOwner();
+	KTVECTOR3 up = capsuleObj->GetUp();
+
+	KTVECTOR3 A = capsuleObj->_transform._position - up * (cylinderHeight * 0.5f);
+	KTVECTOR3 B = capsuleObj->_transform._position + up * (cylinderHeight * 0.5f);
+
+	//球の中心点(C)
+	KTVECTOR3 C = other->GetOwner()->_transform._position;
+
+	//点Cから線分AB上の最近接点(P)を計算する
+	KTVECTOR3 AB = B - A;
+	KTVECTOR3 AC = C - A;
+
+	float t = 0.0f;
+	float abLengthSqr = AB.MagnitudeSqr();
+
+	//線分が点に退化していないかチェック（ゼロ除算防止）
+	if (abLengthSqr > 1e-6f) {
+		t = Dot(AC, AB) / abLengthSqr;
+	}
+
+	//tを0.0～1.0にクランプして線分上に制限
+	t = Clamp(t, 0.0f, 1.0f);
+
+	//最近接点P
+	KTVECTOR3 P = A + AB * t;
+
+	//最近接点Pと球の中心Cの距離で衝突判定
+	KTVECTOR3 diff = C - P; // PからCへのベクトル
+	float distSq = diff.MagnitudeSqr();
+	float radiusSum = this->_radius + other->_radius;
+
+	if (distSq <= radiusSum * radiusSum) {//衝突している
+		outCollisionManifold.hasCollision = true;
+
+		outCollisionManifold.a = const_cast<ColliderSphere*>(other);
+		outCollisionManifold.b = const_cast<ColliderCapsule*>(this);
+
+		float dist = diff.Magnitude();
+		outCollisionManifold.penetrationDepth = radiusSum - dist;
+
+		//法線の計算 (カプセルから球へ押し出す方向)
+		if (dist > 1e-5f) {
+			outCollisionManifold.normal = diff.Normalize(); // 正規化
+		}
+		else {
+			// 完全に中心が重なっている場合は適当な方向に押し出す
+			outCollisionManifold.normal = KTVECTOR3(0.0f, 1.0f, 0.0f);
+		}
+
+		// 接触点の計算 (球の表面上、または中点)
+		ContactPoint cp;
+		cp.position = C - outCollisionManifold.normal * other->_radius;
+		cp.penetration = outCollisionManifold.penetrationDepth;
+		outCollisionManifold.contacts.push_back(cp);
+
+		return true;
+	}
+
 	return false;
 }
 
