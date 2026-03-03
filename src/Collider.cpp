@@ -678,6 +678,22 @@ void ColliderCapsule::Update() {
 		_radius = tempScaleRad * 0.5f;
 		_height = tempScaleHeight * 2.0f;
 	}
+
+	//AABBの更新
+	float halfCylHeight = (std::max)(0.0f, _height - 2.0f * _radius) * 0.5f;
+
+	//カプセルの現在のY軸（Upベクトル）を取得
+	KTVECTOR3 up = _owner->GetUp();
+
+	//線分が各軸（X, Y, Z）に対してどれだけ伸びているかを計算し、半径を足す
+	KTVECTOR3 extents;
+	extents.x = std::abs(up.x) * halfCylHeight + _radius;
+	extents.y = std::abs(up.y) * halfCylHeight + _radius;
+	extents.z = std::abs(up.z) * halfCylHeight + _radius;
+
+	//AABBの最小値と最大値を更新
+	_aabb.min = _owner->_transform._position - extents;
+	_aabb.max = _owner->_transform._position + extents;
 }
 
 void ColliderCapsule::Render() const{
