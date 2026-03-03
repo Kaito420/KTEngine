@@ -442,6 +442,11 @@ bool ColliderBox::CheckVSSphere(const ColliderSphere* other, CollisionManifold& 
 	return other->CheckVSOBB(this, outCollisionManifold);
 }
 
+bool ColliderBox::CheckVSCapsule(const ColliderCapsule* other, CollisionManifold& outCollisionManifold)const {
+	return other->CheckVSOBB(this, outCollisionManifold);
+}
+
+
 bool ColliderBox::OverlapOnAxis(const ColliderBox* other, const KTVECTOR3& axis) const{
 
 	if (axis.Magnitude() < 1e-6f) return true;
@@ -816,6 +821,114 @@ bool ColliderCapsule::CheckVSSphere(const ColliderSphere* other, CollisionManifo
 }
 
 bool ColliderCapsule::CheckVSOBB(const ColliderBox* other, CollisionManifold& outCollisionManifold)const {
+	//カプセルの内部線分の始点(A)と終点(B)をワールド空間で計算
+	float cylinderHeight = (std::max)(0.0f, this->_height - 2.0f * this->_radius);
+	KTVECTOR3 up = this->GetOwner()->GetUp();
+	KTVECTOR3 A = this->GetOwner()->_transform._position - up * (cylinderHeight * 0.5f);
+	KTVECTOR3 B = this->GetOwner()->_transform._position + up * (cylinderHeight * 0.5f);
+
+	//OBBのローカル空間（AABBとして扱える空間）にAとBを変換
+	KTVECTOR3 boxPos = other->GetOwner()->_transform._position;
+	KTVECTOR3 dA = A - boxPos;
+	KTVECTOR3 dB = B - boxPos;
+
+	//Boxのローカル軸を使って投影（回転の逆変換）
+	KTVECTOR3 localA(
+		Dot(dA, other->_axis[0]),
+		Dot(dA, other->_axis[1]),
+		Dot(dA, other->_axis[2])
+	);
+	KTVECTOR3 localB(
+		Dot(dB, other->_axis[0]),
+		Dot(dB, other->_axis[1]),
+		Dot(dB, other->_axis[2])
+	);
+
+	//交互射影法 (Alternating Projection) で最近接点を探す
+	KTVECTOR3 P = (localA + localB) * 0.5f; // 線分上の点P (初期値は中点)
+	KTVECTOR3 Q;							// OBB上の点Q
+	KTVECTOR3 ab = localB - localA;
+	float abLenSq = ab.MagnitudeSqr();
+
+	//3回ループすれば実用上は完全に収束
+	for (int i = 0; i < 3; ++i) {
+		// 手順A: PをAABBにクランプしてQを求める
+		Q.x = Clamp(P.x, -other->_extents.x, other->_extents.x);
+		Q.y = Clamp(P.y, -other->_extents.y, other->_extents.y);
+		Q.z = Clamp(P.z, -other->_extents.z, other->_extents.z);
+
+		// 手順B: Qから線分ABへの最近接点を求めてPを更新する
+		if (abLenSq > 1e-6f) {
+			float t = Dot(Q - localA, ab) / abLenSq;
+			t = Clamp(t, 0.0f, 1.0f);
+			P = localA + ab * t;
+		}
+		else {
+			P = localA;
+		}
+	}
+
+	//最後のPから最終的なQを確定
+	Q.x = Clamp(P.x, -other->_extents.x, other->_extents.x);
+	Q.y = Clamp(P.y, -other->_extents.y, other->_extents.y);
+	Q.z = Clamp(P.z, -other->_extents.z, other->_extents.z);
+
+	//衝突判定とマニフォールドの構築
+	KTVECTOR3 PQ = Q - P; // P(Capsule)からQ(Box)へのベクトル
+	float distSq = PQ.MagnitudeSqr();
+
+	if (distSq <= this->_radius * this->_radius) {
+		outCollisionManifold.hasCollision = true;
+		outCollisionManifold.a = const_cast<ColliderBox*>(other);
+		outCollisionManifold.b = const_cast<ColliderCapsule*>(this);
+
+		KTVECTOR3 normalLocal;
+		float dist = 0.0f;
+
+		if (distSq > 1e-6f) {
+			// 通常の接触
+			dist = sqrtf(distSq);
+			normalLocal = PQ / dist; // 正規化
+		}
+		else {
+			// 線分が完全にBoxの内部にめり込んでいる場合（PとQが一致）
+			// 最も近いBoxの面を探して、そこへ押し出す法線を作る
+			float minDist = FLT_MAX;
+
+			float dx = other->_extents.x - fabs(P.x);
+			if (dx < minDist) { minDist = dx; normalLocal = KTVECTOR3((P.x > 0) ? 1 : -1, 0, 0); }
+
+			float dy = other->_extents.y - fabs(P.y);
+			if (dy < minDist) { minDist = dy; normalLocal = KTVECTOR3(0, (P.y > 0) ? 1 : -1, 0); }
+
+			float dz = other->_extents.z - fabs(P.z);
+			if (dz < minDist) { minDist = dz; normalLocal = KTVECTOR3(0, 0, (P.z > 0) ? 1 : -1); }
+
+			dist = -minDist; // めり込んでいるので距離はマイナスとして扱う
+		}
+
+		outCollisionManifold.penetrationDepth = this->_radius - dist;
+
+		// ローカル法線をワールド空間の法線に変換
+		outCollisionManifold.normal =
+			other->_axis[0] * normalLocal.x +
+			other->_axis[1] * normalLocal.y +
+			other->_axis[2] * normalLocal.z;
+
+		// 接触点の計算 (ローカルのQをワールド空間に戻す)
+		KTVECTOR3 Q_world = boxPos +
+			other->_axis[0] * Q.x +
+			other->_axis[1] * Q.y +
+			other->_axis[2] * Q.z;
+
+		ContactPoint cp;
+		cp.position = Q_world; // Boxの表面を接触点とする
+		cp.penetration = outCollisionManifold.penetrationDepth;
+		outCollisionManifold.contacts.push_back(cp);
+
+		return true;
+	}
+
 	return false;
 }
 
