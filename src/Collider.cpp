@@ -660,19 +660,19 @@ void ColliderCapsule::OnDestroy() {
 void ColliderCapsule::Update() {
 	//GameObjectの情報で更新する
 	// _owner->_transform._scale の一番大きい値を反映（歪みを防ぐための均等スケール化）
-	float tempScale = _owner->_transform._scale.x;
-	if (tempScale < _owner->_transform._scale.y) tempScale = _owner->_transform._scale.y;
-	if (tempScale < _owner->_transform._scale.z) tempScale = _owner->_transform._scale.z;
+	float tempScaleRad = _owner->_transform._scale.x;
+	float tempScaleHeight = _owner->_transform._scale.y;
+	if (tempScaleRad < _owner->_transform._scale.z) tempScaleRad = _owner->_transform._scale.z;
 
 	// 見た目（Capsuleコンポーネント）からパラメータを反映
 	Capsule* cap = _owner->GetComponent<Capsule>();
 	if (cap) {
-		_radius = cap->_radius * tempScale;
-		_height = cap->_height * tempScale;
+		_radius = cap->_radius * tempScaleRad;
+		_height = cap->_height * tempScaleHeight;
 	}
 	else {
-		_radius = tempScale * 0.5f;
-		_height = tempScale * 2.0f;
+		_radius = tempScaleRad * 0.5f;
+		_height = tempScaleHeight * 2.0f;
 	}
 }
 

@@ -35,6 +35,7 @@
     <ClCompile Include="src\BlockSpawner.cpp" />
     <ClCompile Include="src\Camera.cpp" />
     <ClCompile Include="src\Capsule.cpp" />
+    <ClCompile Include="src\CapsuleObject.cpp" />
     <ClCompile Include="src\Collider.cpp" />
     <ClCompile Include="src\ComponentRegistry.cpp" />
     <ClCompile Include="src\Cube.cpp" />
@@ -92,6 +93,7 @@
     <ClInclude Include="src\BlockSpawner.h" />
     <ClInclude Include="src\Camera.h" />
     <ClInclude Include="src\Capsule.h" />
+    <ClInclude Include="src\CapsuleObject.h" />
     <ClInclude Include="src\Collider.h" />
     <ClInclude Include="src\Component.h" />
     <ClInclude Include="src\ComponentRegistry.h" />

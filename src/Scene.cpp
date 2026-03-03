@@ -16,6 +16,7 @@
 #include "Light.h"
 #include "CubeObject.h"
 #include "SphereObject.h"
+#include "CapsuleObject.h"
 
 std::string Scene::GenerateUniqueName(const std::string& baseName){
 	std::string uniqueName = baseName;
@@ -212,6 +213,11 @@ void Scene::RenderHierarchy()
 			if (ImGui::MenuItem("Sphere")) {
 				GameObject* newObj = AddGameObject<SphereObject>();
 				newObj->_name = GenerateUniqueName("Sphere");
+				_selectedObjId = newObj->_id;
+			}
+			if (ImGui::MenuItem("Capsule")) {
+				GameObject* newObj = AddGameObject<CapsuleObject>();
+				newObj->_name = GenerateUniqueName("Capsule");
 				_selectedObjId = newObj->_id;
 			}
 			ImGui::EndPopup();
