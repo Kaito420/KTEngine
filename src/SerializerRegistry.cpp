@@ -17,6 +17,7 @@ void RegisterAllComponents() {
 	ComponentRegistry::Register<RigidBody>("RigidBody");
 	ComponentRegistry::Register<ColliderBox>("ColliderBox");
 	ComponentRegistry::Register<ColliderSphere>("ColliderSphere");
+	ComponentRegistry::Register<ColliderCapsule>("ColliderCapsule");
 	ComponentRegistry::Register<Cube>("Cube");
 	ComponentRegistry::Register<Sphere>("Sphere");
 	ComponentRegistry::Register<Capsule>("Capsule");

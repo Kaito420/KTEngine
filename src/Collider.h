@@ -301,6 +301,20 @@ public:
 	bool CheckVSSphere(const ColliderSphere* other, CollisionManifold& outCollisionManifold)const;
 	bool CheckVSOBB(const ColliderBox* other, CollisionManifold& outCollisionManifold)const;
 	bool CheckVSCapsule(const ColliderCapsule* other, CollisionManifold& outCollisionManifold)const;
+	
+	KTMATRIX3 ComputeLocalInertiaTensor(float mass)override;
+
+	std::string GetComponentName() { return "ColliderCapsule"; }
+
+	void ShowUI()override;
+
+	template <class Archive>
+	void serialize(Archive& ar) {
+		ar(cereal::base_class<Collider>(this));
+		ar(cereal::make_nvp("Height", _height));
+		ar(cereal::make_nvp("Radius", _radius));
+	}
+
 };
 
 #endif // !_COLLIDER_H_

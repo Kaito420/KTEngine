@@ -6,6 +6,7 @@
 
 #include "Collider.h"
 #include "Sphere.h"
+#include "Capsule.h"
 #include "GameObject.h"
 #include "Manager.h"
 #include "Scene.h"
@@ -657,7 +658,25 @@ void ColliderCapsule::OnDestroy() {
 }
 
 void ColliderCapsule::Update() {
+	//GameObjectの情報で更新する
+	// _owner->_transform._scale の一番大きい値を反映（歪みを防ぐための均等スケール化）
+	float tempScale = _owner->_transform._scale.x;
+	if (tempScale < _owner->_transform._scale.y) tempScale = _owner->_transform._scale.y;
+	if (tempScale < _owner->_transform._scale.z) tempScale = _owner->_transform._scale.z;
 
+	// 見た目（Capsuleコンポーネント）からパラメータを反映
+	Capsule* cap = _owner->GetComponent<Capsule>();
+	if (cap) {
+		_radius = cap->_radius * tempScale;
+		_height = cap->_height * tempScale;
+	}
+	else {
+		_radius = tempScale * 0.5f;
+		_height = tempScale * 2.0f;
+	}
+}
+
+void ColliderCapsule::Render() const{
 }
 
 bool ColliderCapsule::CheckVSCapsule(const ColliderCapsule* other, CollisionManifold& outCollisionManifold) const{
@@ -665,5 +684,106 @@ bool ColliderCapsule::CheckVSCapsule(const ColliderCapsule* other, CollisionMani
 	float cylinderHeightA = (std::max)(0.0f, this->_height - 2.0f * this->_radius);
 	float cylinderHeightB = (std::max)(0.0f, other->_height - 2.0f * other->_radius);
 	
+	GameObject* capsuleA = this->GetOwner();
+	GameObject* capsuleB = other->GetOwner();
+
+	KTVECTOR3 upA = capsuleA->GetUp();
+	KTVECTOR3 upB = capsuleB->GetUp();
+
+	KTVECTOR3 s1 = capsuleA->_transform._position - upA * (cylinderHeightA * 0.5f);
+	KTVECTOR3 e1 = capsuleA->_transform._position + upA * (cylinderHeightA * 0.5f);
+
+	KTVECTOR3 s2 = capsuleB->_transform._position - upB * (cylinderHeightB * 0.5f);
+	KTVECTOR3 e2 = capsuleB->_transform._position + upB * (cylinderHeightB * 0.5f);
+
+	//最近傍点2点を求める
+	KTVECTOR3 closestPointA, closestPointB;
+	ClosestPointSegSeg(s1, e1, s2, e2, closestPointA, closestPointB);
+
+	KTVECTOR3 diff = closestPointB - closestPointA;
+	float distSq = diff.MagnitudeSqr();
+	float radiusSum = this->_radius + other->_radius;
+
+	if (distSq < radiusSum * radiusSum) {//衝突
+		outCollisionManifold.hasCollision = true;
+		outCollisionManifold.a = const_cast<ColliderCapsule*>(other);
+		outCollisionManifold.b = const_cast<ColliderCapsule*>(this);
+
+		float dist = diff.Magnitude();
+		outCollisionManifold.penetrationDepth = radiusSum - dist;
+		if (dist > 1e-5f)
+		{
+			outCollisionManifold.normal = diff.Normalize();
+		}
+		else {//完全に重なっている場合
+			outCollisionManifold.normal = KTVECTOR3(0.0f, 1.0f, 0.0f);
+		}
+
+
+		ContactPoint cp;
+		cp.position = closestPointB + outCollisionManifold.normal * other->_radius;
+		cp.penetration = outCollisionManifold.penetrationDepth;
+		outCollisionManifold.contacts.push_back(cp);
+		return true;
+	}
+
 	return false;
+}
+
+bool ColliderCapsule::CheckVSSphere(const ColliderSphere* other, CollisionManifold& outCollisionManifold)const {
+	return false;
+}
+
+bool ColliderCapsule::CheckVSOBB(const ColliderBox* other, CollisionManifold& outCollisionManifold)const {
+	return false;
+}
+
+KTMATRIX3 ColliderCapsule::ComputeLocalInertiaTensor(float mass){
+	//円柱部分の高さ
+	float cylinderHeight = (std::max)(0.0f, _height - 2.0f * _radius);
+
+	//半径が小さすぎる、または質量が0以下の場合はゼロ行列を返す
+	if (_radius <= 0.001f || mass <= 0.0f) {
+		return KTMATRIX3::Zero();
+	}
+
+	const float PI = 3.14159265359f;
+
+	//体積の計算
+	float volumeCylinder = PI * _radius * _radius * cylinderHeight;
+	float volumeSphere = (4.0f / 3.0f) * PI * _radius * _radius * _radius;
+	float volumeTotal = volumeCylinder + volumeSphere;
+
+	if (volumeTotal == 0.0f) return KTMATRIX3::Zero();
+
+	//質量の分配
+	float massCylinder = mass * (volumeCylinder / volumeTotal);
+	float massSphere = mass * (volumeSphere / volumeTotal);
+
+	//Y軸（長軸）まわりの慣性モーメント
+	float iy = (0.5f * massCylinder * _radius * _radius) +
+		(0.4f * massSphere * _radius * _radius);
+
+	//X軸・Z軸（短軸）まわりの慣性モーメント
+	//円柱部分の X/Z 慣性
+	float ixzCylinder = (1.0f / 12.0f) * massCylinder * (3.0f * _radius * _radius + cylinderHeight * cylinderHeight);
+
+	//半球部分の X/Z 慣性（平行軸の定理を適用済み）
+	float ixzSphere = massSphere * (0.4f * _radius * _radius +
+		0.5f * cylinderHeight * cylinderHeight +
+		0.375f * cylinderHeight * _radius);
+
+	float ix = ixzCylinder + ixzSphere;
+	float iz = ix;
+
+	//テンソル行列にして返す
+	return KTMATRIX3(
+		ix, 0.0f, 0.0f,
+		0.0f, iy, 0.0f,
+		0.0f, 0.0f, iz
+	);
+}
+
+void ColliderCapsule::ShowUI(){
+	ImGui::Checkbox("_wasOverlap", &_wasOverlap);
 }
