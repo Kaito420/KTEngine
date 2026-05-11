@@ -10,7 +10,7 @@
 #pragma comment(lib, "shlwapi.lib")
 
 
-#include "RendererDX11.h"
+#include "Renderer.h"
 #include "modelRenderer.h"
 #include "GameObject.h"
 
@@ -21,18 +21,18 @@ std::unordered_map<std::string, MODEL*> ModelRenderer::m_ModelPool;
 void ModelRenderer::Render() const
 {
 
-	// í∏ì_ÉoÉbÉtÉ@ê›íË
+	// _obt@›í
 	UINT stride = sizeof(Vertex);
 	UINT offset = 0;
-	RendererDX11::GetContext()->IASetVertexBuffers(0, 1, &m_Model->VertexBuffer, &stride, &offset);
+	Renderer::IASetVertexBuffers(0, 1, &m_Model->VertexBuffer, &stride, &offset);
 
-	// ÉCÉìÉfÉbÉNÉXÉoÉbÉtÉ@ê›íË
-	RendererDX11::GetContext()->IASetIndexBuffer(m_Model->IndexBuffer, DXGI_FORMAT_R32_UINT, 0);
+	// CfbNXobt@›í
+	Renderer::IASetIndexBuffer(m_Model->IndexBuffer, DXGI_FORMAT_R32_UINT, 0);
 
-	//É}ÉgÉäÉNÉXê›íË
-//ïΩçsà⁄ìÆçsóÒ
+	//}gNX›í
+//s⁄ìs
 	XMMATRIX translation = XMMatrixTranslation(_owner->_transform._position.x, _owner->_transform._position.y, _owner->_transform._position.z);
-	//âÒì]çsóÒ
+	//]s
 	KTVECTOR3 radians = { XMConvertToRadians(_owner->_transform._rotation.x),
 						  XMConvertToRadians(_owner->_transform._rotation.y),
 						  XMConvertToRadians(_owner->_transform._rotation.z) };
@@ -43,29 +43,29 @@ void ModelRenderer::Render() const
 
 	//XMMATRIX rotation = XMMatrixRotationQuaternion(XMLoadFloat4(&q));
 
-	//ÉXÉPÅ[ÉäÉìÉOçsóÒ
+	//XP[Os
 	XMMATRIX scaling = XMMatrixScaling(_owner->_transform._scale.x, _owner->_transform._scale.y, _owner->_transform._scale.z);
 
-	//ÉèÅ[ÉãÉhçsóÒ
+	//[hs
 	XMMATRIX worldMatrix = scaling * rotation * translation;
 
-	RendererDX11::SetWorldMatrix(worldMatrix);
+	Renderer::SetWorldMatrix(worldMatrix);
 
-	// ÉvÉäÉ~ÉeÉBÉuÉgÉ|ÉçÉWê›íË
-	RendererDX11::GetContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	// v~eBug|W›í
+	Renderer::IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 
 	for (unsigned int i = 0; i < m_Model->SubsetNum; i++)
 	{
-		// É}ÉeÉäÉAÉãê›íË
-		RendererDX11::SetMaterial(m_Model->SubsetArray[i].Material.Material);
+		// }eA›í
+		Renderer::SetMaterial(m_Model->SubsetArray[i].Material.Material);
 
-		// ÉeÉNÉXÉ`ÉÉê›íË
+		// eNX`›í
 		if (m_Model->SubsetArray[i].Material.Texture)
-			RendererDX11::GetContext()->PSSetShaderResources(0, 1, &m_Model->SubsetArray[i].Material.Texture);
+			Renderer::PSSetShaderResources(0, 1, &m_Model->SubsetArray[i].Material.Texture);
 
-		// É|ÉäÉSÉìï`âÊ
-		RendererDX11::GetContext()->DrawIndexed(m_Model->SubsetArray[i].IndexNum, m_Model->SubsetArray[i].StartIndex, 0);
+		// |S`
+		Renderer::DrawIndexed(m_Model->SubsetArray[i].IndexNum, m_Model->SubsetArray[i].StartIndex, 0);
 	}
 
 }
@@ -109,18 +109,18 @@ void ModelRenderer::UnloadAll()
 
 void ModelRenderer::Load(const char* FileName)
 {
-	//ÉtÉ@ÉCÉãñºÇ™Ç©ÇÁÇ»ÇÁâΩÇ‡ÇµÇ»Ç¢
+	//t@C»ÇÁâΩ»Ç
 	if(FileName == nullptr || strlen(FileName) == 0)
 		return;
 
-	//èdï°ì«Ç›çûÇ›ñhé~
+	//d«Ç›ç›ñh~
 	if(m_ModelPool.find(FileName) != m_ModelPool.end())
 	{
 		m_Model = m_ModelPool[FileName];
 		return;
 	}
 
-	//êVãKÉçÅ[Éh
+	//VK[h
 	MODEL* newModel = new MODEL();
 	LoadModel(FileName, newModel);
 	if (newModel->VertexBuffer != nullptr) {
@@ -143,7 +143,7 @@ void ModelRenderer::LoadModel(const char* FileName, MODEL* Model)
 
 
 
-	// í∏ì_ÉoÉbÉtÉ@ê∂ê¨
+	// _obt@
 	{
 		D3D11_BUFFER_DESC bd;
 		ZeroMemory(&bd, sizeof(bd));
@@ -156,11 +156,11 @@ void ModelRenderer::LoadModel(const char* FileName, MODEL* Model)
 		ZeroMemory(&sd, sizeof(sd));
 		sd.pSysMem = modelObj.VertexArray;
 
-		RendererDX11::GetDevice()->CreateBuffer(&bd, &sd, &Model->VertexBuffer);
+		Renderer::CreateBuffer(&bd, &sd, &Model->VertexBuffer);
 	}
 
 
-	// ÉCÉìÉfÉbÉNÉXÉoÉbÉtÉ@ê∂ê¨
+	// CfbNXobt@
 	{
 		D3D11_BUFFER_DESC bd;
 		ZeroMemory(&bd, sizeof(bd));
@@ -173,10 +173,10 @@ void ModelRenderer::LoadModel(const char* FileName, MODEL* Model)
 		ZeroMemory(&sd, sizeof(sd));
 		sd.pSysMem = modelObj.IndexArray;
 
-		RendererDX11::GetDevice()->CreateBuffer(&bd, &sd, &Model->IndexBuffer);
+		Renderer::CreateBuffer(&bd, &sd, &Model->IndexBuffer);
 	}
 
-	// ÉTÉuÉZÉbÉgê›íË
+	// TuZbg›í
 	{
 		Model->SubsetArray = new SUBSET[modelObj.SubsetNum];
 		Model->SubsetNum = modelObj.SubsetNum;
@@ -190,13 +190,13 @@ void ModelRenderer::LoadModel(const char* FileName, MODEL* Model)
 
 			Model->SubsetArray[i].Material.Texture = nullptr;
 
-			// ÉeÉNÉXÉ`ÉÉì«Ç›çûÇ›
+			// eNX`«Ç›ç
 			TexMetadata metadata;
 			ScratchImage image;
 			wchar_t wc[256];
 			mbstowcs(wc, modelObj.SubsetArray[i].Material.TextureName, sizeof(wc));
 			LoadFromWICFile(wc, WIC_FLAGS_NONE, &metadata, image);
-			CreateShaderResourceView(RendererDX11::GetDevice(), image.GetImages(), image.GetImageCount(), metadata, &Model->SubsetArray[i].Material.Texture);
+			CreateShaderResourceView(Renderer::GetDevice(), image.GetImages(), image.GetImageCount(), metadata, &Model->SubsetArray[i].Material.Texture);
 
 			if (Model->SubsetArray[i].Material.Texture)
 				Model->SubsetArray[i].Material.Material.TextureEnable = true;
@@ -217,7 +217,7 @@ void ModelRenderer::LoadModel(const char* FileName, MODEL* Model)
 
 
 
-//ÉÇÉfÉãì«çû////////////////////////////////////////////
+//f«ç////////////////////////////////////////////
 void ModelRenderer::LoadObj(const char* FileName, MODEL_OBJ* ModelObj)
 {
 
@@ -255,7 +255,7 @@ void ModelRenderer::LoadObj(const char* FileName, MODEL_OBJ* ModelObj)
 
 
 
-	//óvëfêîÉJÉEÉìÉg
+	//vfJEg
 	while (true)
 	{
 		fscanf(file, "%s", str);
@@ -291,7 +291,7 @@ void ModelRenderer::LoadObj(const char* FileName, MODEL_OBJ* ModelObj)
 				c = fgetc(file);
 			} while (c != '\n' && c != '\r');
 
-			//éläpÇÕéOäpÇ…ï™äÑ
+			//lpÕéOp…ï
 			if (in == 4)
 				in = 6;
 
@@ -300,7 +300,7 @@ void ModelRenderer::LoadObj(const char* FileName, MODEL_OBJ* ModelObj)
 	}
 
 
-	//ÉÅÉÇÉäämï€
+	//m
 	positionArray = new XMFLOAT3[positionNum];
 	normalArray = new XMFLOAT3[normalNum];
 	texcoordArray = new XMFLOAT2[texcoordNum];
@@ -318,7 +318,7 @@ void ModelRenderer::LoadObj(const char* FileName, MODEL_OBJ* ModelObj)
 
 
 
-	//óvëfì«çû
+	//vf«ç
 	XMFLOAT3* position = positionArray;
 	XMFLOAT3* normal = normalArray;
 	XMFLOAT2* texcoord = texcoordArray;
@@ -339,7 +339,7 @@ void ModelRenderer::LoadObj(const char* FileName, MODEL_OBJ* ModelObj)
 
 		if (strcmp(str, "mtllib") == 0)
 		{
-			//É}ÉeÉäÉAÉãÉtÉ@ÉCÉã
+			//}eAt@C
 			fscanf(file, "%s", str);
 
 			char path[256];
@@ -351,12 +351,12 @@ void ModelRenderer::LoadObj(const char* FileName, MODEL_OBJ* ModelObj)
 		}
 		else if (strcmp(str, "o") == 0)
 		{
-			//ÉIÉuÉWÉFÉNÉgñº
+			//IuWFNg
 			fscanf(file, "%s", str);
 		}
 		else if (strcmp(str, "v") == 0)
 		{
-			//í∏ì_ç¿ïW
+			//_W
 			fscanf(file, "%f", &position->x);
 			fscanf(file, "%f", &position->y);
 			fscanf(file, "%f", &position->z);
@@ -364,7 +364,7 @@ void ModelRenderer::LoadObj(const char* FileName, MODEL_OBJ* ModelObj)
 		}
 		else if (strcmp(str, "vn") == 0)
 		{
-			//ñ@ê¸
+			//@
 			fscanf(file, "%f", &normal->x);
 			fscanf(file, "%f", &normal->y);
 			fscanf(file, "%f", &normal->z);
@@ -372,7 +372,7 @@ void ModelRenderer::LoadObj(const char* FileName, MODEL_OBJ* ModelObj)
 		}
 		else if (strcmp(str, "vt") == 0)
 		{
-			//ÉeÉNÉXÉ`ÉÉç¿ïW
+			//eNX`W
 			fscanf(file, "%f", &texcoord->x);
 			fscanf(file, "%f", &texcoord->y);
 			texcoord->x = 1.0f - texcoord->x;
@@ -381,7 +381,7 @@ void ModelRenderer::LoadObj(const char* FileName, MODEL_OBJ* ModelObj)
 		}
 		else if (strcmp(str, "usemtl") == 0)
 		{
-			//É}ÉeÉäÉAÉã
+			//}eA
 			fscanf(file, "%s", str);
 
 			if (sc != 0)
@@ -407,7 +407,7 @@ void ModelRenderer::LoadObj(const char* FileName, MODEL_OBJ* ModelObj)
 		}
 		else if (strcmp(str, "f") == 0)
 		{
-			//ñ 
+			//
 			in = 0;
 
 			do
@@ -418,7 +418,7 @@ void ModelRenderer::LoadObj(const char* FileName, MODEL_OBJ* ModelObj)
 				ModelObj->VertexArray[vc].position = positionArray[atoi(s) - 1];
 				if (s[strlen(s) + 1] != '/')
 				{
-					//ÉeÉNÉXÉ`ÉÉç¿ïWÇ™ë∂ç›ÇµÇ»Ç¢èÍçáÇ‡Ç†ÇÈ
+					//eNX`W›Ç»ÇÍçá
 					s = strtok(nullptr, "/");
 					ModelObj->VertexArray[vc].uv = texcoordArray[atoi(s) - 1];
 				}
@@ -435,7 +435,7 @@ void ModelRenderer::LoadObj(const char* FileName, MODEL_OBJ* ModelObj)
 				c = fgetc(file);
 			} while (c != '\n' && c != '\r');
 
-			//éläpÇÕéOäpÇ…ï™äÑ
+			//lpÕéOp…ï
 			if (in == 4)
 			{
 				ModelObj->IndexArray[ic] = vc - 4;
@@ -463,7 +463,7 @@ void ModelRenderer::LoadObj(const char* FileName, MODEL_OBJ* ModelObj)
 
 
 
-//É}ÉeÉäÉAÉãì«Ç›çûÇ›///////////////////////////////////////////////////////////////////
+//}eA«Ç›ç///////////////////////////////////////////////////////////////////
 void ModelRenderer::LoadMaterial(const char* FileName, MODEL_MATERIAL** MaterialArray, unsigned int* MaterialNum)
 {
 
@@ -482,7 +482,7 @@ void ModelRenderer::LoadMaterial(const char* FileName, MODEL_MATERIAL** Material
 	MODEL_MATERIAL* materialArray;
 	unsigned int materialNum = 0;
 
-	//óvëfêîÉJÉEÉìÉg
+	//vfJEg
 	while (true)
 	{
 		fscanf(file, "%s", str);
@@ -498,11 +498,11 @@ void ModelRenderer::LoadMaterial(const char* FileName, MODEL_MATERIAL** Material
 	}
 
 
-	//ÉÅÉÇÉäämï€
+	//m
 	materialArray = new MODEL_MATERIAL[materialNum];
 
 
-	//óvëfì«çû
+	//vf«ç
 	int mc = -1;
 
 	fseek(file, 0, SEEK_SET);
@@ -517,7 +517,7 @@ void ModelRenderer::LoadMaterial(const char* FileName, MODEL_MATERIAL** Material
 
 		if (strcmp(str, "newmtl") == 0)
 		{
-			//É}ÉeÉäÉAÉãñº
+			//}eA
 			mc++;
 			fscanf(file, "%s", materialArray[mc].Name);
 			strcpy(materialArray[mc].TextureName, "");
@@ -529,7 +529,7 @@ void ModelRenderer::LoadMaterial(const char* FileName, MODEL_MATERIAL** Material
 		}
 		else if (strcmp(str, "Ka") == 0)
 		{
-			//ÉAÉìÉrÉGÉìÉg
+			//ArGg
 			fscanf(file, "%f", &materialArray[mc].Material.Ambient.x);
 			fscanf(file, "%f", &materialArray[mc].Material.Ambient.y);
 			fscanf(file, "%f", &materialArray[mc].Material.Ambient.z);
@@ -537,7 +537,7 @@ void ModelRenderer::LoadMaterial(const char* FileName, MODEL_MATERIAL** Material
 		}
 		else if (strcmp(str, "Kd") == 0)
 		{
-			//ÉfÉBÉtÉÖÅ[ÉY
+			//fBt[Y
 			fscanf(file, "%f", &materialArray[mc].Material.Diffuse.x);
 			fscanf(file, "%f", &materialArray[mc].Material.Diffuse.y);
 			fscanf(file, "%f", &materialArray[mc].Material.Diffuse.z);
@@ -545,7 +545,7 @@ void ModelRenderer::LoadMaterial(const char* FileName, MODEL_MATERIAL** Material
 		}
 		else if (strcmp(str, "Ks") == 0)
 		{
-			//ÉXÉyÉLÉÖÉâ
+			//XyL
 			fscanf(file, "%f", &materialArray[mc].Material.Specular.x);
 			fscanf(file, "%f", &materialArray[mc].Material.Specular.y);
 			fscanf(file, "%f", &materialArray[mc].Material.Specular.z);
@@ -553,17 +553,17 @@ void ModelRenderer::LoadMaterial(const char* FileName, MODEL_MATERIAL** Material
 		}
 		else if (strcmp(str, "Ns") == 0)
 		{
-			//ÉXÉyÉLÉÖÉâã≠ìx
+			//XyLx
 			fscanf(file, "%f", &materialArray[mc].Material.Shininess);
 		}
 		else if (strcmp(str, "d") == 0)
 		{
-			//ÉAÉãÉtÉ@
+			//At@
 			fscanf(file, "%f", &materialArray[mc].Material.Diffuse.w);
 		}
 		else if (strcmp(str, "map_Kd") == 0)
 		{
-			//ÉeÉNÉXÉ`ÉÉ
+			//eNX`
 			fscanf(file, "%s", str);
 
 			char path[256];

@@ -9,7 +9,7 @@
 
 #include <cereal/cereal.hpp>
 #include <DirectXMath.h>
-#include "RendererDX11.h"
+#include "Renderer.h"
 
 //DirectXMathの型のシリアライズ関数
 namespace DirectX {

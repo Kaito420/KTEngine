@@ -8,7 +8,7 @@ static XMMATRIX g_billboardMtx = XMMatrixIdentity();
 
 void Particle::Awake()
 {
-	ID3D11Device* pDevice = RendererDX11::GetDevice();
+	ID3D11Device* pDevice = Renderer::GetDevice();
 	// 頂点バッファ生成
 	D3D11_BUFFER_DESC bd;
 	ZeroMemory(&bd, sizeof(bd));
@@ -39,7 +39,7 @@ void Particle::Awake()
 	D3D11_SUBRESOURCE_DATA sd;
 	sd.pSysMem = vertex;
 
-	RendererDX11::GetDevice()->CreateBuffer(&bd, &sd, &_VertexBuffer);
+	Renderer::CreateBuffer(&bd, &sd, &_VertexBuffer);
 
 	_texture = Texture::Load("asset/texture/particle.png");
 
@@ -91,22 +91,22 @@ void Particle::Render() const
 	// 頂点バッファ設定
 	UINT stride = sizeof(Vertex);
 	UINT offset = 0;
-	RendererDX11::GetContext()->IASetVertexBuffers(0, 1, &_VertexBuffer, &stride, &offset);
+	Renderer::IASetVertexBuffers(0, 1, &_VertexBuffer, &stride, &offset);
 
 	//テクスチャ設定
-	RendererDX11::GetContext()->PSSetShaderResources(0, 1, &_texture);
+	Renderer::PSSetShaderResources(0, 1, &_texture);
 
 	// プリミティブトポロジ設定
-	RendererDX11::GetContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+	Renderer::IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
 	// マテリアル設定
 	MATERIAL material;
 	ZeroMemory(&material, sizeof(material));
 	material.Diffuse = XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f);
 	material.TextureEnable = true;
-	RendererDX11::SetMaterial(material);
+	Renderer::SetMaterial(material);
 
-	RendererDX11::SetDepthEnable(false);
+	Renderer::SetDepthEnable(false);
 
 	for (int i = 0; i < PARTICLE_MAX; i++) {
 		if (_particle[i].enable == true) {
@@ -123,13 +123,13 @@ void Particle::Render() const
 
 			XMMATRIX worldMatrix = rotation * scale * g_billboardMtx * translation;
 
-			RendererDX11::SetWorldMatrix(worldMatrix);
+			Renderer::SetWorldMatrix(worldMatrix);
 
 			// ポリゴン描画
-			RendererDX11::GetContext()->Draw(4, 0);
+			Renderer::Draw(4, 0);
 		}
 	}
 
 
-	RendererDX11::SetDepthEnable(true);
+	Renderer::SetDepthEnable(true);
 }

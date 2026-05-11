@@ -21,9 +21,9 @@ void SkyDome::Update()
 
 void SkyDome::Render() const
 {
-	RendererDX11::SetDepthEnable(false);
-	RendererDX11::SetCullModeFront();
+	Renderer::SetDepthEnable(false);
+	Renderer::SetCullModeFront();
 	_sphere->Render();
-	RendererDX11::SetCullModeBack();
-	RendererDX11::SetDepthEnable(true);
+	Renderer::SetCullModeBack();
+	Renderer::SetDepthEnable(true);
 }

@@ -24,7 +24,7 @@ void Fade::Render() const
 	//頂点バッファ設定
 	UINT stride = sizeof(Vertex);
 	UINT offset = 0;
-	RendererDX11::GetContext()->IASetVertexBuffers(0, 1, _vertexBuffer.GetAddressOf(), &stride, &offset);
+	Renderer::IASetVertexBuffers(0, 1, _vertexBuffer.GetAddressOf(), &stride, &offset);
 
 	//マトリクス設定
 	Camera* camera = Manager::GetCurrentScene()->FindGameObjectByName<Camera>("Camera");
@@ -40,20 +40,20 @@ void Fade::Render() const
 
 	XMMATRIX worldMatrix = scale * rotation * translation;
 
-	RendererDX11::SetWorldMatrix(worldMatrix);
+	Renderer::SetWorldMatrix(worldMatrix);
 
 	//プリミティブトポロジ設定
-	RendererDX11::GetContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+	Renderer::IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
 	MATERIAL material = {};
 	material.Diffuse = { _color, _color, _color, _alpha };
 	material.TextureEnable = false;
-	RendererDX11::SetMaterial(material);
+	Renderer::SetMaterial(material);
 
-	RendererDX11::GetContext()->PSSetShaderResources(0, 1, &_texture);
+	Renderer::PSSetShaderResources(0, 1, &_texture);
 
 	//ポリゴン描画
-	RendererDX11::GetContext()->Draw(4, 0);
+	Renderer::Draw(4, 0);
 }
 
 void Fade::OnDestroy()

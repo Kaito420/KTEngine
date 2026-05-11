@@ -1,7 +1,7 @@
-#include <windows.h>
+ï»¿#include <windows.h>
 #include <time.h>
 #include "ImGuiLayer.h"
-#include "RendererDX11.h"
+#include "Renderer.h"
 #include "backends/imgui_impl_win32.h"
 #include "backends/imgui_impl_dx11.h"
 #include "imgui.h"
@@ -11,12 +11,12 @@
 #include "Scene.h"
 #include "Input.h"
 
-// ƒOƒ[ƒoƒ‹•Ï”
+// ã‚°ãƒ­ãƒ¼ãƒãƒ«å¤‰æ•°
 HWND hwnd = nullptr;
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);                // Use ImGui::GetCurrentContext()
 FileBrowser fileBrowser;
 
-// ƒEƒBƒ“ƒhƒEƒvƒƒV[ƒWƒƒ
+// ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ãƒ—ãƒ­ã‚·ãƒ¼ã‚¸ãƒ£
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam))
         return true;
@@ -36,7 +36,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
 
     srand((unsigned)time(NULL));
-    // ƒEƒBƒ“ƒhƒEƒNƒ‰ƒX“o˜^
+    // ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚¯ãƒ©ã‚¹ç™»éŒ²
     WNDCLASSEX wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L,
                       hInstance, NULL, NULL, NULL, NULL,
                       "DX11WindowClass", NULL };
@@ -48,20 +48,21 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
     ShowWindow(hwnd, nCmdShow);
     UpdateWindow(hwnd);
 
-    // DirectX11 ‰Šú‰»
-    if (!RendererDX11::Init(hwnd)) return 1;
+    Manager::LoadEngineConfig();
+    // DirectX11 åˆæœŸåŒ–
+    if (!Renderer::Init(hwnd)) return 1;
 
-    // ImGui ‰Šú‰»
-    ImGuiLayer::Init(hwnd, RendererDX11::GetDevice(), RendererDX11::GetContext());
+    // ImGui åˆæœŸåŒ–
+    ImGuiLayer::Init(hwnd, Renderer::GetDevice(), Renderer::GetContext());
 
-    //Manager ‰Šú‰»
+    //Manager åˆæœŸåŒ–
     Manager::Initialize();
     Input::Initialize(hwnd);
 
-    //ƒV[ƒ“—pƒoƒbƒtƒ@iˆê’UƒTƒCƒYŒÅ’èj
-    RendererDX11::InitSceneRenderTarget(1280,720);
+    //ã‚·ãƒ¼ãƒ³ç”¨ãƒãƒƒãƒ•ã‚¡ï¼ˆä¸€æ—¦ã‚µã‚¤ã‚ºå›ºå®šï¼‰
+    Renderer::InitSceneRenderTarget(1280,720);
 
-    // ƒƒCƒ“ƒ‹[ƒv
+    // ãƒ¡ã‚¤ãƒ³ãƒ«ãƒ¼ãƒ—
     MSG msg = {};
     while (msg.message != WM_QUIT) {
         if (PeekMessage(&msg, NULL, 0U, 0U, PM_REMOVE)) {
@@ -70,16 +71,16 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
             continue;
         }
 
-        Manager::Update(); // Manager‚ÌXV
+        Manager::Update(); // Managerã®æ›´æ–°
 
-        //ƒQ[ƒ€ƒV[ƒ“‚ğƒeƒNƒXƒ`ƒƒ‚ÉƒŒƒ“ƒ_ƒŠƒ“ƒO
-        RendererDX11::BeginSceneRender();
+        //ã‚²ãƒ¼ãƒ ã‚·ãƒ¼ãƒ³ã‚’ãƒ†ã‚¯ã‚¹ãƒãƒ£ã«ãƒ¬ãƒ³ãƒ€ãƒªãƒ³ã‚°
+        Renderer::BeginSceneRender();
         Manager::Render();
 
-        //ImGui‚ÆƒEƒBƒ“ƒhƒE‘S‘Ì‚ÌƒŒƒ“ƒ_ƒŠƒ“ƒO
-        RendererDX11::BeginFrame();
+        //ImGuiã¨ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦å…¨ä½“ã®ãƒ¬ãƒ³ãƒ€ãƒªãƒ³ã‚°
+        Renderer::BeginFrame();
 
-		//Manager::Render(); // Manager‚Ì•`‰æ
+		//Manager::Render(); // Managerã®æç”»
 
 
         ImGuiLayer::Begin();
@@ -94,14 +95,14 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
             Manager::GetCurrentScene()->RenderButton();
 
             if (Manager::IsShowGameView()) {
-                ImGui::Begin("Game View", nullptr, ImGuiWindowFlags_NoScrollbar);//ƒQ[ƒ€ƒrƒ…[•`‰æ
+                ImGui::Begin("Game View", nullptr, ImGuiWindowFlags_NoScrollbar);//ã‚²ãƒ¼ãƒ ãƒ“ãƒ¥ãƒ¼æç”»
                 {
-                    ImVec2 viewportSize = ImGui::GetContentRegionAvail(); //•`‰æ—Ìˆæ‚ÌƒTƒCƒYæ“¾
+                    ImVec2 viewportSize = ImGui::GetContentRegionAvail(); //æç”»é ˜åŸŸã®ã‚µã‚¤ã‚ºå–å¾—
 
-                    //ƒTƒCƒY‚ª—LŒø‚©‚ÂŒ»İ‚ÌƒeƒNƒXƒ`ƒƒƒTƒCƒY‚ÆˆÙ‚È‚éê‡‚ÍƒŠƒTƒCƒY
-					RendererDX11::ResizeSceneBuffer(viewportSize.x, viewportSize.y);
+                    //ã‚µã‚¤ã‚ºãŒæœ‰åŠ¹ã‹ã¤ç¾åœ¨ã®ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚µã‚¤ã‚ºã¨ç•°ãªã‚‹å ´åˆã¯ãƒªã‚µã‚¤ã‚º
+					Renderer::ResizeSceneBuffer(viewportSize.x, viewportSize.y);
 
-                    void* myTexture = RendererDX11::GetSceneSRV();
+                    void* myTexture = Renderer::GetSceneSRV();
                     if (myTexture == nullptr)
                         ImGui::Text("Texture is NULL!");
                     else {
@@ -116,16 +117,16 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
         ImGuiLayer::End();
 
 
-        RendererDX11::EndFrame();
+        Renderer::EndFrame();
 
-        Input::Update();    //Input‚ÌXV
+        Input::Update();    //Inputã®æ›´æ–°
 
     }
 
-    // ƒNƒŠ[ƒ“ƒAƒbƒv
+    // ã‚¯ãƒªãƒ¼ãƒ³ã‚¢ãƒƒãƒ—
 	Manager::Finalize();
     ImGuiLayer::Shutdown();
-    RendererDX11::Shutdown();
+    Renderer::Shutdown();
     UnregisterClass(wc.lpszClassName, hInstance);
     return 0;
 }

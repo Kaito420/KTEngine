@@ -4,7 +4,7 @@
 // Date:2025/06/23
 //=====================================================================================
 
-#include "RendererDX11.h"
+#include "Renderer.h"
 #include <dxgi.h>
 #include <io.h>
 #include "ShaderManager.h"
@@ -73,6 +73,28 @@ bool RendererDX11::Init(HWND hwnd) {
 
     if (FAILED(hr)) return false;
 
+
+    //レンダーターゲットビュー設定
+    ID3D11Texture2D* backBuffer;
+    _swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
+    _device->CreateRenderTargetView(backBuffer, nullptr, &_rtv);
+    backBuffer->Release();
+
+    return InitState(width, height);
+}
+
+
+
+ID3D11DepthStencilView* RendererDX11::GetDSV() {
+    return _dsv;
+}
+
+void RendererDX11::SetExternalDevice(ID3D11Device* dev, ID3D11DeviceContext* ctx) {
+    _device = dev;
+    _context = ctx;
+}
+
+bool RendererDX11::InitState(UINT width, UINT height) {
     //ビューポート設定
     D3D11_VIEWPORT vp = {};
 	vp.Width = static_cast<float>(GetSystemMetrics(SM_CXSCREEN));
@@ -83,21 +105,15 @@ bool RendererDX11::Init(HWND hwnd) {
 	vp.TopLeftY = 0.0f;
 	_context->RSSetViewports(1, &vp);
 
-    //レンダーターゲットビュー生成、設定
-    ID3D11Texture2D* backBuffer;
-    _swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
-    _device->CreateRenderTargetView(backBuffer, nullptr, &_rtv);
-    backBuffer->Release();
-
     //デプスステンシルバッファ作成
     ID3D11Texture2D* depthStencile{};
     D3D11_TEXTURE2D_DESC textureDesc{};
-    textureDesc.Width = scd.BufferDesc.Width;
-    textureDesc.Height = scd.BufferDesc.Height;
+    textureDesc.Width = width;
+    textureDesc.Height = height;
     textureDesc.MipLevels = 1;
     textureDesc.ArraySize = 1;
     textureDesc.Format = DXGI_FORMAT_D16_UNORM;
-    textureDesc.SampleDesc = scd.SampleDesc;
+    textureDesc.SampleDesc = {1, 0};
     textureDesc.Usage = D3D11_USAGE_DEFAULT;
     textureDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
     textureDesc.CPUAccessFlags = 0;
@@ -642,3 +658,52 @@ void RendererDX11::ResizeSceneBuffer(float width, float height){
     if (FAILED(hr)) return;
 }
 
+
+namespace RendererDX11 {
+    void IASetVertexBuffers(UINT StartSlot, UINT NumBuffers, ID3D11Buffer* const* ppVertexBuffers, const UINT* pStrides, const UINT* pOffsets) {
+        _context->IASetVertexBuffers(StartSlot, NumBuffers, ppVertexBuffers, pStrides, pOffsets);
+    }
+    void IASetIndexBuffer(ID3D11Buffer* pIndexBuffer, DXGI_FORMAT Format, UINT Offset) {
+        _context->IASetIndexBuffer(pIndexBuffer, Format, Offset);
+    }
+    void IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY Topology) {
+        _context->IASetPrimitiveTopology(Topology);
+    }
+    void IASetInputLayout(ID3D11InputLayout* pInputLayout) {
+        _context->IASetInputLayout(pInputLayout);
+    }
+    void VSSetShader(ID3D11VertexShader* pVertexShader, ID3D11ClassInstance* const* ppClassInstances, UINT NumClassInstances) {
+        _context->VSSetShader(pVertexShader, ppClassInstances, NumClassInstances);
+    }
+    void PSSetShader(ID3D11PixelShader* pPixelShader, ID3D11ClassInstance* const* ppClassInstances, UINT NumClassInstances) {
+        _context->PSSetShader(pPixelShader, ppClassInstances, NumClassInstances);
+    }
+    void PSSetShaderResources(UINT StartSlot, UINT NumViews, ID3D11ShaderResourceView* const* ppShaderResourceViews) {
+        _context->PSSetShaderResources(StartSlot, NumViews, ppShaderResourceViews);
+    }
+    void Draw(UINT VertexCount, UINT StartVertexLocation) {
+        _context->Draw(VertexCount, StartVertexLocation);
+    }
+    void DrawIndexed(UINT IndexCount, UINT StartIndexLocation, INT BaseVertexLocation) {
+        _context->DrawIndexed(IndexCount, StartIndexLocation, BaseVertexLocation);
+    }
+    HRESULT Map(ID3D11Resource* pResource, UINT Subresource, D3D11_MAP MapType, UINT MapFlags, D3D11_MAPPED_SUBRESOURCE* pMappedResource) {
+        return _context->Map(pResource, Subresource, MapType, MapFlags, pMappedResource);
+    }
+    void Unmap(ID3D11Resource* pResource, UINT Subresource) {
+        _context->Unmap(pResource, Subresource);
+    }
+    
+    HRESULT CreateVertexShader(const void* pShaderBytecode, SIZE_T BytecodeLength, ID3D11ClassLinkage* pClassLinkage, ID3D11VertexShader** ppVertexShader) {
+        return _device->CreateVertexShader(pShaderBytecode, BytecodeLength, pClassLinkage, ppVertexShader);
+    }
+    HRESULT CreatePixelShader(const void* pShaderBytecode, SIZE_T BytecodeLength, ID3D11ClassLinkage* pClassLinkage, ID3D11PixelShader** ppPixelShader) {
+        return _device->CreatePixelShader(pShaderBytecode, BytecodeLength, pClassLinkage, ppPixelShader);
+    }
+    HRESULT CreateInputLayout(const D3D11_INPUT_ELEMENT_DESC* pInputElementDescs, UINT NumElements, const void* pShaderBytecodeWithInputSignature, SIZE_T BytecodeLength, ID3D11InputLayout** ppInputLayout) {
+        return _device->CreateInputLayout(pInputElementDescs, NumElements, pShaderBytecodeWithInputSignature, BytecodeLength, ppInputLayout);
+    }
+    HRESULT CreateBuffer(const D3D11_BUFFER_DESC* pDesc, const D3D11_SUBRESOURCE_DATA* pInitialData, ID3D11Buffer** ppBuffer) {
+        return _device->CreateBuffer(pDesc, pInitialData, ppBuffer);
+    }
+}

@@ -101,12 +101,12 @@ void Scene::Render()const{
 				ID3D11InputLayout* layout = ShaderManager::Instance().GetInputLayout(shader->GetVertexLayoutID());
 				ID3D11PixelShader* ps = ShaderManager::Instance().GetPixelShader(shader->GetPixelShaderID());
 
-				RendererDX11::GetContext()->VSSetShader(vs, nullptr, 0);
-				RendererDX11::GetContext()->IASetInputLayout(layout);
-				RendererDX11::GetContext()->PSSetShader(ps, nullptr, 0);
+				Renderer::VSSetShader(vs, nullptr, 0);
+				Renderer::IASetInputLayout(layout);
+				Renderer::PSSetShader(ps, nullptr, 0);
 			}
 			else {
-				RendererDX11::SetDefaultShader();
+				Renderer::SetDefaultShader();
 			}
 			gameObject->Render();
 			gameObject->RenderComponents();

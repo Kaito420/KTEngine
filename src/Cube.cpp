@@ -61,7 +61,7 @@ void Cube::Awake() {
 	data.SysMemPitch = 0;
 	data.SysMemSlicePitch = 0;
 
-	RendererDX11::GetDevice()->CreateBuffer(&bd, &data, _vertexBuffer.GetAddressOf());
+	Renderer::CreateBuffer(&bd, &data, _vertexBuffer.GetAddressOf());
 
 	//インデックスバッファ生成
 
@@ -83,7 +83,7 @@ void Cube::Awake() {
 	data.SysMemPitch = 0;
 	data.SysMemSlicePitch = 0;
 
-	RendererDX11::GetDevice()->CreateBuffer(&bd, &data, _indexBuffer.GetAddressOf());
+	Renderer::CreateBuffer(&bd, &data, _indexBuffer.GetAddressOf());
 }
 
 void Cube::Render()const {
@@ -91,9 +91,9 @@ void Cube::Render()const {
 	//頂点バッファの設定
 	UINT stride = sizeof(Vertex);
 	UINT offset = 0;
-	RendererDX11::GetContext()->IASetVertexBuffers(0, 1, _vertexBuffer.GetAddressOf(), &stride, &offset);
+	Renderer::IASetVertexBuffers(0, 1, _vertexBuffer.GetAddressOf(), &stride, &offset);
 	//インデックスバッファの設定
-	RendererDX11::GetContext()->IASetIndexBuffer(_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
+	Renderer::IASetIndexBuffer(_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
 
 	//マトリクス設定
 	//平行移動行列
@@ -110,17 +110,17 @@ void Cube::Render()const {
 	//ワールド行列
 	XMMATRIX worldMatrix =  scaling * rotation * translation;
 
-	RendererDX11::SetWorldMatrix(worldMatrix);
+	Renderer::SetWorldMatrix(worldMatrix);
 
 	MATERIAL material = {};
 	material.Diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
 	material.TextureEnable = false;
-	RendererDX11::SetMaterial(material);
+	Renderer::SetMaterial(material);
 
 	//プリミティブトポロジの設定（三角形リスト）
-	RendererDX11::GetContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	Renderer::IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	//描画コール
-	RendererDX11::GetContext()->DrawIndexed(36, 0, 0); // 36 indices for the cube
+	Renderer::DrawIndexed(36, 0, 0); // 36 indices for the cube
 
 }
 

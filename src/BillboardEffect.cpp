@@ -8,7 +8,7 @@ static XMMATRIX g_billboardMatrix = XMMatrixIdentity();
 
 void BillboardEffect::Awake()
 {
-	ID3D11Device* pDevice = RendererDX11::GetDevice();
+	ID3D11Device* pDevice = Renderer::GetDevice();
 	// 頂点バッファ生成
 	D3D11_BUFFER_DESC bd;
 	ZeroMemory(&bd, sizeof(bd));
@@ -16,11 +16,11 @@ void BillboardEffect::Awake()
 	bd.ByteWidth = sizeof(Vertex) * 4;	//四角形用
 	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	RendererDX11::GetDevice()->CreateBuffer(&bd, NULL, _vertexBuffer.GetAddressOf());
+	Renderer::CreateBuffer(&bd, NULL, _vertexBuffer.GetAddressOf());
 
 
 	D3D11_MAPPED_SUBRESOURCE msr;
-	RendererDX11::GetContext()->Map(_vertexBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &msr);
+	Renderer::Map(_vertexBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &msr);
 	Vertex* vertex = (Vertex*)msr.pData;
 
 	vertex[0].position = XMFLOAT3(-0.5f, +0.5f, 0.0f);
@@ -37,7 +37,7 @@ void BillboardEffect::Awake()
 		vertex[i].color = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 		vertex[i].normal = XMFLOAT3(0.0f, 0.0f, -1.0f);
 	}
-	RendererDX11::GetContext()->Unmap(_vertexBuffer.Get(), 0);
+	Renderer::Unmap(_vertexBuffer.Get(), 0);
 
 	_texture = Texture::Load("asset/texture/explosion.png");
 	_numXCut = 4;
@@ -70,7 +70,7 @@ void BillboardEffect::Update()
 
 void BillboardEffect::Render() const
 {
-	RendererDX11::SetDepthEnable(false);
+	Renderer::SetDepthEnable(false);
 
 	//1カット当たりのwidth,hight
 	float w = 1.0 / _numXCut;
@@ -81,7 +81,7 @@ void BillboardEffect::Render() const
 	float v = (_frame / _numXCut) * h;
 
 	D3D11_MAPPED_SUBRESOURCE msr;
-	RendererDX11::GetContext()->Map(_vertexBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &msr);
+	Renderer::Map(_vertexBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &msr);
 	Vertex* vertex = (Vertex*)msr.pData;
 
 	vertex[0].position = XMFLOAT3(-0.5f, +0.5f, 0.0f);
@@ -98,12 +98,12 @@ void BillboardEffect::Render() const
 		vertex[i].color = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 		vertex[i].normal = XMFLOAT3(0.0f, 1.0f, 0.0f);
 	}
-	RendererDX11::GetContext()->Unmap(_vertexBuffer.Get(), 0);
+	Renderer::Unmap(_vertexBuffer.Get(), 0);
 
 	//頂点バッファ設定
 	UINT stride = sizeof(Vertex);
 	UINT offset = 0;
-	RendererDX11::GetContext()->IASetVertexBuffers(0, 1, _vertexBuffer.GetAddressOf(), &stride, &offset);
+	Renderer::IASetVertexBuffers(0, 1, _vertexBuffer.GetAddressOf(), &stride, &offset);
 
 	//マトリクス設定
 	XMMATRIX translation = XMMatrixTranslation(_owner->_transform._position.x, _owner->_transform._position.y, _owner->_transform._position.z);
@@ -118,22 +118,22 @@ void BillboardEffect::Render() const
 
 	XMMATRIX worldMatrix = rotation * scale * g_billboardMatrix * translation;
 
-	RendererDX11::SetWorldMatrix(worldMatrix);
+	Renderer::SetWorldMatrix(worldMatrix);
 
 	//プリミティブトポロジ設定
-	RendererDX11::GetContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+	Renderer::IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
 	MATERIAL material = {};
 	material.Diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
 	material.TextureEnable = true;
-	RendererDX11::SetMaterial(material);
+	Renderer::SetMaterial(material);
 
-	RendererDX11::GetContext()->PSSetShaderResources(0, 1, &_texture);
+	Renderer::PSSetShaderResources(0, 1, &_texture);
 
 	//ポリゴン描画
-	RendererDX11::GetContext()->Draw(4, 0);
+	Renderer::Draw(4, 0);
 
-	RendererDX11::SetDepthEnable(true);
+	Renderer::SetDepthEnable(true);
 
 }
 

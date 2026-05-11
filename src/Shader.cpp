@@ -5,7 +5,7 @@
 //=====================================================================================
 
 #include "Shader.h"
-#include "RendererDX11.h"
+#include "Renderer.h"
 #include "ShaderManager.h"
 
 void Shader::Awake(){

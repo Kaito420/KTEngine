@@ -9,7 +9,7 @@
 
 
 #include "Component.h"
-#include "RendererDX11.h"
+#include "Renderer.h"
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 

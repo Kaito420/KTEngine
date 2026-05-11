@@ -84,7 +84,7 @@ void Capsule::RebuildBuffers(){
 	D3D11_SUBRESOURCE_DATA sd = {};
 	sd.pSysMem = vertices.data();
 
-	RendererDX11::GetDevice()->CreateBuffer(&bd, &sd, &_vertexBuffer);
+	Renderer::CreateBuffer(&bd, &sd, &_vertexBuffer);
 
 	//インデックスバッファ
 	bd.ByteWidth = sizeof(UINT) * indices.size();
@@ -92,7 +92,7 @@ void Capsule::RebuildBuffers(){
 
 	sd.pSysMem = indices.data();
 
-	RendererDX11::GetDevice()->CreateBuffer(&bd, &sd, &_indexBuffer);
+	Renderer::CreateBuffer(&bd, &sd, &_indexBuffer);
 
 }
 
@@ -105,7 +105,7 @@ void Capsule::UpdateBuffers(){
 
 	//MapしてGPUメモリのポインタを取得
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
-	HRESULT hr = RendererDX11::GetContext()->Map(
+	HRESULT hr = Renderer::Map(
 		_vertexBuffer.Get(),
 		0,
 		D3D11_MAP_WRITE_DISCARD,
@@ -118,7 +118,7 @@ void Capsule::UpdateBuffers(){
 		memcpy(mappedResource.pData, vertices.data(), sizeof(Vertex) * vertices.size());
 
 		//Unmapして変更を確定させる
-		RendererDX11::GetContext()->Unmap(_vertexBuffer.Get(), 0);
+		Renderer::Unmap(_vertexBuffer.Get(), 0);
 	}
 }
 
@@ -131,8 +131,8 @@ void Capsule::Render() const{
 	UINT stride = sizeof(Vertex);
 	UINT offset = 0;
 
-	RendererDX11::GetContext()->IASetVertexBuffers(0, 1, _vertexBuffer.GetAddressOf(), &stride, &offset);
-	RendererDX11::GetContext()->IASetIndexBuffer(_indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+	Renderer::IASetVertexBuffers(0, 1, _vertexBuffer.GetAddressOf(), &stride, &offset);
+	Renderer::IASetIndexBuffer(_indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
 
 
 	//マトリクス設定
@@ -150,21 +150,21 @@ void Capsule::Render() const{
 	//ワールド行列
 	XMMATRIX worldMatrix = scaling * rotation * translation;
 
-	RendererDX11::SetWorldMatrix(worldMatrix);
+	Renderer::SetWorldMatrix(worldMatrix);
 
 	// プリミティブトポロジ設定
-	RendererDX11::GetContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	Renderer::IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	MATERIAL material = {};
 	material.Diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
 	material.TextureEnable = true;
-	RendererDX11::SetMaterial(material);
+	Renderer::SetMaterial(material);
 
 	// シェーダーリソースビュー設定
-	RendererDX11::GetContext()->PSSetShaderResources(0, 1, _texture.GetAddressOf());
+	Renderer::PSSetShaderResources(0, 1, _texture.GetAddressOf());
 
 	// ポリゴン描画
-	RendererDX11::GetContext()->DrawIndexed(_indexCount, 0, 0);
+	Renderer::DrawIndexed(_indexCount, 0, 0);
 
 }
 

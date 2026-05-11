@@ -16,5 +16,5 @@ void Light::Awake(){
 }
 
 void Light::Update(){
-	RendererDX11::SetLight(_lightData);
+	Renderer::SetLight(_lightData);
 }

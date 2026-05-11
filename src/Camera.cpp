@@ -51,8 +51,8 @@ void Camera::Update() {
 	);
 
 	//RendererDX11からシーンサイズを取得してアスペクト比を計算
-	float width = RendererDX11::GetSceneWidth();
-	float height = RendererDX11::GetSceneHeight();
+	float width = Renderer::GetSceneWidth();
+	float height = Renderer::GetSceneHeight();
 	float aspectRatio = width / height;
 
 	if (height <= 0.0f) aspectRatio = 1.777f; //16:9
@@ -63,8 +63,8 @@ void Camera::Update() {
 		0.1f,
 		1000.0f);
 
-	RendererDX11::SetViewMatrix(view);
-	RendererDX11::SetProjectionMatrix(projection);
+	Renderer::SetViewMatrix(view);
+	Renderer::SetProjectionMatrix(projection);
 
 	_viewMatrix = view;
 	_projectionMatrix = projection;

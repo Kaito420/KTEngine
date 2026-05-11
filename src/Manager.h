@@ -1,4 +1,4 @@
-//=====================================================================================
+ï»¿//=====================================================================================
 // Manager.h
 // Author:Kaito Aoki
 // Date:2025/07/04
@@ -10,6 +10,8 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+
+#include "Renderer.h"
 
 class Scene;
 
@@ -24,7 +26,7 @@ private:
 	static std::shared_ptr<Scene> _runtimeScene;
 	static std::shared_ptr<Scene> _nextScene;
 
-	static std::string _currentScenePath;	//Œ»İƒV[ƒ“‚Ìƒtƒ@ƒCƒ‹ƒpƒXiã‘‚«•Û‘¶—pj
+	static std::string _currentScenePath;	//ç¾åœ¨ã‚·ãƒ¼ãƒ³ã®ãƒ•ã‚¡ã‚¤ãƒ«ãƒ‘ã‚¹ï¼ˆä¸Šæ›¸ãä¿å­˜ç”¨ï¼‰
 
 	static EngineMode _mode;
 
@@ -34,6 +36,8 @@ private:
 	static bool _showGameView;
 
 public:
+	static void LoadEngineConfig();
+	static void SaveEngineConfig(GraphicsAPI api);
 	static void Initialize();
 	static void Finalize();
 	static void Update();
@@ -57,17 +61,17 @@ public:
 	static void OpenScene(const std::string& filePath);
 
 	/// <summary>
-	/// ƒƒjƒ…[ƒo[‚Ì•`‰æ
+	/// ãƒ¡ãƒ‹ãƒ¥ãƒ¼ãƒãƒ¼ã®æç”»
 	/// </summary>
 	static void RenderMenuBar();
 
 	/// <summary>
-	/// Œ»İ‚ÌƒpƒX‚Éã‘‚«•Û‘¶iƒpƒX‚ª‚È‚¯‚ê‚Îƒ_ƒCƒAƒƒOj
+	/// ç¾åœ¨ã®ãƒ‘ã‚¹ã«ä¸Šæ›¸ãä¿å­˜ï¼ˆãƒ‘ã‚¹ãŒãªã‘ã‚Œã°ãƒ€ã‚¤ã‚¢ãƒ­ã‚°ï¼‰
 	/// </summary>
 	static void SaveScene();
 
 	/// <summary>
-	/// –¼‘O‚ğ•t‚¯‚Ä•Û‘¶
+	/// åå‰ã‚’ä»˜ã‘ã¦ä¿å­˜
 	/// </summary>
 	static void SaveSceneAs();
 

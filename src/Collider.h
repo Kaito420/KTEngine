@@ -11,7 +11,7 @@
 #include "ktvector.hpp"
 #include <unordered_set>
 #include <vector>
-#include "RendererDX11.h"
+#include "Renderer.h"
 #include <array>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>

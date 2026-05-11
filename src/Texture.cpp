@@ -6,7 +6,7 @@
 
 #include "Texture.h"
 #include "Manager.h"
-#include "RendererDX11.h"
+#include "Renderer.h"
 
 std::unordered_map<std::string, ID3D11ShaderResourceView*> Texture::_texturePool;
 
@@ -25,7 +25,7 @@ ID3D11ShaderResourceView* Texture::Load(const char* FileName) {
 	ScratchImage image;
 	ID3D11ShaderResourceView* texture;
 	LoadFromWICFile(wFileName, WIC_FLAGS_NONE, &metadata, image);
-	CreateShaderResourceView(RendererDX11::GetDevice(), image.GetImages(),
+	CreateShaderResourceView(Renderer::GetDevice(), image.GetImages(),
 		image.GetImageCount(), metadata, &texture);
 	assert(texture);
 

@@ -10,7 +10,7 @@
 #include "GameObject.h"
 #include "Manager.h"
 #include "Scene.h"
-#include "RendererDX11.h"
+#include "Renderer.h"
 #include "Texture.h"
 
 void ClosestPointSegSeg(const KTVECTOR3& s1, const KTVECTOR3& e1, const KTVECTOR3& s2, const KTVECTOR3& e2, KTVECTOR3& c1, KTVECTOR3& c2){
@@ -226,10 +226,10 @@ void ColliderBox::Awake() {
 	bd.ByteWidth = sizeof(Vertex) * 8;
 	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	RendererDX11::GetDevice()->CreateBuffer(&bd, NULL, _vertexBuffer.GetAddressOf());
+	Renderer::CreateBuffer(&bd, NULL, _vertexBuffer.GetAddressOf());
 
 	D3D11_MAPPED_SUBRESOURCE msr;
-	RendererDX11::GetContext()->Map(_vertexBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &msr);
+	Renderer::Map(_vertexBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &msr);
 	Vertex* vertex = (Vertex*)msr.pData;
 
 	//デバッグ用ワイヤーフレーム頂点バッファ生成
@@ -242,7 +242,7 @@ void ColliderBox::Awake() {
 	vertex[6] = { { +_extents.x, -_extents.y, -_extents.z},{0,0,0},{0,1,0,1},{0,0} };	//6　下段右下
 	vertex[7] = { { -_extents.x, -_extents.y, -_extents.z},{0,0,0},{0,1,0,1},{0,0} };	//7　下段左下
 
-	RendererDX11::GetContext()->Unmap(_vertexBuffer.Get(), 0);
+	Renderer::Unmap(_vertexBuffer.Get(), 0);
 
 	//インデックスバッファ生成
 	unsigned short indices[] =
@@ -273,7 +273,7 @@ void ColliderBox::Awake() {
 	D3D11_SUBRESOURCE_DATA data = {};
 	data.pSysMem = indices;
 
-	RendererDX11::GetDevice()->CreateBuffer(&ibd, &data, _indexBuffer.GetAddressOf());
+	Renderer::CreateBuffer(&ibd, &data, _indexBuffer.GetAddressOf());
 
 }
 
@@ -315,7 +315,7 @@ void ColliderBox::Update() {
 void ColliderBox::Render()const {
 
 	D3D11_MAPPED_SUBRESOURCE msr;
-	RendererDX11::GetContext()->Map(_vertexBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &msr);
+	Renderer::Map(_vertexBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &msr);
 	Vertex* vertex = (Vertex*)msr.pData;
 
 	//デバッグ用ワイヤーフレーム頂点バッファ生成
@@ -328,13 +328,13 @@ void ColliderBox::Render()const {
 	vertex[6] = { { + _extents.x, - _extents.y, - _extents.z},{0,0,0},{0,1,0,1},{0,0} };	//6　下段右下
 	vertex[7] = { { - _extents.x, - _extents.y, - _extents.z},{0,0,0},{0,1,0,1},{0,0} };	//7　下段左下
 
-	RendererDX11::GetContext()->Unmap(_vertexBuffer.Get(), 0);
+	Renderer::Unmap(_vertexBuffer.Get(), 0);
 
 	//頂点バッファ設定
 	UINT stride = sizeof(Vertex);
 	UINT offset = 0;
-	RendererDX11::GetContext()->IASetVertexBuffers(0, 1, _vertexBuffer.GetAddressOf(), &stride, &offset);
-	RendererDX11::GetContext()->IASetIndexBuffer(_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
+	Renderer::IASetVertexBuffers(0, 1, _vertexBuffer.GetAddressOf(), &stride, &offset);
+	Renderer::IASetIndexBuffer(_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
 	//マトリクス設定
 	XMMATRIX translation = XMMatrixTranslation(_owner->_transform._position.x, _owner->_transform._position.y, _owner->_transform._position.z);
 
@@ -346,18 +346,18 @@ void ColliderBox::Render()const {
 
 	XMMATRIX worldMatrix = rotation * translation;
 
-	RendererDX11::SetWorldMatrix(worldMatrix);
+	Renderer::SetWorldMatrix(worldMatrix);
 
 	//プリミティブトポロジ設定
-	RendererDX11::GetContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
+	Renderer::IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
 
 	MATERIAL material = {};
 	material.Diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
 	material.TextureEnable = false;
-	RendererDX11::SetMaterial(material);
+	Renderer::SetMaterial(material);
 
 	//ポリゴン描画
-	RendererDX11::GetContext()->DrawIndexed(24, 0, 0);
+	Renderer::DrawIndexed(24, 0, 0);
 
 }
 

@@ -51,7 +51,7 @@ struct MODEL
 
 
 #include "Component.h"
-#include "RendererDX11.h"
+#include "Renderer.h"
 #include <string>
 #include <unordered_map>
 #include <cereal/types/base_class.hpp>

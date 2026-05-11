@@ -41,7 +41,7 @@ void Wave::Awake(){
 		ZeroMemory(&sd, sizeof(sd));
 		sd.pSysMem = m_Vertex;
 
-		RendererDX11::GetDevice()->CreateBuffer(&bd, &sd, &m_VertexBuffer);
+		Renderer::CreateBuffer(&bd, &sd, &m_VertexBuffer);
 	}
 
 
@@ -84,7 +84,7 @@ void Wave::Awake(){
 		ZeroMemory(&sd, sizeof(sd));
 		sd.pSysMem = index;
 
-		RendererDX11::GetDevice()->CreateBuffer(&bd, &sd, &m_IndexBuffer);
+		Renderer::CreateBuffer(&bd, &sd, &m_IndexBuffer);
 	}
 
 
@@ -98,14 +98,14 @@ void Wave::Awake(){
 	//Renderer::CreateVertexShader(&m_VertexShader, &m_VertexLayout,
 	//	"shader\\vertexLightingVS.cso");
 
-	//RendererDX11::CreateVertexShader(&m_VertexShader, &m_VertexLayout,
+	//Renderer::CreateVertexShader(&m_VertexShader, &m_VertexLayout,
 	//	"shader\\waveVS.cso");
 
 
 	//Renderer::CreatePixelShader(&m_PixelShader,
 	//	"shader\\vertexLightingPS.cso");
 
-	//RendererDX11::CreatePixelShader(&m_PixelShader,
+	//Renderer::CreatePixelShader(&m_PixelShader,
 	//	"shader\\wavePS.cso");
 }
 
@@ -163,22 +163,22 @@ void Wave::Update()
 
 	//頂点データ書き換え
 	D3D11_MAPPED_SUBRESOURCE msr;
-	RendererDX11::GetContext()->Map(m_VertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &msr);
+	Renderer::Map(m_VertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &msr);
 
 	Vertex* vertex = (Vertex*)msr.pData;
 
 	memcpy(vertex, m_Vertex, sizeof(Vertex) * 21 * 21);
 
-	RendererDX11::GetContext()->Unmap(m_VertexBuffer, 0);
+	Renderer::Unmap(m_VertexBuffer, 0);
 }
 
 void Wave::Render() const{
 	// 入力レイアウト設定
-	//RendererDX11::GetContext()->IASetInputLayout(m_VertexLayout);
+	//Renderer::IASetInputLayout(m_VertexLayout);
 
 	// シェーダ設定
-	//RendererDX11::GetContext()->VSSetShader(m_VertexShader, NULL, 0);
-	//RendererDX11::GetContext()->PSSetShader(m_PixelShader, NULL, 0);
+	//Renderer::VSSetShader(m_VertexShader, NULL, 0);
+	//Renderer::PSSetShader(m_PixelShader, NULL, 0);
 
 	// ワールドマトリクス設定
 	XMMATRIX world, scale, rot, trans;
@@ -191,15 +191,15 @@ void Wave::Render() const{
 
 	trans = XMMatrixTranslation(_owner->_transform._position.x, _owner->_transform._position.y, _owner->_transform._position.z);
 	world = scale * rot * trans;
-	RendererDX11::SetWorldMatrix(world);
+	Renderer::SetWorldMatrix(world);
 
 	// 頂点バッファ設定
 	UINT stride = sizeof(Vertex);
 	UINT offset = 0;
-	RendererDX11::GetContext()->IASetVertexBuffers(0, 1, &m_VertexBuffer, &stride, &offset);
+	Renderer::IASetVertexBuffers(0, 1, &m_VertexBuffer, &stride, &offset);
 
 	// インデックスバッファ設定
-	RendererDX11::GetContext()->IASetIndexBuffer(
+	Renderer::IASetIndexBuffer(
 		m_IndexBuffer, DXGI_FORMAT_R32_UINT, 0);
 
 	// マテリアル設定
@@ -207,17 +207,17 @@ void Wave::Render() const{
 	//ZeroMemory(&material, sizeof(material));
 	material.Diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	material.TextureEnable = true;
-	RendererDX11::SetMaterial(material);
+	Renderer::SetMaterial(material);
 
 	// テクスチャ設定
-	RendererDX11::GetContext()->PSSetShaderResources(0, 1, &m_Texture);
-	RendererDX11::GetContext()->PSSetShaderResources(1, 1, &m_TextureEnv);
+	Renderer::PSSetShaderResources(0, 1, &m_Texture);
+	Renderer::PSSetShaderResources(1, 1, &m_TextureEnv);
 
 	// プリミティブトポロジ設定
-	RendererDX11::GetContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+	Renderer::IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
 	// ポリゴン描画
-	//RendererDX11::GetContext()->Draw(21 * 21, 0);
-	RendererDX11::GetContext()->DrawIndexed((22 * 2) * 20 - 2, 0, 0);
+	//Renderer::Draw(21 * 21, 0);
+	Renderer::DrawIndexed((22 * 2) * 20 - 2, 0, 0);
 
 }

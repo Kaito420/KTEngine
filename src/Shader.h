@@ -8,7 +8,7 @@
 #define _SHADER_H
 
 #include "Component.h"
-#include "RendererDX11.h"
+#include "Renderer.h"
 #include <string>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>

@@ -5,7 +5,7 @@
 //=====================================================================================
 
 #include "ShaderManager.h"
-#include "RendererDX11.h"
+#include "Renderer.h"
 #include <io.h>
 //生ポインタからComPtrに変更
 void ShaderManager::LoadVertexShader(const std::string& id, const char* fileName){
@@ -26,7 +26,7 @@ void ShaderManager::LoadVertexShader(const std::string& id, const char* fileName
     fclose(file);
 
     //頂点シェーダー作成
-    HRESULT hr = RendererDX11::GetDevice()->CreateVertexShader(buffer, fsize, NULL, &vertexShader);
+    HRESULT hr = Renderer::CreateVertexShader(buffer, fsize, NULL, &vertexShader);
     if (FAILED(hr)) {
         delete[] buffer;
 		assert(false && "CreateVertexShader failed");
@@ -59,7 +59,7 @@ void ShaderManager::LoadVertexShader(const std::string& id, const char* fileName
             inputLayoutDesc.push_back(elementDesc);
         }
         //InputLayout作成
-        hr = RendererDX11::GetDevice()->CreateInputLayout(
+        hr = Renderer::CreateInputLayout(
             inputLayoutDesc.data(), (UINT)inputLayoutDesc.size(),
             buffer, fsize, &vertexLayout);
 
@@ -94,7 +94,7 @@ void ShaderManager::LoadPixelShader(const std::string& id, const char* fileName)
     fread(buffer, fsize, 1, file);
     fclose(file);
 
-    RendererDX11::GetDevice()->CreatePixelShader(buffer, fsize, NULL, &pixelShader);
+    Renderer::CreatePixelShader(buffer, fsize, NULL, &pixelShader);
     
     delete[] buffer;
 

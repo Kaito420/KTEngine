@@ -8,7 +8,7 @@
 #define _SPHERE_H_
 
 #include "Component.h"
-#include "RendererDX11.h"
+#include "Renderer.h"
 #include <vector>
 #include <string>
 #include <cereal/types/base_class.hpp>

@@ -12,7 +12,7 @@
 #include "SceneResult.h"
 #include "ScenePhysicsTest.h"
 
-#include "RendererDX11.h"
+#include "Renderer.h"
 #include "ImGuiLayer.h"
 #include "imgui.h"
 
@@ -30,32 +30,57 @@ std::shared_ptr<Scene> Manager::_runtimeScene = nullptr;
 std::string Manager::_currentScenePath = "";
 EngineMode Manager::_mode = EngineMode::Editor;
 
-//Ã“Iƒƒ“ƒo‚Ì‰Šú‰»
+//é™çš„ãƒ¡ãƒ³ãƒã®åˆæœŸåŒ–
 bool Manager::_showHierarchy = true;
 bool Manager::_showInspector = true;
 bool Manager::_showContentBrowser = true;
 bool Manager::_showGameView = true;
 
-//====ƒwƒ‹ƒp[ŠÖ”: Windows‚Ìƒtƒ@ƒCƒ‹•Û‘¶ƒ_ƒCƒAƒƒO‚ğŠJ‚­====
+//====ãƒ˜ãƒ«ãƒ‘ãƒ¼é–¢æ•°: Windowsã®ãƒ•ã‚¡ã‚¤ãƒ«ä¿å­˜ãƒ€ã‚¤ã‚¢ãƒ­ã‚°ã‚’é–‹ã====
 std::string SaveFileDialog(const char* filter) {
 	OPENFILENAMEA ofn;
 	CHAR szFile[260] = { 0 };
 	ZeroMemory(&ofn, sizeof(ofn));
 	ofn.lStructSize = sizeof(ofn);
-	ofn.hwndOwner = GetActiveWindow(); // ƒƒCƒ“ƒEƒBƒ“ƒhƒE‚Ìƒnƒ“ƒhƒ‹
+	ofn.hwndOwner = GetActiveWindow(); // ãƒ¡ã‚¤ãƒ³ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ãƒãƒ³ãƒ‰ãƒ«
 	ofn.lpstrFile = szFile;
 	ofn.nMaxFile = sizeof(szFile);
-	ofn.lpstrFilter = filter; // —á:"Json File (*.json)\0*.json\0"
+	ofn.lpstrFilter = filter; // ä¾‹:"Json File (*.json)\0*.json\0"
 	ofn.nFilterIndex = 1;
 	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
 
-	// ƒfƒtƒHƒ‹ƒg‚ÌŠg’£q
+	// ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆã®æ‹¡å¼µå­
 	ofn.lpstrDefExt = "json";
 
 	if (GetSaveFileNameA(&ofn) == TRUE) {
 		return std::string(ofn.lpstrFile);
 	}
-	return std::string(); //ƒLƒƒƒ“ƒZƒ‹‚³‚ê‚½‚ç‹ó•¶š
+	return std::string(); //ã‚­ãƒ£ãƒ³ã‚»ãƒ«ã•ã‚ŒãŸã‚‰ç©ºæ–‡å­—
+}
+
+
+#include "Renderer.h"
+#include <shellapi.h>
+
+void Manager::LoadEngineConfig() {
+    std::ifstream ifs("engine_config.json");
+    if (ifs.is_open()) {
+        try {
+            cereal::JSONInputArchive iarchive(ifs);
+            int api = 0;
+            iarchive(cereal::make_nvp("GraphicsAPI", api));
+            Renderer::SetGraphicsAPI(static_cast<GraphicsAPI>(api));
+        } catch(...) {}
+    }
+}
+
+void Manager::SaveEngineConfig(GraphicsAPI api) {
+    std::ofstream ofs("engine_config.json");
+    if (ofs.is_open()) {
+        cereal::JSONOutputArchive oarchive(ofs);
+        int api_val = static_cast<int>(api);
+        oarchive(cereal::make_nvp("GraphicsAPI", api_val));
+    }
 }
 
 void Manager::Initialize() {
@@ -65,7 +90,7 @@ void Manager::Initialize() {
 
 void Manager::Finalize() {
 
-	//I—¹‚Éƒƒ‚ƒŠ‰ğ•úiƒZ[ƒuˆ—‚Íƒ†[ƒU[‚ÉˆÏ‚Ë‚Ä‚¢‚éj
+	//çµ‚äº†æ™‚ã«ãƒ¡ãƒ¢ãƒªè§£æ”¾ï¼ˆã‚»ãƒ¼ãƒ–å‡¦ç†ã¯ãƒ¦ãƒ¼ã‚¶ãƒ¼ã«å§”ã­ã¦ã„ã‚‹ï¼‰
 	_editorScene.reset();
 	_runtimeScene.reset();
 }
@@ -98,7 +123,7 @@ void Manager::Render() {
 		//	_runtimeScene->Initialize();
 		//	_nextScene = nullptr;
 		//}
-		//ƒV[ƒ“Ø‚è‘Ö‚¦‚Íjson‚©‚çOpenScene‚·‚éŒ`‚É•ÏX
+		//ã‚·ãƒ¼ãƒ³åˆ‡ã‚Šæ›¿ãˆã¯jsonã‹ã‚‰OpenSceneã™ã‚‹å½¢ã«å¤‰æ›´
 	}
 
 }
@@ -113,18 +138,18 @@ std::shared_ptr<Scene> Manager::GetCurrentScene() {
 void Manager::NewScene(){
 	_editorScene = std::make_shared<Scene>();
 	_editorScene->Initialize();
-	_currentScenePath = "";	//V‹KƒV[ƒ“‚Í‚Ü‚¾•Û‘¶‚³‚ê‚Ä‚¢‚È‚¢‚Ì‚ÅƒpƒX‚Í‹ó‚É‚µ‚Ä‚¨‚­
+	_currentScenePath = "";	//æ–°è¦ã‚·ãƒ¼ãƒ³ã¯ã¾ã ä¿å­˜ã•ã‚Œã¦ã„ãªã„ã®ã§ãƒ‘ã‚¹ã¯ç©ºã«ã—ã¦ãŠã
 }
 
 void Manager::SaveScene(const std::string& filePath){
 	if (!_editorScene)return;
 
 	std::ofstream os(filePath);
-	if (os.is_open()) {//Sceneƒ^ƒO‚ÅƒXƒ}[ƒgƒ|ƒCƒ“ƒ^–ˆ•Û‘¶iƒ|ƒŠƒ‚[ƒtƒBƒYƒ€‚Ì‚½‚ßj
+	if (os.is_open()) {//Sceneã‚¿ã‚°ã§ã‚¹ãƒãƒ¼ãƒˆãƒã‚¤ãƒ³ã‚¿æ¯ä¿å­˜ï¼ˆãƒãƒªãƒ¢ãƒ¼ãƒ•ã‚£ã‚ºãƒ ã®ãŸã‚ï¼‰
 		cereal::JSONOutputArchive archive(os);
 		archive(cereal::make_nvp("Scene", _editorScene));
 
-		_currentScenePath = filePath; //•Û‘¶‚µ‚½ƒtƒ@ƒCƒ‹ƒpƒX‚ğŒ»İ‚ÌƒV[ƒ“ƒpƒX‚Æ‚µ‚Ä•Û‘¶
+		_currentScenePath = filePath; //ä¿å­˜ã—ãŸãƒ•ã‚¡ã‚¤ãƒ«ãƒ‘ã‚¹ã‚’ç¾åœ¨ã®ã‚·ãƒ¼ãƒ³ãƒ‘ã‚¹ã¨ã—ã¦ä¿å­˜
 	}
 }
 
@@ -134,33 +159,34 @@ void Manager::OpenScene(const std::string& filePath){
 		try {
 			cereal::JSONInputArchive archive(is);
 
-			//ˆê’U“Ç‚İ‚İ—p‚ÌƒV[ƒ“
+			//ä¸€æ—¦èª­ã¿è¾¼ã¿ç”¨ã®ã‚·ãƒ¼ãƒ³
 			std::shared_ptr<Scene> loadedScene;
 			archive(cereal::make_nvp("Scene", loadedScene));
 
-			if (loadedScene) {//“Ç‚İ‚İ¬Œ÷‚ÉƒGƒfƒBƒ^ƒV[ƒ“‚É‘‚«Š·‚¦
+			if (loadedScene) {//èª­ã¿è¾¼ã¿æˆåŠŸæ™‚ã«ã‚¨ãƒ‡ã‚£ã‚¿ã‚·ãƒ¼ãƒ³ã«æ›¸ãæ›ãˆ
 				_editorScene = loadedScene;
-				_editorScene->OnLoaded();//physicsSystem‚Ì‰Šú‰»‚È‚Ç
-				_currentScenePath = filePath; //“Ç‚İ‚ñ‚¾ƒtƒ@ƒCƒ‹ƒpƒX‚ğŒ»İ‚ÌƒV[ƒ“ƒpƒX‚Æ‚µ‚Ä•Û‘¶
+				_editorScene->OnLoaded();//physicsSystemã®åˆæœŸåŒ–ãªã©
+				_currentScenePath = filePath; //èª­ã¿è¾¼ã‚“ã ãƒ•ã‚¡ã‚¤ãƒ«ãƒ‘ã‚¹ã‚’ç¾åœ¨ã®ã‚·ãƒ¼ãƒ³ãƒ‘ã‚¹ã¨ã—ã¦ä¿å­˜
 			}
 		}
 		catch (const std::exception& e) {
-			//“Ç‚İ‚İ¸”s
+			//èª­ã¿è¾¼ã¿å¤±æ•—
 			MessageBoxA(NULL, e.what(), "Scene Load Error", MB_OK | MB_ICONERROR);
 		}
 	}
 }
 
 void Manager::RenderMenuBar(){
+	static bool bShowRestartPopup = false;
 	if (ImGui::BeginMainMenuBar()) {
-		if (ImGui::BeginMenu("File")) {//Fileƒƒjƒ…[
+		if (ImGui::BeginMenu("File")) {//Fileãƒ¡ãƒ‹ãƒ¥ãƒ¼
 
 			if (ImGui::MenuItem("New Scene")) {
 				NewScene();
 			}
 			
 			if (ImGui::MenuItem("Open Scene")) {
-				//ƒtƒ@ƒCƒ‹ƒ_ƒCƒAƒƒO‚ğŠJ‚¢‚ÄƒV[ƒ“‚ğ‘I‘ğ
+				//ãƒ•ã‚¡ã‚¤ãƒ«ãƒ€ã‚¤ã‚¢ãƒ­ã‚°ã‚’é–‹ã„ã¦ã‚·ãƒ¼ãƒ³ã‚’é¸æŠ
 
 			}
 
@@ -180,7 +206,21 @@ void Manager::RenderMenuBar(){
 		ImGui::EndMenu();
 		}
 
-		if (ImGui::BeginMenu("Window")) { //Windowƒƒjƒ…[
+		
+            if (ImGui::BeginMenu("Options")) {
+                GraphicsAPI currentAPI = Renderer::GetGraphicsAPI();
+                int api_int = static_cast<int>(currentAPI);
+                if (ImGui::Combo("Graphics API", &api_int, "DirectX 11\0DirectX 12\0")) {
+                    if (api_int != static_cast<int>(currentAPI)) {
+                        SaveEngineConfig(static_cast<GraphicsAPI>(api_int));
+                        bShowRestartPopup = true;
+                    }
+                }
+                ImGui::EndMenu();
+            }
+
+
+            if (ImGui::BeginMenu("Window")) { //Windowãƒ¡ãƒ‹ãƒ¥ãƒ¼
 			ImGui::MenuItem("Hierarchy", nullptr, &_showHierarchy);
 			ImGui::MenuItem("Inspector", nullptr, &_showInspector);
 			ImGui::MenuItem("Content Browser", nullptr, &_showContentBrowser);
@@ -190,6 +230,27 @@ void Manager::RenderMenuBar(){
 		}
 	ImGui::EndMainMenuBar();
 	}
+
+    if (bShowRestartPopup) {
+        ImGui::OpenPopup("Restarting Engine");
+        bShowRestartPopup = false;
+    }
+
+    if (ImGui::BeginPopupModal("Restarting Engine", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::Text("Graphics API changed. Restarting application...");
+        ImGui::Separator();
+        
+        static float restart_timer = 0.0f;
+        restart_timer += ImGui::GetIO().DeltaTime;
+        
+        if (restart_timer > 1.5f) {
+            TCHAR szExeFileName[MAX_PATH];
+            GetModuleFileName(NULL, szExeFileName, MAX_PATH);
+            ShellExecute(NULL, "open", szExeFileName, NULL, NULL, SW_SHOWNORMAL);
+            PostQuitMessage(0);
+        }
+        ImGui::EndPopup();
+    }
 }
 
 void Manager::SaveScene(){
@@ -213,14 +274,14 @@ void Manager::Play(){
 	if (_mode == EngineMode::Runtime)return;
 	if (!_editorScene)return;
 
-	//ƒGƒfƒBƒ^ƒV[ƒ“‚Ìó‘Ô‚ğƒƒ‚ƒŠã‚ÉƒVƒŠƒAƒ‰ƒCƒY
+	//ã‚¨ãƒ‡ã‚£ã‚¿ã‚·ãƒ¼ãƒ³ã®çŠ¶æ…‹ã‚’ãƒ¡ãƒ¢ãƒªä¸Šã«ã‚·ãƒªã‚¢ãƒ©ã‚¤ã‚º
 	std::stringstream ss;
-	{//ˆê•Û‘¶‚È‚Ì‚ÅƒoƒCƒiƒŠ‚Å‚‘¬‚És‚¤
+	{//ä¸€æ™‚ä¿å­˜ãªã®ã§ãƒã‚¤ãƒŠãƒªã§é«˜é€Ÿã«è¡Œã†
 		cereal::BinaryOutputArchive outArchive(ss);
 		outArchive(_editorScene);
 	}
 
-	//ƒƒ‚ƒŠ‚©‚çƒfƒVƒŠƒAƒ‰ƒCƒY‚µ‚Äƒ‰ƒ“ƒ^ƒCƒ€ƒV[ƒ“‚ğ¶¬
+	//ãƒ¡ãƒ¢ãƒªã‹ã‚‰ãƒ‡ã‚·ãƒªã‚¢ãƒ©ã‚¤ã‚ºã—ã¦ãƒ©ãƒ³ã‚¿ã‚¤ãƒ ã‚·ãƒ¼ãƒ³ã‚’ç”Ÿæˆ
 	{
 		cereal::BinaryInputArchive inArchive(ss);
 		inArchive(_runtimeScene);
@@ -228,7 +289,7 @@ void Manager::Play(){
 
 	if (_runtimeScene) {
 		_mode = EngineMode::Runtime;
-		_runtimeScene->OnLoaded(); //ID•œŒ³‚âPhysicsSystemÄ\’z
+		_runtimeScene->OnLoaded(); //IDå¾©å…ƒã‚„PhysicsSystemå†æ§‹ç¯‰
 		
 	}
 
@@ -237,7 +298,7 @@ void Manager::Play(){
 void Manager::Stop(){
 	if (_mode == EngineMode::Editor)return;
 
-	//Œ»İ‚Ìƒ‰ƒ“ƒ^ƒCƒ€ƒV[ƒ“‚ğI—¹‚µ‚ÄEditor‚É–ß‚·
+	//ç¾åœ¨ã®ãƒ©ãƒ³ã‚¿ã‚¤ãƒ ã‚·ãƒ¼ãƒ³ã‚’çµ‚äº†ã—ã¦Editorã«æˆ»ã™
 	if (_runtimeScene) {
 		_runtimeScene->Finalize();
 		_runtimeScene.reset();

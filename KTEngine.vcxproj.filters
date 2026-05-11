@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="ソース ファイル">
@@ -51,6 +51,12 @@
     <ClCompile Include="src\RendererDX11.cpp">
       <Filter>ソース ファイル\Framework</Filter>
     </ClCompile>
+    <ClCompile Include="src\Renderer.cpp">
+      <Filter>ソース ファイル\Framework</Filter>
+    </ClCompile>
+    <ClCompile Include="src\RendererDX12.cpp">
+      <Filter>ソース ファイル\Framework</Filter>
+    </ClCompile>
     <ClCompile Include="libs\imgui\imgui.cpp">
       <Filter>ソース ファイル\Framework\ImGui</Filter>
     </ClCompile>
@@ -67,6 +73,9 @@
       <Filter>ソース ファイル\Framework\ImGui</Filter>
     </ClCompile>
     <ClCompile Include="libs\imgui\backends\imgui_impl_dx11.cpp">
+      <Filter>ソース ファイル\Framework\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\imgui\backends\imgui_impl_dx12.cpp">
       <Filter>ソース ファイル\Framework\ImGui</Filter>
     </ClCompile>
     <ClCompile Include="libs\imgui\backends\imgui_impl_win32.cpp">
@@ -206,6 +215,12 @@
     <ClInclude Include="src\RendererDX11.h">
       <Filter>ヘッダー ファイル\Framework</Filter>
     </ClInclude>
+    <ClInclude Include="src\Renderer.h">
+      <Filter>ヘッダー ファイル\Framework</Filter>
+    </ClInclude>
+    <ClInclude Include="src\RendererDX12.h">
+      <Filter>ヘッダー ファイル\Framework</Filter>
+    </ClInclude>
     <ClInclude Include="libs\imgui\imconfig.h">
       <Filter>ヘッダー ファイル\Framework\ImGui</Filter>
     </ClInclude>
@@ -225,6 +240,9 @@
       <Filter>ヘッダー ファイル\Framework\ImGui</Filter>
     </ClInclude>
     <ClInclude Include="libs\imgui\backends\imgui_impl_dx11.h">
+      <Filter>ヘッダー ファイル\Framework\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\imgui\backends\imgui_impl_dx12.h">
       <Filter>ヘッダー ファイル\Framework\ImGui</Filter>
     </ClInclude>
     <ClInclude Include="libs\imgui\backends\imgui_impl_win32.h">
