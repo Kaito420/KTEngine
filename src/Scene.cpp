@@ -384,3 +384,15 @@ void Scene::RenderButton(){
 }
 
 
+
+
+std::shared_ptr<GameObject> Scene::GetSelectedGameObject() {
+	if (_selectedObjId != -1) {
+		for (auto& gameObject : _gameObjects) {
+			if (gameObject->_id == _selectedObjId) {
+				return gameObject;
+			}
+		}
+	}
+	return nullptr;
+}

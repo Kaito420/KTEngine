@@ -43,6 +43,7 @@ public:
 	virtual void RenderButton();
 
 	virtual PhysicsSystem* GetPhysicsSystem() { return _physicsSystem; }
+	std::shared_ptr<GameObject> GetSelectedGameObject();
 
 	void OnLoaded();
 

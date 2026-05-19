@@ -210,6 +210,9 @@
     <ClCompile Include="src\EditorCamera.cpp">
       <Filter>ソース ファイル\Framework</Filter>
     </ClCompile>
+    <ClCompile Include="libs\imgui\ImGuizmo.cpp">
+      <Filter>ソース ファイル\Framework\ImGui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ImGuiLayer.h">
@@ -385,6 +388,9 @@
     </ClInclude>
     <ClInclude Include="src\EditorCamera.h">
       <Filter>ヘッダー ファイル\Framework</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\imgui\ImGuizmo.h">
+      <Filter>ヘッダー ファイル\Framework\ImGui</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
