@@ -47,7 +47,16 @@ namespace {
     ID3D11DepthStencilView* _sceneDSV = nullptr;
 
     float _sceneWidth = 1920.0f;    //‰Šú’l
-	float _sceneHeight = 1080.0f;   //‰Šú’l
+	float _sceneHeight = 1080.0f;
+
+    ID3D11Texture2D* _gameTexture = nullptr;
+    ID3D11RenderTargetView* _gameRTV = nullptr;
+    ID3D11ShaderResourceView* _gameSRV = nullptr;
+    ID3D11Texture2D* _gameDepthTexture = nullptr;
+    ID3D11DepthStencilView* _gameDSV = nullptr;
+
+    float _gameWidth = 1920.0f;
+    float _gameHeight = 1080.0f;
 }
 
 bool RendererDX11::Init(HWND hwnd) {
@@ -706,4 +715,99 @@ namespace RendererDX11 {
     HRESULT CreateBuffer(const D3D11_BUFFER_DESC* pDesc, const D3D11_SUBRESOURCE_DATA* pInitialData, ID3D11Buffer** ppBuffer) {
         return _device->CreateBuffer(pDesc, pInitialData, ppBuffer);
     }
+}
+
+
+bool RendererDX11::InitGameRenderTarget(int width, int height) {
+    if (width <= 0 || height <= 0) return false;
+    _gameWidth = width;
+    _gameHeight = height;
+
+    HRESULT hr;
+    D3D11_TEXTURE2D_DESC texDesc = {};
+    texDesc.Width = width;
+    texDesc.Height = height;
+    texDesc.MipLevels = 1;
+    texDesc.ArraySize = 1;
+    texDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    texDesc.SampleDesc.Count = 1;
+    texDesc.Usage = D3D11_USAGE_DEFAULT;
+    texDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+    texDesc.CPUAccessFlags = 0;
+
+    hr = _device->CreateTexture2D(&texDesc, NULL, &_gameTexture);
+    if (FAILED(hr)) return false;
+
+    D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = {};
+    rtvDesc.Format = texDesc.Format;
+    rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+    hr = _device->CreateRenderTargetView(_gameTexture, &rtvDesc, &_gameRTV);
+    if (FAILED(hr)) return false;
+
+    D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+    srvDesc.Format = texDesc.Format;
+    srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+    srvDesc.Texture2D.MostDetailedMip = 0;
+    srvDesc.Texture2D.MipLevels = 1;
+    hr = _device->CreateShaderResourceView(_gameTexture, &srvDesc, &_gameSRV);
+    if (FAILED(hr)) return false;
+
+    D3D11_TEXTURE2D_DESC depthTexDesc = texDesc;
+    depthTexDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    depthTexDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+
+    hr = _device->CreateTexture2D(&depthTexDesc, NULL, &_gameDepthTexture);
+    if (FAILED(hr)) return false;
+
+    D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
+    dsvDesc.Format = depthTexDesc.Format;
+    dsvDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+    hr = _device->CreateDepthStencilView(_gameDepthTexture, &dsvDesc, &_gameDSV);
+    if (FAILED(hr)) return false;
+
+    return true;
+}
+
+void RendererDX11::BeginGameRender() {
+    float clearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+    _context->OMSetRenderTargets(1, &_gameRTV, _gameDSV);
+    _context->ClearRenderTargetView(_gameRTV, clearColor);
+    _context->ClearDepthStencilView(_gameDSV, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+
+    D3D11_VIEWPORT vp = {};
+    vp.Width = static_cast<float>(_gameWidth);
+    vp.Height = static_cast<float>(_gameHeight);
+    vp.MinDepth = 0.0f;
+    vp.MaxDepth = 1.0f;
+    vp.TopLeftX = 0;
+    vp.TopLeftY = 0;
+    _context->RSSetViewports(1, &vp);
+}
+
+void RendererDX11::ResizeGameBuffer(float width, float height) {
+    if (_gameWidth == width && _gameHeight == height) return;
+    _gameWidth = width;
+    _gameHeight = height;
+
+    if (_gameRTV) { _gameRTV->Release(); _gameRTV = nullptr; }
+    if (_gameSRV) { _gameSRV->Release(); _gameSRV = nullptr; }
+    if (_gameTexture) { _gameTexture->Release(); _gameTexture = nullptr; }
+    if (_gameDSV) { _gameDSV->Release(); _gameDSV = nullptr; }
+    if (_gameDepthTexture) { _gameDepthTexture->Release(); _gameDepthTexture = nullptr; }
+
+    InitGameRenderTarget(width, height);
+}
+
+void* RendererDX11::GetGameSRV() {
+    return _gameSRV;
+}
+
+
+float RendererDX11::GetGameWidth() {
+    return static_cast<float>(_gameWidth);
+}
+
+float RendererDX11::GetGameHeight() {
+    return static_cast<float>(_gameHeight);
 }

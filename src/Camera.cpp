@@ -51,8 +51,8 @@ void Camera::Update() {
 	);
 
 	//RendererDX11からシーンサイズを取得してアスペクト比を計算
-	float width = Renderer::GetSceneWidth();
-	float height = Renderer::GetSceneHeight();
+	float width = Renderer::GetGameWidth();
+	float height = Renderer::GetGameHeight();
 	float aspectRatio = width / height;
 
 	if (height <= 0.0f) aspectRatio = 1.777f; //16:9
@@ -63,26 +63,6 @@ void Camera::Update() {
 		0.1f,
 		1000.0f);
 
-	Renderer::SetViewMatrix(view);
-	Renderer::SetProjectionMatrix(projection);
-
 	_viewMatrix = view;
 	_projectionMatrix = projection;
-
-	if (Input::IsMouseButtonDown(Input::MouseButton::Right) && Input::IsGameViewHovered()) {
-		_transform._rotation.y += (float)Input::GetMouseDelta().first * 0.1f;
-		_transform._rotation.x += (float)Input::GetMouseDelta().second * 0.1f;
-	}
-
-	if (Input::IsMouseButtonDown(Input::MouseButton::Middle) && Input::IsGameViewHovered()) {
-		_transform._position += upKTVec * (float)Input::GetMouseDelta().second * 0.1f;
-		_transform._position += rightKTVec * -(float)Input::GetMouseDelta().first * 0.1f;
-	}
-
-	if (Input::GetMouseWheelDelta() != 0 && Input::IsGameViewHovered()) {
-		_transform._position += frontKTVec * (float)Input::GetMouseWheelDelta() * 0.03f;
-	}
-
-	XMFLOAT4 tempPos = XMFLOAT4(_transform._position.x, _transform._position.y, _transform._position.z, 0.0f);
-
 }

@@ -25,6 +25,7 @@ namespace {
 	int _wheelDelta = 0;
 
 	bool _isGameViewHovered = false;
+	bool _isSceneViewHovered = false;
 }
 
 
@@ -166,4 +167,13 @@ std::pair<LONG, LONG> Input::GetMouseDelta(){
 int Input::GetMouseWheelDelta()
 {
 	return _wheelDelta;
+}
+
+
+void Input::SetSceneViewHovered(bool hovered) {
+	_isSceneViewHovered = hovered;
+}
+
+bool Input::IsSceneViewHovered() {
+	return _isSceneViewHovered;
 }

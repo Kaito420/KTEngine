@@ -1,4 +1,4 @@
-﻿//=====================================================================================
+//=====================================================================================
 // Manager.h
 // Author:Kaito Aoki
 // Date:2025/07/04
@@ -11,6 +11,8 @@
 #include <string>
 #include <unordered_map>
 
+#include "Scene.h"
+#include "EditorCamera.h"
 #include "Renderer.h"
 
 class Scene;
@@ -34,6 +36,9 @@ private:
 	static bool _showInspector;
 	static bool _showContentBrowser;
 	static bool _showGameView;
+	static bool _showSceneView;
+
+	static EditorCamera _editorCamera;
 
 public:
 	static void LoadEngineConfig();
@@ -47,6 +52,9 @@ public:
 	static bool IsShowInspector() { return _showInspector; }
 	static bool IsShowContentBrowser() { return _showContentBrowser; }
 	static bool IsShowGameView() { return _showGameView; }
+	static bool IsShowSceneView() { return _showSceneView; }
+
+	static EditorCamera* GetEditorCamera() { return &_editorCamera; }
 
 	static std::shared_ptr<Scene> GetCurrentScene();
 

@@ -115,6 +115,15 @@ namespace RendererDX11 {
     float GetSceneHeight();
 
     void ResizeSceneBuffer(float width, float height);
+
+    bool InitGameRenderTarget(int width, int height);
+    void BeginGameRender();
+    void* GetGameSRV();
+
+    float GetGameWidth();
+    float GetGameHeight();
+
+    void ResizeGameBuffer(float width, float height);
     
     // Abstracted DX11 context methods
     void IASetVertexBuffers(UINT StartSlot, UINT NumBuffers, ID3D11Buffer* const* ppVertexBuffers, const UINT* pStrides, const UINT* pOffsets);
@@ -158,6 +167,11 @@ namespace RendererDX12 {
     void BeginSceneRender();
     void* GetSceneSRV();
     void ResizeSceneBuffer(float width, float height);
+
+    bool InitGameRenderTarget(int width, int height);
+    void BeginGameRender();
+    void* GetGameSRV();
+    void ResizeGameBuffer(float width, float height);
 }
 
 namespace Renderer {
@@ -224,6 +238,15 @@ namespace Renderer {
     float GetSceneHeight();
 
     void ResizeSceneBuffer(float width, float height);
+
+    bool InitGameRenderTarget(int width, int height);  //ゲーム用バッファ
+    void BeginGameRender();
+    void* GetGameSRV();
+
+    float GetGameWidth();
+    float GetGameHeight();
+
+    void ResizeGameBuffer(float width, float height);
 }
 
 struct ID3D12Device;

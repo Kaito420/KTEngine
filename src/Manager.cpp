@@ -35,6 +35,8 @@ bool Manager::_showHierarchy = true;
 bool Manager::_showInspector = true;
 bool Manager::_showContentBrowser = true;
 bool Manager::_showGameView = true;
+bool Manager::_showSceneView = true;
+EditorCamera Manager::_editorCamera;
 
 //====ヘルパー関数: Windowsのファイル保存ダイアログを開く====
 std::string SaveFileDialog(const char* filter) {
@@ -105,6 +107,9 @@ void Manager::Update() {
 		if (_runtimeScene)
 			_runtimeScene->Update();
 	}
+
+	// EditorCamera is updated regardless of the mode so it can be used in the Scene View during play mode
+	_editorCamera.Update();
 }
 
 void Manager::Render() {
@@ -225,6 +230,7 @@ void Manager::RenderMenuBar(){
 			ImGui::MenuItem("Inspector", nullptr, &_showInspector);
 			ImGui::MenuItem("Content Browser", nullptr, &_showContentBrowser);
 			ImGui::MenuItem("Game View", nullptr, &_showGameView);
+			ImGui::MenuItem("Scene View", nullptr, &_showSceneView);
 			
 			ImGui::EndMenu();
 		}

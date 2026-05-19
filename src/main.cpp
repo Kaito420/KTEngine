@@ -1,4 +1,4 @@
-﻿#include <windows.h>
+#include <windows.h>
 #include <time.h>
 #include "ImGuiLayer.h"
 #include "Renderer.h"
@@ -7,6 +7,7 @@
 #include "imgui.h"
 
 #include "Manager.h"
+#include "Camera.h"
 #include "FileBrowser.h"
 #include "Scene.h"
 #include "Input.h"
@@ -61,6 +62,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
 
     //シーン用バッファ（一旦サイズ固定）
     Renderer::InitSceneRenderTarget(1280,720);
+    Renderer::InitGameRenderTarget(1280,720);
 
     // メインループ
     MSG msg = {};
@@ -74,7 +76,20 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
         Manager::Update(); // Managerの更新
 
         //ゲームシーンをテクスチャにレンダリング
+        Renderer::BeginGameRender();
+        Camera* mainCamera = nullptr;
+        if (Manager::GetCurrentScene()) {
+            mainCamera = Manager::GetCurrentScene()->FindGameObjectByName<Camera>("Camera");
+        }
+        if (mainCamera) {
+            Renderer::SetViewMatrix(mainCamera->GetViewMatrix());
+            Renderer::SetProjectionMatrix(mainCamera->GetProjectionMatrix());
+        }
+        Manager::Render();
+
         Renderer::BeginSceneRender();
+        Renderer::SetViewMatrix(Manager::GetEditorCamera()->GetViewMatrix());
+        Renderer::SetProjectionMatrix(Manager::GetEditorCamera()->GetProjectionMatrix());
         Manager::Render();
 
         //ImGuiとウィンドウ全体のレンダリング
@@ -94,15 +109,30 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
                 Manager::GetCurrentScene()->RenderInspector();
             Manager::GetCurrentScene()->RenderButton();
 
+            if (Manager::IsShowSceneView()) {
+                ImGui::Begin("Scene View", nullptr, ImGuiWindowFlags_NoScrollbar);
+                {
+                    ImVec2 viewportSize = ImGui::GetContentRegionAvail();
+                    Renderer::ResizeSceneBuffer((UINT)viewportSize.x, (UINT)viewportSize.y);
+                    void* myTexture = Renderer::GetSceneSRV();
+                    if (myTexture) {
+                        ImGui::Image(myTexture, viewportSize);
+                        bool isHovered = ImGui::IsItemHovered();
+                        Input::SetSceneViewHovered(isHovered);
+                    }
+                }
+                ImGui::End();
+            }
+
             if (Manager::IsShowGameView()) {
                 ImGui::Begin("Game View", nullptr, ImGuiWindowFlags_NoScrollbar);//ゲームビュー描画
                 {
                     ImVec2 viewportSize = ImGui::GetContentRegionAvail(); //描画領域のサイズ取得
 
                     //サイズが有効かつ現在のテクスチャサイズと異なる場合はリサイズ
-					Renderer::ResizeSceneBuffer(viewportSize.x, viewportSize.y);
+					Renderer::ResizeGameBuffer((UINT)viewportSize.x, (UINT)viewportSize.y);
 
-                    void* myTexture = Renderer::GetSceneSRV();
+                    void* myTexture = Renderer::GetGameSRV();
                     if (myTexture == nullptr)
                         ImGui::Text("Texture is NULL!");
                     else {
@@ -111,7 +141,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
                         Input::SetGameViewHovered(isHovered);
                     }
                 }
-            ImGui::End();
+                ImGui::End();
             }
         }
         ImGuiLayer::End();

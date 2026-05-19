@@ -1,4 +1,4 @@
-﻿#include "Renderer.h"
+#include "Renderer.h"
 #include <iostream>
 
 GraphicsAPI g_CurrentAPI = GraphicsAPI::DirectX11;
@@ -150,6 +150,36 @@ namespace Renderer {
 
     void ResizeSceneBuffer(float width, float height) {
         RendererDX11::ResizeSceneBuffer(width, height);
+    }
+
+    bool InitGameRenderTarget(int width, int height) {
+        if (g_CurrentAPI == GraphicsAPI::DirectX12) {
+            return true; // Use DX11 logic inside DX12 if it's wrapped, but actually we use DX11 on 12
+        }
+        return RendererDX11::InitGameRenderTarget(width, height);
+    }
+
+    void BeginGameRender() {
+        if (g_CurrentAPI == GraphicsAPI::DirectX12) {
+            // No direct DX12 logic for Game render yet, it uses DX11 wrapped resources
+        }
+        RendererDX11::BeginGameRender();
+    }
+
+    void* GetGameSRV() {
+        return RendererDX11::GetGameSRV();
+    }
+
+    float GetGameWidth() {
+        return RendererDX11::GetGameWidth();
+    }
+
+    float GetGameHeight() {
+        return RendererDX11::GetGameHeight();
+    }
+
+    void ResizeGameBuffer(float width, float height) {
+        RendererDX11::ResizeGameBuffer(width, height);
     }
 
     // Abstracted DX11 context methods

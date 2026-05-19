@@ -214,3 +214,9 @@ namespace RendererDX12 {
     void* GetSceneSRV() { return nullptr; }
     void ResizeSceneBuffer(float width, float height) {}
 }
+
+
+bool RendererDX12::InitGameRenderTarget(int width, int height) { return true; }
+void RendererDX12::BeginGameRender() {}
+void* RendererDX12::GetGameSRV() { return nullptr; }
+void RendererDX12::ResizeGameBuffer(float width, float height) {}

@@ -16,6 +16,9 @@ namespace Input {
 	void SetGameViewHovered(bool hovered);
 	bool IsGameViewHovered();
 
+	void SetSceneViewHovered(bool hovered);
+	bool IsSceneViewHovered();
+
 	enum class MouseButton {
 		Left,
 		Right,
