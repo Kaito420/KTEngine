@@ -98,6 +98,7 @@ namespace RendererDX12 {
     int GetFrameCount();
     ID3D12GraphicsCommandList* GetCommandList();
     ID3D12CommandQueue* GetCommandQueue();
+    ID3D12RootSignature* GetRootSignature();
     
     ID3D11Device* GetDevice11();
     ID3D11DeviceContext* GetContext11();
@@ -123,6 +124,7 @@ namespace RendererDX12 {
     void ReleaseShaderResourceView(unsigned int index);
     void SetConstant(int slot, const void* data, unsigned int size);
     void SetTexture(int slot, const TEXTURE* texture);
+    void PrintDebugMessages();
 }
 
 namespace Renderer {
@@ -218,6 +220,8 @@ namespace Renderer {
     int GetFrameCountDX12();
     ID3D12GraphicsCommandList* GetCommandListDX12();
     ID3D12CommandQueue* GetCommandQueueDX12();
+    ID3D12RootSignature* GetRootSignatureDX12();
+    void PrintDebugMessagesDX12();
 }
 
 #endif // !_RENDERER_H

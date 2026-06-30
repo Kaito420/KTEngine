@@ -38,12 +38,27 @@ namespace Renderer {
 
     void SetDepthEnable(bool enable) {}
     void SetDepthReadOnly() {}
-    void SetWorldMatrix(XMMATRIX world) {}
-    void SetViewMatrix(XMMATRIX view) {}
-    void SetProjectionMatrix(XMMATRIX projection) {}
-    void SetMaterial(MATERIAL material) {}
-    void SetLight(LIGHT light) {}
-    void SetCameraPosition(XMFLOAT4 cameraPos) {}
+    void SetWorldMatrix(XMMATRIX world) {
+        XMMATRIX transposed = XMMatrixTranspose(world);
+        SetConstant(0, &transposed, sizeof(transposed));
+    }
+    void SetViewMatrix(XMMATRIX view) {
+        XMMATRIX transposed = XMMatrixTranspose(view);
+        SetConstant(1, &transposed, sizeof(transposed));
+    }
+    void SetProjectionMatrix(XMMATRIX projection) {
+        XMMATRIX transposed = XMMatrixTranspose(projection);
+        SetConstant(2, &transposed, sizeof(transposed));
+    }
+    void SetMaterial(MATERIAL material) {
+        SetConstant(3, &material, sizeof(material));
+    }
+    void SetLight(LIGHT light) {
+        SetConstant(4, &light, sizeof(light));
+    }
+    void SetCameraPosition(XMFLOAT4 cameraPos) {
+        SetConstant(5, &cameraPos, sizeof(cameraPos));
+    }
     void SetWorldProjection2D() {}
     void SetWorldProjection3D() {}
     void CreateVertexShader() {}
@@ -117,6 +132,8 @@ namespace Renderer {
     int GetFrameCountDX12() { return RendererDX12::GetFrameCount(); }
     ID3D12GraphicsCommandList* GetCommandListDX12() { return RendererDX12::GetCommandList(); }
     ID3D12CommandQueue* GetCommandQueueDX12() { return RendererDX12::GetCommandQueue(); }
+    ID3D12RootSignature* GetRootSignatureDX12() { return RendererDX12::GetRootSignature(); }
+    void PrintDebugMessagesDX12() { RendererDX12::PrintDebugMessages(); }
 
     std::unique_ptr<VERTEX_BUFFER> CreateVertexBuffer(unsigned int stride, unsigned int size) {
         return RendererDX12::CreateVertexBuffer(stride, size);

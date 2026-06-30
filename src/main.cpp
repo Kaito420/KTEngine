@@ -87,12 +87,12 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
             Renderer::SetViewMatrix(mainCamera->GetViewMatrix());
             Renderer::SetProjectionMatrix(mainCamera->GetProjectionMatrix());
         }
-        //Manager::Render();
+        Manager::Render();
 
         Renderer::BeginSceneRender();
         Renderer::SetViewMatrix(Manager::GetEditorCamera()->GetViewMatrix());
         Renderer::SetProjectionMatrix(Manager::GetEditorCamera()->GetProjectionMatrix());
-        //Manager::Render();
+        Manager::Render();
 
         //ImGuiとウィンドウ全体のレンダリング
         Renderer::BeginFrame();

@@ -2,6 +2,8 @@
 #include "GameObject.h"
 #include "Texture.h"
 #include "ktvector.hpp"
+#include "ShaderManager.h"
+#include "Shader.h"
 
 void Wave::Awake(){
 	for (int x = 0; x < 21; x++)
@@ -24,7 +26,7 @@ void Wave::Awake(){
 		m_vertexBuffer->Resource->Unmap(0, nullptr);
 	}
 
-	// ƒCƒ“ƒfƒbƒNƒXƒoƒbƒtƒ@
+	// CfbNXobt@
 	unsigned int index[((21 + 1) * 2) * 20 - 2];
 	int i = 0;
 	for (int x = 0; x < 20; x++)
@@ -118,6 +120,21 @@ void Wave::Render() const{
 	cmdList->IASetIndexBuffer(&ibView);
 
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+	// PSOãƒã‚¤ãƒ³ãƒ‰
+	{
+		std::string vsId = "UnlitTextureVS";
+		std::string psId = "UnlitTexturePS";
+		auto shaderComp = _owner->GetComponent<Shader>();
+		if (shaderComp) {
+			vsId = shaderComp->GetVertexShaderID();
+			psId = shaderComp->GetPixelShaderID();
+		}
+		ID3D12PipelineState* pso = ShaderManager::Instance().GetPipelineState(
+			vsId, psId, 1, 1, true, true, D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE
+		);
+		cmdList->SetPipelineState(pso);
+	}
+
 
 	XMMATRIX world, scale, rot, trans;
 	scale = XMMatrixScaling(_owner->_transform._scale.x, _owner->_transform._scale.y, _owner->_transform._scale.z);
@@ -131,10 +148,10 @@ void Wave::Render() const{
 	MATERIAL material{};
 	material.Diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	material.TextureEnable = (m_texture != nullptr);
-	Renderer::SetConstant(1, &material, sizeof(material));
+	Renderer::SetConstant(3, &material, sizeof(material));
 
 	if (m_texture) {
-		Renderer::SetTexture(4, m_texture);
+		Renderer::SetTexture(6, m_texture);
 	}
 	if (m_textureEnv) {
 		Renderer::SetTexture(5, m_textureEnv);

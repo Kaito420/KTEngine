@@ -12,49 +12,51 @@
 #include "Scene.h"
 #include "Renderer.h"
 #include "Texture.h"
+#include "ShaderManager.h"
+#include "Shader.h"
 
 void ClosestPointSegSeg(const KTVECTOR3& s1, const KTVECTOR3& e1, const KTVECTOR3& s2, const KTVECTOR3& e2, KTVECTOR3& c1, KTVECTOR3& c2){
-	float s, t;//”}‰î•Ï”
+	float s, t;//}Ï
 
-	KTVECTOR3 d1 = e1 - s1;	//ü•ª‚Ì•ûŒüƒxƒNƒgƒ‹
+	KTVECTOR3 d1 = e1 - s1;	//Ì•xNg
 	KTVECTOR3 d2 = e2 - s2;
-	KTVECTOR3 r = s1 - s2;	//n“_“¯m‚ÌƒxƒNƒgƒ‹i2¨1•ûŒüj
+	KTVECTOR3 r = s1 - s2;	//n_mÌƒxNgi21j
 
-	float lenSqD1 = d1.MagnitudeSqr();//ü•ª‚Ì’·‚³‚Ì2æ
+	float lenSqD1 = d1.MagnitudeSqr();//Ì’2
 	float lenSqD2 = d2.MagnitudeSqr();
 	float f = Dot(d2, r);
 
 	const float EPSILON = 1e-6f;
 
-	if (lenSqD1 <= EPSILON && lenSqD2 <= EPSILON) {//—¼ü•ª‚ª“_‚É‘Ş‰»‚µ‚Ä‚¢‚éê‡
+	if (lenSqD1 <= EPSILON && lenSqD2 <= EPSILON) {//_É‘Ş‰Ä‚ê‡
 		s = t = 0.0f;
 		c1 = s1;
 		c2 = s2;
 		return;
 	}
-	if (lenSqD1 <= EPSILON) {	//ü•ª1‚ª“_‚É‘Ş‰»‚µ‚Ä‚¢‚éê‡
+	if (lenSqD1 <= EPSILON) {	//1_É‘Ş‰Ä‚ê‡
 		s = 0.0f;
 		t = Clamp(f / lenSqD2, 0.0f, 1.0f);
 	}
-	else {	//ü•ª1‚Í“_‚¶‚á‚È‚¢
+	else {	//1Í“_È‚
 		float c = Dot(d1, r);
-		if (lenSqD2 <= EPSILON) {	//ü•ª2‚ª“_‚É‘Ş‰»
+		if (lenSqD2 <= EPSILON) {	//2_É‘Ş‰
 			t = 0.0f;
 			s = Clamp(-c / lenSqD1, 0.0f, 1.0f);
 		}
-		else {	//‚Ç‚¿‚ç‚àü•ª‚Ì‚Ü‚Ü
-			float b = Dot(d1, d2);	//ü•ª‚Ì•ûŒüƒxƒNƒgƒ‹“¯m‚Ì“àÏ
-			float denom = lenSqD1 * lenSqD2 - b * b;	//ƒNƒ‰ƒƒ‹‚ÌŒö®‚Ì•ª•ê
+		else {	//Ç‚Ì‚Ü‚
+			float b = Dot(d1, d2);	//Ì•xNgmÌ“
+			float denom = lenSqD1 * lenSqD2 - b * b;	//NÌŒÌ•
 
-			if (denom != 0.0f) {//ü•ª‚ª•½s‚Å‚È‚¢ê‡
+			if (denom != 0.0f) {//sÅ‚È‚ê‡
 				s = Clamp((b * f - c * lenSqD2) / denom, 0.0f, 1.0f);
 			}
-			else {//ü•ª‚Í•½s
+			else {//Í•s
 				s = 0.0f;
 			}
 			t = (b * s + f) / lenSqD2;
 
-			//t‚ª0~1‚©‚ço‚½ê‡‚ÌÄŒvZ
+			//t0~1oê‡ÌÄŒvZ
 			if (t < 0.0f) {
 				t = 0.0f;
 				s = Clamp(-c / lenSqD1, 0.0f, 1.0f);
@@ -82,7 +84,7 @@ void ColliderSphere::OnDestroy(){
 }
 
 void ColliderSphere::Update(){
-	//_owner->_transform._scale‚Ìˆê”Ô‘å‚«‚¢’l‚ğ”½‰f‚·‚é
+	//_owner->_transform._scaleÌˆÔ‘å‚«lğ”½‰f
 	float tempScale = _owner->_transform._scale.x;
 	if (tempScale < _owner->_transform._scale.y) {
 		tempScale = _owner->_transform._scale.y;
@@ -90,7 +92,7 @@ void ColliderSphere::Update(){
 	if (tempScale < _owner->_transform._scale.z) {
 		tempScale = _owner->_transform._scale.z;
 	}
-	//Œ©‚½–ÚiSphereMesh‚©‚ç”¼Œa‚ğ”½‰fj
+	//ÚiSphereMeshç”¼ağ”½‰fj
 	Sphere* sp;
 	if (sp = _owner->GetComponent<Sphere>()) {
 		_radius = sp->GetRadius() * tempScale;
@@ -98,7 +100,7 @@ void ColliderSphere::Update(){
 	else
 		_radius = tempScale * 0.5f;
 
-	//AABBXV
+	//AABBXV
 	_aabb.min = _owner->_transform._position - KTVECTOR3(_radius, _radius, _radius);
 	_aabb.max = _owner->_transform._position + KTVECTOR3(_radius, _radius, _radius);
 
@@ -123,26 +125,26 @@ bool ColliderSphere::CheckVSSphere(const ColliderSphere* other, CollisionManifol
 	outCollisionManifold.a = const_cast<ColliderSphere*>(other);
 	outCollisionManifold.b = const_cast<ColliderSphere*>(this);
 
-	//’†SŠÔ‚Ì•½•û‹——£
+	//SÔ‚Ì•
 	float distanceSqr = (this->_owner->_transform._position -
 		other->_owner->_transform._position).MagnitudeSqr();
 
-	//”¼Œa‚Ì˜a‚Ì•½•û
+	//aÌ˜aÌ•
 	float radiusSumSqr = (this->_radius + other->_radius) * (this->_radius + other->_radius);
 
-	if (distanceSqr <= radiusSumSqr) {//“–‚½‚Á‚Ä‚¢‚é
+	if (distanceSqr <= radiusSumSqr) {//Ä‚
 		outCollisionManifold.penetrationDepth = sqrtf(radiusSumSqr) - sqrtf(distanceSqr);
 		outCollisionManifold.normal = (other->_owner->_transform._position -
 			this->_owner->_transform._position).Normalize();
-		KTVECTOR3 cpa;//A‘¤‚ÌÚG“_
+		KTVECTOR3 cpa;//AÌÚG_
 		cpa = other->_owner->_transform._position -
 			_radius * outCollisionManifold.normal;
 
-		KTVECTOR3 cpb;//B‘¤‚ÌÚG“_
+		KTVECTOR3 cpb;//BÌÚG_
 		cpb = this->_owner->_transform._position +
 			_radius * outCollisionManifold.normal;
 
-		ContactPoint cp;//ÚG“_“¯m‚Ì’†“_‚ğÕ“Ë‰ğÁ‚É—˜—p‚·‚é
+		ContactPoint cp;//ÚG_mÌ’_Õ“Ë‰É—p
 		cp.position = (cpa + cpb) / 2.0f;
 		cp.penetration = outCollisionManifold.penetrationDepth;
 		outCollisionManifold.contacts.push_back(cp);
@@ -161,8 +163,8 @@ bool ColliderSphere::CheckVSOBB(const ColliderBox* other, CollisionManifold& out
 	outCollisionManifold.a = const_cast<ColliderBox*>(other);
 	outCollisionManifold.b = const_cast<ColliderSphere*>(this);
 
-	KTVECTOR3 bPos = other->GetOwner()->_transform._position;	//OBB‚ÌÀ•W
-	KTVECTOR3 cPos = this->_owner->_transform._position;		//Sphere‚ÌÀ•W
+	KTVECTOR3 bPos = other->GetOwner()->_transform._position;	//OBBÌW
+	KTVECTOR3 cPos = this->_owner->_transform._position;		//SphereÌW
 
 	KTVECTOR3 BToC = cPos - bPos;
 	float q[3];
@@ -265,7 +267,7 @@ void ColliderBox::OnDestroy(){
 }
 
 void ColliderBox::Update() {
-	//ƒ[ƒJƒ‹²XV
+	//[JXV
 	_center = _owner->_transform._position;
 	_axis[0] = _owner->GetRight();
 	_axis[1] = _owner->GetUp();
@@ -273,7 +275,7 @@ void ColliderBox::Update() {
 
 	_extents = _owner->_transform._scale * 0.5f;
 
-	//AABBXV
+	//AABBXV
 	KTVECTOR3 r;
 	r.x = fabsf(_axis[0].x) * _extents.x + fabsf(_axis[1].x) * _extents.y + fabsf(_axis[2].x) * _extents.z;
 	r.y = fabsf(_axis[0].y) * _extents.x + fabsf(_axis[1].y) * _extents.y + fabsf(_axis[2].y) * _extents.z;
@@ -335,9 +337,24 @@ void ColliderBox::Render() const {
 	MATERIAL material = {};
 	material.Diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
 	material.TextureEnable = false;
-	Renderer::SetConstant(1, &material, sizeof(material));
+	Renderer::SetConstant(3, &material, sizeof(material));
 
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
+	// PSOãƒã‚¤ãƒ³ãƒ‰
+	{
+		std::string vsId = "UnlitColorVS";
+		std::string psId = "UnlitColorPS";
+		auto shaderComp = _owner->GetComponent<Shader>();
+		if (shaderComp) {
+			vsId = shaderComp->GetVertexShaderID();
+			psId = shaderComp->GetPixelShaderID();
+		}
+		ID3D12PipelineState* pso = ShaderManager::Instance().GetPipelineState(
+			vsId, psId, 1, 1, true, false, D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE
+		);
+		cmdList->SetPipelineState(pso);
+	}
+
 	cmdList->DrawIndexedInstanced(24, 1, 0, 0, 0);
 }
 
@@ -349,11 +366,11 @@ bool ColliderBox::CheckVSOBB(const ColliderBox* other, CollisionManifold& manifo
 	manifold.a = const_cast<ColliderBox*>(other);
 	manifold.b = const_cast<ColliderBox*>(this);
 
-	float minOverlap = FLT_MAX;	//Å¬‚Ìd‚È‚è—Ê
-	KTVECTOR3 bestAxis;			//Å¬‚Ìd‚È‚è²
+	float minOverlap = FLT_MAX;	//ÅÌdÈ‚
+	KTVECTOR3 bestAxis;			//ÅÌdÈ‚è²
 
-	//Še²‚É‚Â‚¢‚Ä“Š‰e‚µ‚Äƒ`ƒFƒbƒN
-	//•ª—£²SAT”»’è
+	//eÉ‚Â‚Ä“eÄƒ`FbN
+	//SAT
 	for (int i = 0; i < 3; i++) {
 		float overlap = 0.0f;
 		if (!OverlapOnAxis(other, _axis[i], overlap)) return false;
@@ -369,7 +386,7 @@ bool ColliderBox::CheckVSOBB(const ColliderBox* other, CollisionManifold& manifo
 		}
 	}
 
-	//ŠOÏ‚Å‚Å‚«‚é9²‚àŠm”F
+	//OÏ‚Å‚Å‚9mF
 	for (int i = 0; i < 3; i++) {
 		for (int j = 0; j < 3; j++) {
 			KTVECTOR3 axis = Cross(_axis[i], other->_axis[j]);
@@ -384,7 +401,7 @@ bool ColliderBox::CheckVSOBB(const ColliderBox* other, CollisionManifold& manifo
 		}
 	}
 
-	//Õ“Ëî•ñXV
+	//Õ“ËXV
 
 	KTVECTOR3 centerDelta = other->_center - _center;
 	if (Dot(centerDelta, bestAxis) < 0.0f)
@@ -395,17 +412,17 @@ bool ColliderBox::CheckVSOBB(const ColliderBox* other, CollisionManifold& manifo
 	manifold.penetrationDepth = minOverlap;
 
 
-	//Õ“Ë“_‚ÌŒvZ
+	//Õ“Ë“_ÌŒvZ
 	FixedList<KTVECTOR3, 16> contactPolygon = ComputeContactPolygon(this, other, manifold.normal);
 	if (!contactPolygon.empty()) {
 		for (auto& p : contactPolygon) {
 			ContactPoint cp;
 			cp.position = p;
-			cp.penetration = minOverlap;	//‚Æ‚è‚ ‚¦‚¸“¯‚¶’lA‚æ‚è³Šm‚É‚·‚é‚È‚çŒÂ•Ê‚ÉZo
+			cp.penetration = minOverlap;	//Æ‚è‚ lAè³mÉ‚È‚Â•Ê‚ÉZo
 			manifold.contacts.push_back(cp);
 		}
 	}
-	else {//ƒNƒŠƒbƒv‚ÅÁ‚¦‚½ê‡‚Ìˆ—iÅ‹ß–T’†“_j
+	else {//NbvÅê‡ÌiÅ‹ß–T_j
 		KTVECTOR3 pointOnA = _center + manifold.normal * (_extents.x + _extents.y + _extents.z);
 		KTVECTOR3 pointOnB = other->_center - manifold.normal * (other->_extents.x + other->_extents.y + other->_extents.z);
 		ContactPoint cp;
@@ -414,7 +431,7 @@ bool ColliderBox::CheckVSOBB(const ColliderBox* other, CollisionManifold& manifo
 		manifold.contacts.push_back(cp);
 	}
 	
-	//‘S‚Ä‚Ì²‚Åd‚È‚Á‚Ä‚¢‚é‚Ì‚ÅÕ“Ë‚µ‚Ä‚¢‚é
+	//SÄ‚ÌÅdÈ‚Ä‚Ì‚ÅÕ“Ë‚Ä‚
 	return true;
 }
 
@@ -433,22 +450,22 @@ bool ColliderBox::OverlapOnAxis(const ColliderBox* other, const KTVECTOR3& axis)
 
 	KTVECTOR3 L = axis.Normalize();
 
-	//©g‚Ì“Š‰e
+	//gÌ“e
 	float centerA = Dot(_center, L);
 	float rA = _extents.x * fabs(Dot(_axis[0], L)) +
 		_extents.y * fabs(Dot(_axis[1], L)) +
 		_extents.z * fabs(Dot(_axis[2], L));
 
-	//‘Šè‚Ì“Š‰e
+	//Ì“e
 	float centerB = Dot(other->_center, L);
 	float rB = other->_extents.x * fabs(Dot(other->_axis[0], L)) +
 		other->_extents.y * fabs(Dot(other->_axis[1], L)) +
 		other->_extents.z * fabs(Dot(other->_axis[2], L));
 
-	//’†S·
+	//S
 	float distance = fabs(centerA - centerB);
 
-	//•ª—£²‚Ì—L–³
+	//Ì—L
 	return distance <= (rA + rB);
 
 }
@@ -462,30 +479,30 @@ bool ColliderBox::OverlapOnAxis(const ColliderBox* other, const KTVECTOR3& axis,
 
 	KTVECTOR3 L = axis.Normalize();
 
-	//©g‚Ì“Š‰e
+	//gÌ“e
 	float centerA = Dot(_center, L);
 	float rA = _extents.x * fabs(Dot(_axis[0], L)) +
 		_extents.y * fabs(Dot(_axis[1], L)) +
 		_extents.z * fabs(Dot(_axis[2], L));
 
-	//‘Šè‚Ì“Š‰e
+	//Ì“e
 	float centerB = Dot(other->_center, L);
 	float rB = other->_extents.x * fabs(Dot(other->_axis[0], L)) +
 		other->_extents.y * fabs(Dot(other->_axis[1], L)) +
 		other->_extents.z * fabs(Dot(other->_axis[2], L));
 
-	//’†S·
+	//S
 	float distance = fabs(centerA - centerB);
 	outOverlap = (rA + rB) - distance;
 
-	//•ª—£²‚Ì—L–³
+	//Ì—L
 	return distance <= (rA + rB);
 }
 
 FixedList<KTVECTOR3, 4> ColliderBox::GetFaceVertices(const ColliderBox* box, int axisIndex, int sign){
 	FixedList<KTVECTOR3, 4> verts;
 
-	// extents ‚ÌŠe²¬•ª‚ğæ‚èo‚µ
+	// extents ÌŠeo
 	float ex = box->_extents.x;
 	float ey = box->_extents.y;
 	float ez = box->_extents.z;
@@ -495,7 +512,7 @@ FixedList<KTVECTOR3, 4> ColliderBox::GetFaceVertices(const ColliderBox* box, int
 	// face center
 	KTVECTOR3 faceCenter = box->_center + box->_axis[axisIndex] * (extent * (float)sign);
 
-	// face ‚Ìƒ[ƒJƒ‹2²
+	// face Ìƒ[J2
 	int iu = (axisIndex + 1) % 3;
 	int iv = (axisIndex + 2) % 3;
 
@@ -524,11 +541,11 @@ FixedList<Plane, 8> ColliderBox::GetOBBPlanes(const ColliderBox* box){
 		KTVECTOR3 a = box->_axis[i].Normalize();
 		float extent = (i == 0) ? ex : (i == 1 ? ey : ez);
 
-		// +–Ê
+		// +
 		KTVECTOR3 pPos = box->_center + a * extent;
 		planes.push_back({ a, Dot(a, pPos) });
 
-		// -–Ê
+		// -
 		KTVECTOR3 pNeg = box->_center - a * extent;
 		planes.push_back({ -a, Dot(-a, pNeg) });
 	}
@@ -541,7 +558,7 @@ FixedList<KTVECTOR3, 16> ColliderBox::ClipPolygonAgainstPlane(const FixedList<KT
 	if (polygon.empty()) return out;
 
 	auto inside = [&](const KTVECTOR3& v) {
-		// “à‘¤ğŒ: Dot(n, v) <= d (+ eps ƒ}[ƒWƒ“)
+		// : Dot(n, v) <= d (+ eps }[W)
 		return Dot(plane.n, v) <= plane.d + eps;
 		};
 
@@ -554,11 +571,11 @@ FixedList<KTVECTOR3, 16> ColliderBox::ClipPolygonAgainstPlane(const FixedList<KT
 		bool inB = inside(B);
 
 		if (inA && inB) {
-			// —¼•û“à‘¤ -> B ‚ğ’Ç‰Á
+			//  -> B Ç‰
 			out.push_back(B);
 		}
 		else if (inA && !inB) {
-			// A inside, B outside -> Œğ“_‚ğ’Ç‰Á
+			// A inside, B outside -> _Ç‰
 			float da = Dot(plane.n, A) - plane.d;
 			float db = Dot(plane.n, B) - plane.d;
 			float t = da / (da - db); // da/(da-db)
@@ -566,7 +583,7 @@ FixedList<KTVECTOR3, 16> ColliderBox::ClipPolygonAgainstPlane(const FixedList<KT
 			out.push_back(P);
 		}
 		else if (!inA && inB) {
-			// A outside, B inside -> Œğ“_ + B
+			// A outside, B inside -> _ + B
 			float da = Dot(plane.n, A) - plane.d;
 			float db = Dot(plane.n, B) - plane.d;
 			float t = da / (da - db);
@@ -575,7 +592,7 @@ FixedList<KTVECTOR3, 16> ColliderBox::ClipPolygonAgainstPlane(const FixedList<KT
 			out.push_back(B);
 		}
 		else {
-			// —¼•ûŠO‘¤ -> ‰½‚à‚µ‚È‚¢
+			// O -> È‚
 		}
 	}
 
@@ -584,8 +601,8 @@ FixedList<KTVECTOR3, 16> ColliderBox::ClipPolygonAgainstPlane(const FixedList<KT
 
 
 FixedList<KTVECTOR3, 16> ColliderBox::ComputeContactPolygon(const ColliderBox* refBox, const ColliderBox* incBox, const KTVECTOR3& collisionNormal){
-	//QÆƒ{ƒbƒNƒXirefBoxj‚¨‚æ‚ÑQÆ–Ê‚ÌŒˆ’è
-	//QÆ²‚Í bestAxis ‚ÉÅ‚à‹ß‚¢² (abs dot Å‘å) ‚ğ‘I‚Ô
+	//QÆƒ{bNXirefBoxjÑQÆ–Ê‚ÌŒ
+	//QÆ bestAxis ÉÅ‚ß‚ (abs dot Å‘) I
 	int refAxis = 0;
 	float bestDot = fabs(Dot(refBox->_axis[0], collisionNormal));
 	for (int i = 1; i < 3; ++i) {
@@ -593,29 +610,29 @@ FixedList<KTVECTOR3, 16> ColliderBox::ComputeContactPolygon(const ColliderBox* r
 		if (d > bestDot) { bestDot = d; refAxis = i; }
 	}
 
-	//–@ü‚Æ²‚ª“¯•ûŒü¨³A‹t•ûŒü¨•‰
+	//@ÆAt
 	float s = Dot(collisionNormal, refBox->_axis[refAxis]);
 	int refSign = (s >= 0.0f) ? +1 : -1;
 
-	//‰Šúƒ|ƒŠƒSƒ“ = QÆ–Ê‚Ì4’¸“_
+	//|S = QÆ–Ê‚4_
 	FixedList<KTVECTOR3, 16> poly;
 	auto initalVerts =  GetFaceVertices(refBox, refAxis, refSign);
 
-	//Œ^‚ğ‡‚í‚¹‚é‚½‚ß‚ÉƒRƒs[
+	//^í‚¹é‚½ß‚ÉƒRs[
 	for(const auto& v : initalVerts){
 		poly.push_back(v);
 	}
 
-	//ƒCƒ“ƒVƒfƒ“ƒgƒ{ƒbƒNƒX(incBox)‚Ì6•½–Ê‚ğæ“¾
+	//CVfg{bNX(incBox)6Ê‚æ“¾
 	FixedList<Plane, 8> incPlanes = GetOBBPlanes(incBox);
 
-	//poly‚ğŠe•½–Ê‚Å‡‚ÉƒNƒŠƒbƒv
+	//polyeÊ‚ÅÉƒNbv
 	for (const Plane& pl : incPlanes) {
 		poly = ClipPolygonAgainstPlane(poly, pl);
 		if (poly.empty()) break;
 	}
 
-	return poly; // ‹ó‚È‚çƒNƒŠƒbƒv‚ÅÁ‚¦‚½‚±‚Æ‚ğ¦‚·
+	return poly; // È‚NbvÅÆ‚
 }
 
 KTMATRIX3 ColliderBox::ComputeLocalInertiaTensor(float mass)
@@ -647,13 +664,13 @@ void ColliderCapsule::OnDestroy() {
 }
 
 void ColliderCapsule::Update() {
-	//GameObject‚Ìî•ñ‚ÅXV‚·‚é
-	// _owner->_transform._scale ‚Ìˆê”Ô‘å‚«‚¢’l‚ğ”½‰fi˜c‚İ‚ğ–h‚®‚½‚ß‚Ì‹Ï“™ƒXƒP[ƒ‹‰»j
+	//GameObjectÌÅXV
+	// _owner->_transform._scale ÌˆÔ‘å‚«lğ”½‰ficİ‚hß‚Ì‹Ï“XP[j
 	float tempScaleRad = _owner->_transform._scale.x;
 	float tempScaleHeight = _owner->_transform._scale.y;
 	if (tempScaleRad < _owner->_transform._scale.z) tempScaleRad = _owner->_transform._scale.z;
 
-	// Œ©‚½–ÚiCapsuleƒRƒ“ƒ|[ƒlƒ“ƒgj‚©‚çƒpƒ‰ƒ[ƒ^‚ğ”½‰f
+	// ÚiCapsuleR|[lgjp[^ğ”½‰f
 	Capsule* cap = _owner->GetComponent<Capsule>();
 	if (cap) {
 		_radius = cap->_radius * tempScaleRad;
@@ -664,19 +681,19 @@ void ColliderCapsule::Update() {
 		_height = tempScaleHeight * 2.0f;
 	}
 
-	//AABB‚ÌXV
+	//AABBÌXV
 	float halfCylHeight = (std::max)(0.0f, _height - 2.0f * _radius) * 0.5f;
 
-	//ƒJƒvƒZƒ‹‚ÌŒ»İ‚ÌY²iUpƒxƒNƒgƒ‹j‚ğæ“¾
+	//JvZÌŒİ‚YiUpxNgjæ“¾
 	KTVECTOR3 up = _owner->GetUp();
 
-	//ü•ª‚ªŠe²iX, Y, Zj‚É‘Î‚µ‚Ä‚Ç‚ê‚¾‚¯L‚Ñ‚Ä‚¢‚é‚©‚ğŒvZ‚µA”¼Œa‚ğ‘«‚·
+	//eiX, Y, ZjÉ‘Î‚Ä‚Ç‚ê‚¾LÑ‚Ä‚é‚©vZAağ‘«‚
 	KTVECTOR3 extents;
 	extents.x = std::abs(up.x) * halfCylHeight + _radius;
 	extents.y = std::abs(up.y) * halfCylHeight + _radius;
 	extents.z = std::abs(up.z) * halfCylHeight + _radius;
 
-	//AABB‚ÌÅ¬’l‚ÆÅ‘å’l‚ğXV
+	//AABBÌÅlÆÅ‘lXV
 	_aabb.min = _owner->_transform._position - extents;
 	_aabb.max = _owner->_transform._position + extents;
 }
@@ -701,7 +718,7 @@ bool ColliderCapsule::CheckVSCapsule(const ColliderCapsule* other, CollisionMani
 	KTVECTOR3 s2 = capsuleB->_transform._position - upB * (cylinderHeightB * 0.5f);
 	KTVECTOR3 e2 = capsuleB->_transform._position + upB * (cylinderHeightB * 0.5f);
 
-	//Å‹ß–T“_2“_‚ğ‹‚ß‚é
+	//Å‹ß–T_2_ß‚
 	KTVECTOR3 closestPointA, closestPointB;
 	ClosestPointSegSeg(s1, e1, s2, e2, closestPointA, closestPointB);
 
@@ -709,7 +726,7 @@ bool ColliderCapsule::CheckVSCapsule(const ColliderCapsule* other, CollisionMani
 	float distSq = diff.MagnitudeSqr();
 	float radiusSum = this->_radius + other->_radius;
 
-	if (distSq < radiusSum * radiusSum) {//Õ“Ë
+	if (distSq < radiusSum * radiusSum) {//Õ“
 		outCollisionManifold.hasCollision = true;
 		outCollisionManifold.a = const_cast<ColliderCapsule*>(other);
 		outCollisionManifold.b = const_cast<ColliderCapsule*>(this);
@@ -720,7 +737,7 @@ bool ColliderCapsule::CheckVSCapsule(const ColliderCapsule* other, CollisionMani
 		{
 			outCollisionManifold.normal = diff.Normalize();
 		}
-		else {//Š®‘S‚Éd‚È‚Á‚Ä‚¢‚éê‡
+		else {//SÉdÈ‚Ä‚ê‡
 			outCollisionManifold.normal = KTVECTOR3(0.0f, 1.0f, 0.0f);
 		}
 
@@ -736,7 +753,7 @@ bool ColliderCapsule::CheckVSCapsule(const ColliderCapsule* other, CollisionMani
 }
 
 bool ColliderCapsule::CheckVSSphere(const ColliderSphere* other, CollisionManifold& outCollisionManifold)const {
-	//ƒJƒvƒZƒ‹‚Ì“à•”ü•ª‚Ìn“_(A)‚ÆI“_(B)‚ğ‹‚ß‚é
+	//JvZÌ“Ìn_(A)ÆI_(B)ß‚
 	float cylinderHeight = (std::max)(0.0f, this->_height - 2.0f * this->_radius);
 	GameObject* capsuleObj = this->GetOwner();
 	KTVECTOR3 up = capsuleObj->GetUp();
@@ -744,33 +761,33 @@ bool ColliderCapsule::CheckVSSphere(const ColliderSphere* other, CollisionManifo
 	KTVECTOR3 A = capsuleObj->_transform._position - up * (cylinderHeight * 0.5f);
 	KTVECTOR3 B = capsuleObj->_transform._position + up * (cylinderHeight * 0.5f);
 
-	//‹…‚Ì’†S“_(C)
+	//Ì’S_(C)
 	KTVECTOR3 C = other->GetOwner()->_transform._position;
 
-	//“_C‚©‚çü•ªABã‚ÌÅ‹ßÚ“_(P)‚ğŒvZ‚·‚é
+	//_CABÌÅ‹ßÚ“_(P)vZ
 	KTVECTOR3 AB = B - A;
 	KTVECTOR3 AC = C - A;
 
 	float t = 0.0f;
 	float abLengthSqr = AB.MagnitudeSqr();
 
-	//ü•ª‚ª“_‚É‘Ş‰»‚µ‚Ä‚¢‚È‚¢‚©ƒ`ƒFƒbƒNiƒ[ƒœZ–h~j
+	//_É‘Ş‰Ä‚È‚`FbNi[Zh~j
 	if (abLengthSqr > 1e-6f) {
 		t = Dot(AC, AB) / abLengthSqr;
 	}
 
-	//t‚ğ0.0`1.0‚ÉƒNƒ‰ƒ“ƒv‚µ‚Äü•ªã‚É§ŒÀ
+	//t0.0`1.0ÉƒNvÄÉ
 	t = Clamp(t, 0.0f, 1.0f);
 
-	//Å‹ßÚ“_P
+	//Å‹ßÚ“_P
 	KTVECTOR3 P = A + AB * t;
 
-	//Å‹ßÚ“_P‚Æ‹…‚Ì’†SC‚Ì‹——£‚ÅÕ“Ë”»’è
-	KTVECTOR3 diff = C - P; // P‚©‚çC‚Ö‚ÌƒxƒNƒgƒ‹
+	//Å‹ßÚ“_PÆ‹Ì’SCÌ‹ÅÕ“Ë”
+	KTVECTOR3 diff = C - P; // PCÖ‚ÌƒxNg
 	float distSq = diff.MagnitudeSqr();
 	float radiusSum = this->_radius + other->_radius;
 
-	if (distSq <= radiusSum * radiusSum) {//Õ“Ë‚µ‚Ä‚¢‚é
+	if (distSq <= radiusSum * radiusSum) {//Õ“Ë‚Ä‚
 		outCollisionManifold.hasCollision = true;
 
 		outCollisionManifold.a = const_cast<ColliderSphere*>(other);
@@ -779,16 +796,16 @@ bool ColliderCapsule::CheckVSSphere(const ColliderSphere* other, CollisionManifo
 		float dist = diff.Magnitude();
 		outCollisionManifold.penetrationDepth = radiusSum - dist;
 
-		//–@ü‚ÌŒvZ (ƒJƒvƒZƒ‹‚©‚ç‹…‚Ö‰Ÿ‚µo‚·•ûŒü)
+		//@ÌŒvZ (JvZç‹…Ö‰o)
 		if (dist > 1e-5f) {
-			outCollisionManifold.normal = diff.Normalize(); // ³‹K‰»
+			outCollisionManifold.normal = diff.Normalize(); // K
 		}
 		else {
-			// Š®‘S‚É’†S‚ªd‚È‚Á‚Ä‚¢‚éê‡‚Í“K“–‚È•ûŒü‚É‰Ÿ‚µo‚·
+			// SÉ’SdÈ‚Ä‚ê‡Í“KÈ•É‰o
 			outCollisionManifold.normal = KTVECTOR3(0.0f, 1.0f, 0.0f);
 		}
 
-		// ÚG“_‚ÌŒvZ (‹…‚Ì•\–ÊãA‚Ü‚½‚Í’†“_)
+		// ÚG_ÌŒvZ (Ì•\ÊAÜ‚Í’_)
 		ContactPoint cp;
 		cp.position = C - outCollisionManifold.normal * other->_radius;
 		cp.penetration = outCollisionManifold.penetrationDepth;
@@ -801,18 +818,18 @@ bool ColliderCapsule::CheckVSSphere(const ColliderSphere* other, CollisionManifo
 }
 
 bool ColliderCapsule::CheckVSOBB(const ColliderBox* other, CollisionManifold& outCollisionManifold)const {
-	//ƒJƒvƒZƒ‹‚Ì“à•”ü•ª‚Ìn“_(A)‚ÆI“_(B)‚ğƒ[ƒ‹ƒh‹óŠÔ‚ÅŒvZ
+	//JvZÌ“Ìn_(A)ÆI_(B)[hÔ‚ÅŒvZ
 	float cylinderHeight = (std::max)(0.0f, this->_height - 2.0f * this->_radius);
 	KTVECTOR3 up = this->GetOwner()->GetUp();
 	KTVECTOR3 A = this->GetOwner()->_transform._position - up * (cylinderHeight * 0.5f);
 	KTVECTOR3 B = this->GetOwner()->_transform._position + up * (cylinderHeight * 0.5f);
 
-	//OBB‚Ìƒ[ƒJƒ‹‹óŠÔiAABB‚Æ‚µ‚Äˆµ‚¦‚é‹óŠÔj‚ÉA‚ÆB‚ğ•ÏŠ·
+	//OBBÌƒ[JÔiAABBÆ‚ÄˆÔjABÏŠ
 	KTVECTOR3 boxPos = other->GetOwner()->_transform._position;
 	KTVECTOR3 dA = A - boxPos;
 	KTVECTOR3 dB = B - boxPos;
 
-	//Box‚Ìƒ[ƒJƒ‹²‚ğg‚Á‚Ä“Š‰ei‰ñ“]‚Ì‹t•ÏŠ·j
+	//BoxÌƒ[JgÄ“ei]Ì‹tÏŠj
 	KTVECTOR3 localA(
 		Dot(dA, other->_axis[0]),
 		Dot(dA, other->_axis[1]),
@@ -824,20 +841,20 @@ bool ColliderCapsule::CheckVSOBB(const ColliderBox* other, CollisionManifold& ou
 		Dot(dB, other->_axis[2])
 	);
 
-	//ŒğŒİË‰e–@ (Alternating Projection) ‚ÅÅ‹ßÚ“_‚ğ’T‚·
-	KTVECTOR3 P = (localA + localB) * 0.5f; // ü•ªã‚Ì“_P (‰Šú’l‚Í’†“_)
-	KTVECTOR3 Q;							// OBBã‚Ì“_Q
+	//İË‰e@ (Alternating Projection) ÅÅ‹ßÚ“_T
+	KTVECTOR3 P = (localA + localB) * 0.5f; // Ì“_P (lÍ’_)
+	KTVECTOR3 Q;							// OBBÌ“_Q
 	KTVECTOR3 ab = localB - localA;
 	float abLenSq = ab.MagnitudeSqr();
 
-	//3‰ñƒ‹[ƒv‚·‚ê‚ÎÀ—pã‚ÍŠ®‘S‚Éû‘©
+	//3ñƒ‹[vÎpÍŠSÉ
 	for (int i = 0; i < 3; ++i) {
-		// è‡A: P‚ğAABB‚ÉƒNƒ‰ƒ“ƒv‚µ‚ÄQ‚ğ‹‚ß‚é
+		// è‡A: PAABBÉƒNvQß‚
 		Q.x = Clamp(P.x, -other->_extents.x, other->_extents.x);
 		Q.y = Clamp(P.y, -other->_extents.y, other->_extents.y);
 		Q.z = Clamp(P.z, -other->_extents.z, other->_extents.z);
 
-		// è‡B: Q‚©‚çü•ªAB‚Ö‚ÌÅ‹ßÚ“_‚ğ‹‚ß‚ÄP‚ğXV‚·‚é
+		// è‡B: QABÖ‚ÌÅ‹ßÚ“_ß‚PXV
 		if (abLenSq > 1e-6f) {
 			float t = Dot(Q - localA, ab) / abLenSq;
 			t = Clamp(t, 0.0f, 1.0f);
@@ -848,13 +865,13 @@ bool ColliderCapsule::CheckVSOBB(const ColliderBox* other, CollisionManifold& ou
 		}
 	}
 
-	//ÅŒã‚ÌP‚©‚çÅI“I‚ÈQ‚ğŠm’è
+	//ÅŒPÅIIQm
 	Q.x = Clamp(P.x, -other->_extents.x, other->_extents.x);
 	Q.y = Clamp(P.y, -other->_extents.y, other->_extents.y);
 	Q.z = Clamp(P.z, -other->_extents.z, other->_extents.z);
 
-	//Õ“Ë”»’è‚Æƒ}ƒjƒtƒH[ƒ‹ƒh‚Ì\’z
-	KTVECTOR3 PQ = Q - P; // P(Capsule)‚©‚çQ(Box)‚Ö‚ÌƒxƒNƒgƒ‹
+	//Õ“Ë”Æƒ}jtH[hÌ\z
+	KTVECTOR3 PQ = Q - P; // P(Capsule)Q(Box)Ö‚ÌƒxNg
 	float distSq = PQ.MagnitudeSqr();
 
 	if (distSq <= this->_radius * this->_radius) {
@@ -866,13 +883,13 @@ bool ColliderCapsule::CheckVSOBB(const ColliderBox* other, CollisionManifold& ou
 		float dist = 0.0f;
 
 		if (distSq > 1e-6f) {
-			// ’Êí‚ÌÚG
+			// ÊÌÚG
 			dist = sqrtf(distSq);
-			normalLocal = PQ / dist; // ³‹K‰»
+			normalLocal = PQ / dist; // K
 		}
 		else {
-			// ü•ª‚ªŠ®‘S‚ÉBox‚Ì“à•”‚É‚ß‚è‚ñ‚Å‚¢‚éê‡iP‚ÆQ‚ªˆê’vj
-			// Å‚à‹ß‚¢Box‚Ì–Ê‚ğ’T‚µ‚ÄA‚»‚±‚Ö‰Ÿ‚µo‚·–@ü‚ğì‚é
+			// SBoxÌ“É‚ß‚èÅ‚ê‡iPQvj
+			// Å‚ß‚BoxÌ–Ê‚TÄAÖ‰o@
 			float minDist = FLT_MAX;
 
 			float dx = other->_extents.x - fabs(P.x);
@@ -884,25 +901,25 @@ bool ColliderCapsule::CheckVSOBB(const ColliderBox* other, CollisionManifold& ou
 			float dz = other->_extents.z - fabs(P.z);
 			if (dz < minDist) { minDist = dz; normalLocal = KTVECTOR3(0, 0, (P.z > 0) ? 1 : -1); }
 
-			dist = -minDist; // ‚ß‚è‚ñ‚Å‚¢‚é‚Ì‚Å‹——£‚Íƒ}ƒCƒiƒX‚Æ‚µ‚Äˆµ‚¤
+			dist = -minDist; // ß‚èÅ‚Ì‚Å‹Íƒ}CiXÆ‚Äˆ
 		}
 
 		outCollisionManifold.penetrationDepth = this->_radius - dist;
 
-		// ƒ[ƒJƒ‹–@ü‚ğƒ[ƒ‹ƒh‹óŠÔ‚Ì–@ü‚É•ÏŠ·
+		// [J@[hÔ‚Ì–@É•ÏŠ
 		outCollisionManifold.normal =
 			other->_axis[0] * normalLocal.x +
 			other->_axis[1] * normalLocal.y +
 			other->_axis[2] * normalLocal.z;
 
-		// ÚG“_‚ÌŒvZ (ƒ[ƒJƒ‹‚ÌQ‚ğƒ[ƒ‹ƒh‹óŠÔ‚É–ß‚·)
+		// ÚG_ÌŒvZ ([JQ[hÔ‚É–ß‚)
 		KTVECTOR3 Q_world = boxPos +
 			other->_axis[0] * Q.x +
 			other->_axis[1] * Q.y +
 			other->_axis[2] * Q.z;
 
 		ContactPoint cp;
-		cp.position = Q_world; // Box‚Ì•\–Ê‚ğÚG“_‚Æ‚·‚é
+		cp.position = Q_world; // BoxÌ•\Ê‚ÚG_Æ‚
 		cp.penetration = outCollisionManifold.penetrationDepth;
 		outCollisionManifold.contacts.push_back(cp);
 
@@ -913,36 +930,36 @@ bool ColliderCapsule::CheckVSOBB(const ColliderBox* other, CollisionManifold& ou
 }
 
 KTMATRIX3 ColliderCapsule::ComputeLocalInertiaTensor(float mass){
-	//‰~’Œ•”•ª‚Ì‚‚³
+	//~Ì
 	float cylinderHeight = (std::max)(0.0f, _height - 2.0f * _radius);
 
-	//”¼Œa‚ª¬‚³‚·‚¬‚éA‚Ü‚½‚Í¿—Ê‚ª0ˆÈ‰º‚Ìê‡‚Íƒ[ƒs—ñ‚ğ•Ô‚·
+	//aAÜ‚ÍÊ‚0È‰Ìê‡Íƒ[sÔ‚
 	if (_radius <= 0.001f || mass <= 0.0f) {
 		return KTMATRIX3::Zero();
 	}
 
 	const float PI = 3.14159265359f;
 
-	//‘ÌÏ‚ÌŒvZ
+	//ÌÏ‚ÌŒvZ
 	float volumeCylinder = PI * _radius * _radius * cylinderHeight;
 	float volumeSphere = (4.0f / 3.0f) * PI * _radius * _radius * _radius;
 	float volumeTotal = volumeCylinder + volumeSphere;
 
 	if (volumeTotal == 0.0f) return KTMATRIX3::Zero();
 
-	//¿—Ê‚Ì•ª”z
+	//Ê‚Ì•z
 	float massCylinder = mass * (volumeCylinder / volumeTotal);
 	float massSphere = mass * (volumeSphere / volumeTotal);
 
-	//Y²i’·²j‚Ü‚í‚è‚ÌŠµ«ƒ‚[ƒƒ“ƒg
+	//YijÜ‚ÌŠ[g
 	float iy = (0.5f * massCylinder * _radius * _radius) +
 		(0.4f * massSphere * _radius * _radius);
 
-	//X²EZ²i’Z²j‚Ü‚í‚è‚ÌŠµ«ƒ‚[ƒƒ“ƒg
-	//‰~’Œ•”•ª‚Ì X/Z Šµ«
+	//XEZiZjÜ‚ÌŠ[g
+	//~ X/Z 
 	float ixzCylinder = (1.0f / 12.0f) * massCylinder * (3.0f * _radius * _radius + cylinderHeight * cylinderHeight);
 
-	//”¼‹…•”•ª‚Ì X/Z Šµ«i•½s²‚Ì’è—‚ğ“K—pÏ‚İj
+	// X/Z isÌ’è—KpÏ‚İj
 	float ixzSphere = massSphere * (0.4f * _radius * _radius +
 		0.5f * cylinderHeight * cylinderHeight +
 		0.375f * cylinderHeight * _radius);
@@ -950,7 +967,7 @@ KTMATRIX3 ColliderCapsule::ComputeLocalInertiaTensor(float mass){
 	float ix = ixzCylinder + ixzSphere;
 	float iz = ix;
 
-	//ƒeƒ“ƒ\ƒ‹s—ñ‚É‚µ‚Ä•Ô‚·
+	//e\sÉ‚Ä•Ô‚
 	return KTMATRIX3(
 		ix, 0.0f, 0.0f,
 		0.0f, iy, 0.0f,

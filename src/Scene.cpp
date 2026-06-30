@@ -22,7 +22,7 @@ std::string Scene::GenerateUniqueName(const std::string& baseName){
 	std::string uniqueName = baseName;
 	int index = 1;
 
-	//d•¡‚µ‚Ä‚¢‚é–¼‘O‚ª‚ ‚éŒÀ‚èƒ‹[ƒv‚µ‚ÄƒCƒ“ƒfƒbƒNƒX‚ği‚ß‚é
+	//dÄ‚é–¼Oèƒ‹[vÄƒCfbNXiß‚
 	while (FindGameObjectByName<GameObject>(uniqueName) != nullptr) {
 		std::stringstream ss;
 		ss << baseName << "(" << index << ")";
@@ -67,7 +67,7 @@ void Scene::Update(){
 		}
 	}
 
-	//íœˆ—
+	//íœ
 	_gameObjects.remove_if([](const std::shared_ptr<GameObject>& obj) { 
 		if (obj->IsDestroy())
 			obj->ProcessDestroyComponents();
@@ -76,15 +76,15 @@ void Scene::Update(){
 }
 
 void Scene::UpdateEditor() {
-	//ƒGƒfƒBƒ^ƒ‚[ƒh‚Å‚àÀs‚·‚éƒIƒuƒWƒFƒNƒg‚ÌXV
-	//(ƒJƒƒ‰‚âƒXƒJƒCƒh[ƒ€ƒ‰ƒCƒg‚È‚ÇA•¨—ƒVƒXƒeƒ€‚ÍXV‚µ‚È‚¢j
+	//GfB^[hÅ‚sIuWFNgÌXV
+	//(JXJCh[CgÈ‚ÇAVXeÍXVÈ‚j
 	for (auto& gameObject : _gameObjects) {
 		if (gameObject->GetActive()) {
 			gameObject->UpdateEditor();
 		}
 	}
 
-	//íœˆ—
+	//íœ
 	_gameObjects.remove_if([](const std::shared_ptr<GameObject>& obj) {
 		if (obj->IsDestroy())
 			obj->ProcessDestroyComponents();
@@ -95,19 +95,6 @@ void Scene::UpdateEditor() {
 void Scene::Render()const{
 	for(const auto& gameObject : _gameObjects){
 		if (gameObject->GetActive()) {
-			const auto& shader = gameObject->GetComponent<Shader>();
-			if (shader) {//shader‚ª‚ ‚éê‡‚Í‚»‚ÌƒVƒF[ƒ_[‚É•Ï‚¦‚é
-				ID3D11VertexShader* vs = ShaderManager::Instance().GetVertexShader(shader->GetVertexShaderID());
-				ID3D11InputLayout* layout = ShaderManager::Instance().GetInputLayout(shader->GetVertexLayoutID());
-				ID3D11PixelShader* ps = ShaderManager::Instance().GetPixelShader(shader->GetPixelShaderID());
-
-				Renderer::VSSetShader(vs, nullptr, 0);
-				Renderer::IASetInputLayout(layout);
-				Renderer::PSSetShader(ps, nullptr, 0);
-			}
-			else {
-				Renderer::SetDefaultShader();
-			}
 			gameObject->Render();
 			gameObject->RenderComponents();
 		}
@@ -115,18 +102,18 @@ void Scene::Render()const{
 }
 
 void Scene::OnLoaded() {
-	//PhysicsSystem‚ÌÄ¶¬
+	//PhysicsSystemÌÄ
 	if(_physicsSystem)
 		delete _physicsSystem;
 	_physicsSystem = new PhysicsSystem();
 	uint32_t maxId = 0;
 	for(auto& gameObject: _gameObjects) {
 		gameObject->OnLoaded();
-		//id‚ÌÅ‘å’l‚ğXV
+		//idÌÅ‘lXV
 		if(maxId < gameObject->_id)
 			maxId = gameObject->_id;
 	}
-	GameObject::_nextId = maxId + 1; //Ÿ‚ÌID‚ğÅ‘å’l+1‚Éİ’è
+	GameObject::_nextId = maxId + 1; //IDÅ‘l+1Éİ’
 }
 
 void Scene::RenderHierarchy()
@@ -138,14 +125,14 @@ void Scene::RenderHierarchy()
 
 			auto& gameObject = *it;
 
-			ImGui::PushID(gameObject->_id); //ˆêˆÓ‚ÈID‚ğİ’è
-			//‘I‘ğˆ—
+			ImGui::PushID(gameObject->_id); //Ó‚IDİ’
+			//I
 			bool isSelected = (_selectedObjId == gameObject->_id);
 			if (ImGui::Selectable(gameObject->_name.c_str(), isSelected))
 				_selectedObjId = gameObject->_id;
 			//Drag Source
 			if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None)) {
-				GameObject* srcPtr = gameObject.get(); // shared_ptr‚Ì’†g‚Ì¶ƒ|ƒCƒ“ƒ^
+				GameObject* srcPtr = gameObject.get(); // shared_ptrÌ’gÌ|C^
 				ImGui::SetDragDropPayload("DND_GAMEOBJECT", &srcPtr, sizeof(GameObject*));
 				ImGui::Text("%s", gameObject->_name.c_str());
 				ImGui::EndDragDropSource();
@@ -161,7 +148,7 @@ void Scene::RenderHierarchy()
 						[&](const std::shared_ptr<GameObject>& p) { return p.get() == srcPtr; });
 
 					if (srcIt != _gameObjects.end() && srcIt != it) {
-						//src ‚ª target ‚Ì‘O‚É‚ ‚é‚©‚ğ’²‚×‚éisrcBeforeTarget ‚ª true ‚È‚ç‘Oj
+						//src  target Ì‘OÉ‚é‚©ğ’²‚×‚isrcBeforeTarget  true È‚Oj
 						bool srcBeforeTarget = false;
 						for (auto t = srcIt; t != _gameObjects.end(); ++t) {
 							if (t == it) { 
@@ -170,25 +157,25 @@ void Scene::RenderHierarchy()
 							}
 						}
 
-						// ‘}“üˆÊ’u‚ğŒˆ‚ß‚éi‘O‚È‚ç target ‚ÌŸ‚ÉAŒã‚È‚ç target ‚Ì‘O‚Éj
+						// }Ê’uß‚iOÈ‚ target ÌÉAÈ‚ target Ì‘OÉj
 						auto insertPos = it;
-						if (srcBeforeTarget) ++insertPos; // target ‚ÌŒã‚ë‚É“ü‚ê‚é
+						if (srcBeforeTarget) ++insertPos; // target ÌŒÉ“
 
-						// ƒm[ƒh‚ğˆÚ“®iO(1)j
+						// m[hÚ“iO(1)j
 						_gameObjects.splice(insertPos, _gameObjects, srcIt);
 					}
 				}
 				ImGui::EndDragDropTarget();
 			}
 
-			//‰EƒNƒŠƒbƒN‚Åƒ|ƒbƒvƒAƒbƒv
+			//ENbNÅƒ|bvAbv
 			if (ImGui::BeginPopupContextItem()) {
-				//ƒŠƒl[ƒ€
+				//l[
 				if (ImGui::MenuItem("Rename")) {
 					_renameTargetId = gameObject->_id;
-					//ƒŠƒl[ƒ€‘ÎÛ‚Ì–¼‘O‚ğƒoƒbƒtƒ@‚ÉƒRƒs[
+					//l[ÎÛ‚Ì–Oobt@ÉƒRs[
 					strcpy_s(_renameBuffer, sizeof(_renameBuffer), gameObject->_name.c_str());
-					_openPopup = true;	//ƒ|ƒbƒvƒAƒbƒv‚ğŠJ‚­‡}
+					_openPopup = true;	//|bvAbvJ}
 				}
 				if (ImGui::MenuItem("Delete")) {
 					gameObject->Destroy();
@@ -197,13 +184,13 @@ void Scene::RenderHierarchy()
 			}
 			ImGui::PopID();
 		}
-		//‰½‚à‚È‚¢êŠ‚Å‚Ì‰EƒNƒŠƒbƒNƒƒjƒ…[
+		//È‚êŠÅ‚Ì‰ENbNj[
 		if (ImGui::BeginPopupContextWindow(nullptr, 
 			ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems)) {
 			if(ImGui::MenuItem("Create Empty")){
 				GameObject* newObj = AddGameObject<GameObject>();
 				newObj->_name = GenerateUniqueName("GameObject");
-				_selectedObjId = newObj->_id; //V‹Kì¬‚µ‚½ƒIƒuƒWƒFƒNƒg‚ğ‘I‘ğ
+				_selectedObjId = newObj->_id; //VKì¬IuWFNgI
 			}
 			if (ImGui::MenuItem("Cube")) {
 				GameObject* newObj = AddGameObject<CubeObject>();
@@ -223,19 +210,19 @@ void Scene::RenderHierarchy()
 			ImGui::EndPopup();
 		}
 
-		//ƒŠƒl[ƒ€—pƒ‚[ƒ_ƒ‹ƒEƒBƒ“ƒhƒE‚Ìˆ—
+		//l[p[_EBhEÌ
 		if(_openPopup) {
 			ImGui::OpenPopup("Rename Object");
-			_openPopup = false; //‡}‚ğƒŠƒZƒbƒg
+			_openPopup = false; //}Zbg
 		}
 		ImVec2 center = ImGui::GetMainViewport()->GetCenter();
 		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
 		if (ImGui::BeginPopupModal("Rename Object", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
 			bool enterPressed = ImGui::InputText("Name", _renameBuffer, sizeof(_renameBuffer), ImGuiInputTextFlags_EnterReturnsTrue);
-			//ƒ{ƒ^ƒ“ƒGƒŠƒA
+			//{^GA
 			if (ImGui::Button("OK", ImVec2(120, 0)) || enterPressed) {
-				//ID‹óƒIƒuƒWƒFƒNƒg‚ğ’T‚µ‚Ä–¼‘O‚ğXV
+				//IDIuWFNgTÄ–OXV
 				for (auto& obj : _gameObjects) {
 					if (obj->_id == _renameTargetId) {
 						obj->_name = GenerateUniqueName(_renameBuffer);
@@ -263,7 +250,7 @@ void Scene::RenderInspector()
 	ImGui::Begin("Inspector");
 	{
 		if (_selectedObjId != -1) {
-			//ID‚©‚çƒIƒuƒWƒFƒNƒg‚Ìƒ|ƒCƒ“ƒ^æ“¾
+			//IDIuWFNgÌƒ|C^æ“¾
 			std::shared_ptr<GameObject> selectedObj = nullptr;
 			for (auto& gameObject : _gameObjects) {
 				if (gameObject->_id == _selectedObjId) {
@@ -332,13 +319,13 @@ void Scene::RenderInspector()
 				Component* componentToRemove = nullptr;
 
 				for (auto& component : selectedObj->_components) {
-					ImGui::PushID(component.get()); //IDÕ“Ë–h~
+					ImGui::PushID(component.get()); //IDÕ“Ë–h~
 
 					bool open = ImGui::TreeNode(component->GetComponentName().c_str());
 
 					if (ImGui::BeginPopupContextItem()) {
 						if (ImGui::MenuItem("Remove Component")) {
-							componentToRemove = component.get(); //íœ—\–ñ
+							componentToRemove = component.get(); //íœ\
 						}
 						ImGui::EndPopup();
 					}
@@ -351,7 +338,7 @@ void Scene::RenderInspector()
 					ImGui::PopID();
 				}
 
-				//ƒ‹[ƒvŒã‚Éíœ
+				//[vÉíœ
 				if (componentToRemove) {
 					selectedObj->RemoveComponent(componentToRemove);
 				}

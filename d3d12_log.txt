@@ -1,1 +1,3 @@
 --- D3D12 Debug Log Started ---
+[D3D12 1] ID3D12CommandList::DrawIndexedInstanced: The depth stencil format does not match that specified by the current pipeline state. A null depth stencil view may only be bound when the pipeline state depth stencil format is UNKNOWN. (pipeline state = D32_FLOAT, DSV ID3D12Resource* = 0x0000000000000000:'(nullptr)')
+[D3D12 1] ID3D12CommandList::DrawIndexedInstanced: The depth stencil format does not match that specified by the current pipeline state. A null depth stencil view may only be bound when the pipeline state depth stencil format is UNKNOWN. (pipeline state = D32_FLOAT, DSV ID3D12Resource* = 0x0000000000000000:'(nullptr)')

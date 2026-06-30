@@ -1,41 +1,43 @@
 #include "Cube.h"
 #include "GameObject.h"
+#include "ShaderManager.h"
+#include "Shader.h"
 
 void Cube::Awake() {
 	_vertexBuffer = Renderer::CreateVertexBuffer(sizeof(Vertex), 24);
 
 	Vertex v[] = {
-		// ‘O‚Ì–Ê
+		// OÌ–
 		{ { -0.5f,  0.5f, -0.5f },{0.0f, 0.0f, -1.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 0.0f} },
 		{ {  0.5f,  0.5f, -0.5f },{0.0f, 0.0f, -1.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {1.0f, 0.0f} },
 		{ { -0.5f, -0.5f, -0.5f },{0.0f, 0.0f, -1.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 1.0f} },
 		{ {  0.5f, -0.5f, -0.5f },{0.0f, 0.0f, -1.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {1.0f, 1.0f} },
 
-		// ‰E‚Ì–Ê
+		// EÌ–
 		{ { 0.5f,  0.5f, -0.5f },{1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 0.0f} },
 		{ { 0.5f,  0.5f,  0.5f },{1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, {1.0f, 0.0f} },
 		{ { 0.5f, -0.5f, -0.5f },{1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 1.0f} },
 		{ { 0.5f, -0.5f,  0.5f },{1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, {1.0f, 1.0f} },
 
-		// ã‚Ì–Ê
+		// Ì–
 		{ { 0.5f,  0.5f, -0.5f },{0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 0.0f} },
 		{ { -0.5f, 0.5f, -0.5f },{0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 1.0f, 1.0f}, {1.0f, 0.0f} },
 		{ { -0.5f, 0.5f,  0.5f },{0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 1.0f} },
 		{ { 0.5f,  0.5f,  0.5f },{0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 1.0f, 1.0f}, {1.0f, 1.0f} },
 
-		// Œã‚ë‚Ì–Ê
+		// Ì–
 		{ { -0.5f,  0.5f, 0.5f },{0.0f, 0.0f, 1.0f}, {0.0f, 1.0f, 0.0f, 1.0f}, {0.0f, 0.0f} },
 		{ { -0.5f, -0.5f, 0.5f },{0.0f, 0.0f, 1.0f}, {0.0f, 1.0f, 0.0f, 1.0f}, {1.0f, 0.0f} },
 		{ {  0.5f,  0.5f, 0.5f },{0.0f, 0.0f, 1.0f}, {0.0f, 1.0f, 0.0f, 1.0f}, {0.0f, 1.0f} },
 		{ {  0.5f, -0.5f, 0.5f },{0.0f, 0.0f, 1.0f}, {0.0f, 1.0f, 0.0f, 1.0f}, {1.0f, 1.0f} },
 
-		// ¶‚Ì–Ê
+		// Ì–
 		{ { -0.5f,  0.5f, -0.5f },{-1.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 0.0f, 1.0f}, {0.0f, 0.0f} },
 		{ { -0.5f, -0.5f, -0.5f },{-1.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 0.0f, 1.0f}, {1.0f, 0.0f} },
 		{ { -0.5f,  0.5f,  0.5f },{-1.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 0.0f, 1.0f}, {0.0f, 1.0f} },
 		{ { -0.5f, -0.5f,  0.5f },{-1.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 0.0f, 1.0f}, {1.0f, 1.0f} },
 
-		// ‰º‚Ì–Ê
+		// Ì–
 		{ {  0.5f, -0.5f, -0.5f },{0.0f, -1.0f, 0.0f}, {0.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f} },
 		{ { -0.5f, -0.5f,  0.5f },{0.0f, -1.0f, 0.0f}, {0.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 0.0f} },
 		{ { -0.5f, -0.5f, -0.5f },{0.0f, -1.0f, 0.0f}, {0.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 1.0f} },
@@ -71,14 +73,14 @@ void Cube::Render()const {
 	auto cmdList = Renderer::GetCommandListDX12();
 	if (!cmdList) return;
 
-	// ’¸“_ƒoƒbƒtƒ@ƒrƒ…[Ý’è
+	// _obt@r[Ý’
 	D3D12_VERTEX_BUFFER_VIEW vbView = {};
 	vbView.BufferLocation = _vertexBuffer->Resource->GetGPUVirtualAddress();
 	vbView.StrideInBytes = _vertexBuffer->Stride;
 	vbView.SizeInBytes = _vertexBuffer->Stride * _vertexBuffer->Size;
 	cmdList->IASetVertexBuffers(0, 1, &vbView);
 
-	// ƒCƒ“ƒfƒbƒNƒXƒoƒbƒtƒ@ƒrƒ…[Ý’è
+	// CfbNXobt@r[Ý’
 	D3D12_INDEX_BUFFER_VIEW ibView = {};
 	ibView.BufferLocation = _indexBuffer->Resource->GetGPUVirtualAddress();
 	ibView.SizeInBytes = sizeof(unsigned int) * _indexBuffer->Size;
@@ -86,8 +88,23 @@ void Cube::Render()const {
 	cmdList->IASetIndexBuffer(&ibView);
 
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	// PSOãƒã‚¤ãƒ³ãƒ‰
+	{
+		std::string vsId = "VertexDirectionalLightingVS";
+		std::string psId = "VertexDirectionalLightingPS";
+		auto shaderComp = _owner->GetComponent<Shader>();
+		if (shaderComp) {
+			vsId = shaderComp->GetVertexShaderID();
+			psId = shaderComp->GetPixelShaderID();
+		}
+		ID3D12PipelineState* pso = ShaderManager::Instance().GetPipelineState(
+			vsId, psId, 0, 3, true, true, D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE
+		);
+		cmdList->SetPipelineState(pso);
+	}
 
-	// s—ñŒvŽZ
+
+	// svZ
 	XMMATRIX translation = XMMatrixTranslation(_owner->_transform._position.x, _owner->_transform._position.y, _owner->_transform._position.z);
 	XMFLOAT4 q = XMFLOAT4(_owner->_transform._quaternion.x, _owner->_transform._quaternion.y, _owner->_transform._quaternion.z, _owner->_transform._quaternion.w);
 	XMMATRIX rotation = XMMatrixRotationQuaternion(XMLoadFloat4(&q));
@@ -99,7 +116,7 @@ void Cube::Render()const {
 	MATERIAL material = {};
 	material.Diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
 	material.TextureEnable = false;
-	Renderer::SetConstant(1, &material, sizeof(material));
+	Renderer::SetConstant(3, &material, sizeof(material));
 
 	cmdList->DrawIndexedInstanced(36, 1, 0, 0, 0);
 }

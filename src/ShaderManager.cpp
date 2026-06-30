@@ -1,153 +1,206 @@
-//=====================================================================================
-// ShaderManager.cpp
-// Author:Kaito Aoki
-// Date:2026/01/29
-//=====================================================================================
-
 #include "ShaderManager.h"
 #include "Renderer.h"
-#include <io.h>
-//生ポインタからComPtrに変更
-void ShaderManager::LoadVertexShader(const std::string& id, const char* fileName){
-	ID3D11VertexShader* vertexShader = nullptr;
-	ID3D11InputLayout* vertexLayout = nullptr;
-    FILE* file;
-    long int fsize;
+#include <cassert>
+#include <cstdio>
 
+void ShaderManager::LoadVertexShader(const std::string& id, const char* fileName) {
+    FILE* file = nullptr;
     fopen_s(&file, fileName, "rb");
     if (!file) {
-        assert(false && "Shader file not found");
-        return;
-    }
-
-    fsize = _filelength(_fileno(file));
-    unsigned char* buffer = new unsigned char[fsize];
-    fread(buffer, fsize, 1, file);
-    fclose(file);
-
-    //頂点シェーダー作成
-    HRESULT hr = Renderer::CreateVertexShader(buffer, fsize, NULL, &vertexShader);
-    if (FAILED(hr)) {
-        delete[] buffer;
-		assert(false && "CreateVertexShader failed");
-        return;
-    }
-
-	//入力レイアウト作成
-	ID3D11ShaderReflection* pReflector = nullptr;
-	hr = D3DReflect(buffer, fsize, IID_ID3D11ShaderReflection, (void**)&pReflector);
-    if (SUCCEEDED(hr)) {
-        D3D11_SHADER_DESC shaderDesc;
-        pReflector->GetDesc(&shaderDesc);
-
-        //inputLayoutDescの要素を格納するvector
-        std::vector<D3D11_INPUT_ELEMENT_DESC> inputLayoutDesc;
-
-        for (UINT i = 0; i < shaderDesc.InputParameters; i++) {
-            D3D11_SIGNATURE_PARAMETER_DESC paramDesc;
-            pReflector->GetInputParameterDesc(i, &paramDesc);
-
-            D3D11_INPUT_ELEMENT_DESC elementDesc = {};
-            elementDesc.SemanticName = paramDesc.SemanticName;  //セマンティクス名
-            elementDesc.SemanticIndex = paramDesc.SemanticIndex;    //セマンティクスインデックス
-            elementDesc.Format = GetDXGIFormat(paramDesc);  //フォーマット自動決定
-			elementDesc.InputSlot = 0;  //通常は0、インスタンシングをするときに変わる
-            elementDesc.AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
-            elementDesc.InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-            elementDesc.InstanceDataStepRate = 0;
-
-            inputLayoutDesc.push_back(elementDesc);
+        // もしshader/フォルダの中にない場合は、実行フォルダパスや異なる階層を探すための代替処理
+        // （KTEngineではshader/フォルダにHLSLがあり、csoはx64/Debugなどのビルド出力ディレクトリにあることが多い）
+        char altPath[512];
+        sprintf_s(altPath, "shader/%s", fileName);
+        fopen_s(&file, altPath, "rb");
+        if (!file) {
+            sprintf_s(altPath, "../shader/%s", fileName);
+            fopen_s(&file, altPath, "rb");
         }
-        //InputLayout作成
-        hr = Renderer::CreateInputLayout(
-            inputLayoutDesc.data(), (UINT)inputLayoutDesc.size(),
-            buffer, fsize, &vertexLayout);
-
-        if (FAILED(hr))
-            assert(false && "CreateInputLayout failed from reflection");
-
-		pReflector->Release();  //インターフェース解放
-
-    }
-    else {
-        assert(false && "D3DReflect failed");
     }
 
-    delete[] buffer;
+    if (!file) {
+        assert(false && "Vertex Shader file not found");
+        return;
+    }
 
-	_vertexLayouts[id] = ComPtr<ID3D11InputLayout>(vertexLayout);
-	_vertexShaders[id] = ComPtr<ID3D11VertexShader>(vertexShader);
-}
+    fseek(file, 0, SEEK_END);
+    long size = ftell(file);
+    fseek(file, 0, SEEK_SET);
 
-void ShaderManager::LoadPixelShader(const std::string& id, const char* fileName){
-    ID3D11PixelShader* pixelShader = nullptr;
-
-    FILE* file;
-    long int fsize;
-
-    file = fopen(fileName, "rb");
-    assert(file);
-
-    fsize = _filelength(_fileno(file));
-    unsigned char* buffer = new unsigned char[fsize];
-
-    fread(buffer, fsize, 1, file);
+    std::vector<unsigned char> buffer(size);
+    fread(buffer.data(), 1, size, file);
     fclose(file);
 
-    Renderer::CreatePixelShader(buffer, fsize, NULL, &pixelShader);
-    
-    delete[] buffer;
-
-	_pixelShaders[id] = pixelShader;
+    _vertexShaderBinaries[id] = std::move(buffer);
 }
 
-ID3D11VertexShader* ShaderManager::GetVertexShader(const std::string& id){
-    if(_vertexShaders.find(id) != _vertexShaders.end()){
-        return _vertexShaders[id].Get();
-	}
-    return nullptr;
-}
-
-ID3D11InputLayout* ShaderManager::GetInputLayout(const std::string& id) {
-    if (_vertexLayouts.find(id) != _vertexLayouts.end())
-        return _vertexLayouts[id].Get();
-    return nullptr;
-}
-
-ID3D11PixelShader* ShaderManager::GetPixelShader(const std::string& id){
-    if(_pixelShaders.find(id) != _pixelShaders.end())
-		return _pixelShaders[id].Get();
-    return nullptr;
-}
-
-DXGI_FORMAT ShaderManager::GetDXGIFormat(const D3D11_SIGNATURE_PARAMETER_DESC& paramDesc) {
-    //成分数（マスクのビット数）を計算
-    int componentCount = 0;
-	if (paramDesc.Mask & 1) componentCount++;
-	if (paramDesc.Mask & 2) componentCount++;
-	if (paramDesc.Mask & 4) componentCount++;
-	if (paramDesc.Mask & 8) componentCount++;
-
-	//成分の型に基づいてDXGI_FORMATを決定
-    if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_FLOAT32) {
-        if (componentCount == 1) return DXGI_FORMAT_R32_FLOAT;
-		if (componentCount == 2) return DXGI_FORMAT_R32G32_FLOAT;
-		if (componentCount == 3) return DXGI_FORMAT_R32G32B32_FLOAT;
-		if (componentCount == 4) return DXGI_FORMAT_R32G32B32A32_FLOAT;
-    }
-    else if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_SINT32) {
-		if (componentCount == 1) return DXGI_FORMAT_R32_SINT;
-		if (componentCount == 2) return DXGI_FORMAT_R32G32_SINT;
-		if (componentCount == 3) return DXGI_FORMAT_R32G32B32_SINT;
-        if (componentCount == 4) return DXGI_FORMAT_R32G32B32A32_SINT;
-    }
-    else if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_UINT32) {
-		if (componentCount == 1) return DXGI_FORMAT_R32_UINT;
-		if (componentCount == 2) return DXGI_FORMAT_R32G32_UINT;
-        if (componentCount == 3) return DXGI_FORMAT_R32G32B32_UINT;
-		if (componentCount == 4) return DXGI_FORMAT_R32G32B32A32_UINT;
+void ShaderManager::LoadPixelShader(const std::string& id, const char* fileName) {
+    FILE* file = nullptr;
+    fopen_s(&file, fileName, "rb");
+    if (!file) {
+        char altPath[512];
+        sprintf_s(altPath, "shader/%s", fileName);
+        fopen_s(&file, altPath, "rb");
+        if (!file) {
+            sprintf_s(altPath, "../shader/%s", fileName);
+            fopen_s(&file, altPath, "rb");
+        }
     }
 
-	//対応するフォーマットが見つからない場合はUNKNOWNを返す
-    return DXGI_FORMAT_UNKNOWN;
+    if (!file) {
+        assert(false && "Pixel Shader file not found");
+        return;
+    }
+
+    fseek(file, 0, SEEK_END);
+    long size = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    std::vector<unsigned char> buffer(size);
+    fread(buffer.data(), 1, size, file);
+    fclose(file);
+
+    _pixelShaderBinaries[id] = std::move(buffer);
+}
+
+ID3D12PipelineState* ShaderManager::GetPipelineState(
+    const std::string& vsId,
+    const std::string& psId,
+    int blendMode,
+    int cullMode,
+    bool depthEnable,
+    bool depthWrite,
+    D3D12_PRIMITIVE_TOPOLOGY_TYPE topologyType
+) {
+    PipelineStateKey key = { vsId, psId, blendMode, cullMode, depthEnable, depthWrite, topologyType };
+    if (_pipelineStates.count(key) > 0) {
+        return _pipelineStates[key].Get();
+    }
+
+    // シェーダーバイナリ取得
+    if (_vertexShaderBinaries.count(vsId) == 0 || _pixelShaderBinaries.count(psId) == 0) {
+        // ロードされていない場合は、デフォルトのファイル名でロードを試みる
+        // 例: idが "UnlitTextureVS" なら、"UnlitTextureVS.cso" を探す
+        if (_vertexShaderBinaries.count(vsId) == 0) {
+            std::string fileName = vsId + ".cso";
+            LoadVertexShader(vsId, fileName.c_str());
+        }
+        if (_pixelShaderBinaries.count(psId) == 0) {
+            std::string fileName = psId + ".cso";
+            LoadPixelShader(psId, fileName.c_str());
+        }
+        
+        // 再チェック
+        if (_vertexShaderBinaries.count(vsId) == 0 || _pixelShaderBinaries.count(psId) == 0) {
+            assert(false && "Requested VS/PS binary not found in map!");
+            return nullptr;
+        }
+    }
+
+    const auto& vsBin = _vertexShaderBinaries[vsId];
+    const auto& psBin = _pixelShaderBinaries[psId];
+
+    // PSO作成のDESC定義
+    D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
+    psoDesc.pRootSignature = Renderer::GetRootSignatureDX12();
+    assert(psoDesc.pRootSignature != nullptr && "Root Signature is null when creating Pipeline State!");
+
+    psoDesc.VS.pShaderBytecode = vsBin.data();
+    psoDesc.VS.BytecodeLength = vsBin.size();
+    psoDesc.PS.pShaderBytecode = psBin.data();
+    psoDesc.PS.BytecodeLength = psBin.size();
+
+    // 入力レイアウト定義 (POSITION, NORMAL, COLOR, TEXCOORD)
+    static const D3D12_INPUT_ELEMENT_DESC inputElementDescs[] = {
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        { "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        { "COLOR",    0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0, 40, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+    };
+    psoDesc.InputLayout.pInputElementDescs = inputElementDescs;
+    psoDesc.InputLayout.NumElements = _countof(inputElementDescs);
+
+    // ブレンドステートの設定
+    D3D12_RENDER_TARGET_BLEND_DESC rtBlend = {};
+    if (blendMode == 0) { // Opaque
+        rtBlend.BlendEnable = FALSE;
+        rtBlend.LogicOpEnable = FALSE;
+        rtBlend.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+    } else if (blendMode == 1) { // AlphaBlend
+        rtBlend.BlendEnable = TRUE;
+        rtBlend.LogicOpEnable = FALSE;
+        rtBlend.SrcBlend = D3D12_BLEND_SRC_ALPHA;
+        rtBlend.DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+        rtBlend.BlendOp = D3D12_BLEND_OP_ADD;
+        rtBlend.SrcBlendAlpha = D3D12_BLEND_ONE;
+        rtBlend.DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA;
+        rtBlend.BlendOpAlpha = D3D12_BLEND_OP_ADD;
+        rtBlend.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+    } else if (blendMode == 2) { // Additive
+        rtBlend.BlendEnable = TRUE;
+        rtBlend.LogicOpEnable = FALSE;
+        rtBlend.SrcBlend = D3D12_BLEND_SRC_ALPHA;
+        rtBlend.DestBlend = D3D12_BLEND_ONE;
+        rtBlend.BlendOp = D3D12_BLEND_OP_ADD;
+        rtBlend.SrcBlendAlpha = D3D12_BLEND_ONE;
+        rtBlend.DestBlendAlpha = D3D12_BLEND_ONE;
+        rtBlend.BlendOpAlpha = D3D12_BLEND_OP_ADD;
+        rtBlend.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+    }
+    psoDesc.BlendState.AlphaToCoverageEnable = FALSE;
+    psoDesc.BlendState.IndependentBlendEnable = FALSE;
+    psoDesc.BlendState.RenderTarget[0] = rtBlend;
+
+    // ラスタライザステート
+    psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
+    psoDesc.RasterizerState.CullMode = (D3D12_CULL_MODE)cullMode;
+    psoDesc.RasterizerState.FrontCounterClockwise = FALSE;
+    psoDesc.RasterizerState.DepthBias = D3D12_DEFAULT_DEPTH_BIAS;
+    psoDesc.RasterizerState.DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
+    psoDesc.RasterizerState.SlopeScaledDepthBias = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
+    psoDesc.RasterizerState.DepthClipEnable = TRUE;
+    psoDesc.RasterizerState.MultisampleEnable = FALSE;
+    psoDesc.RasterizerState.AntialiasedLineEnable = FALSE;
+    psoDesc.RasterizerState.ForcedSampleCount = 0;
+    psoDesc.RasterizerState.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+
+    // 深度ステンシルステート
+    psoDesc.DepthStencilState.DepthEnable = depthEnable ? TRUE : FALSE;
+    psoDesc.DepthStencilState.DepthWriteMask = depthWrite ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
+    psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+    psoDesc.DepthStencilState.StencilEnable = FALSE;
+
+    // プリミティブトポロジとレンダーターゲット設定
+    psoDesc.PrimitiveTopologyType = topologyType;
+    psoDesc.NumRenderTargets = 1;
+    psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+    psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
+    psoDesc.SampleDesc.Count = 1;
+    psoDesc.SampleDesc.Quality = 0;
+    psoDesc.SampleMask = UINT_MAX;
+
+    ID3D12Device* device = Renderer::GetDeviceDX12();
+    ComPtr<ID3D12PipelineState> pso;
+    HRESULT hr = device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pso));
+    if (FAILED(hr)) {
+        // 詳細なエラーログを出力
+        FILE* fp = nullptr;
+        fopen_s(&fp, "d3d12_log.txt", "a");
+        if (fp) {
+            fprintf(fp, "\n--- CreateGraphicsPipelineState Failed Details ---\n");
+            fprintf(fp, "VS ID: %s, PS ID: %s\n", vsId.c_str(), psId.c_str());
+            fprintf(fp, "HRESULT: 0x%08X\n", hr);
+            fprintf(fp, "VS Size: %zu bytes, PS Size: %zu bytes\n", vsBin.size(), psBin.size());
+            fprintf(fp, "BlendMode: %d, CullMode: %d, DepthEnable: %d, DepthWrite: %d, TopologyType: %d\n",
+                blendMode, cullMode, depthEnable ? 1 : 0, depthWrite ? 1 : 0, (int)topologyType);
+            fclose(fp);
+        }
+        // D3D12デバッグメッセージも強制出力
+        Renderer::PrintDebugMessagesDX12();
+        assert(false && "CreateGraphicsPipelineState failed!");
+        return nullptr;
+    }
+
+    _pipelineStates[key] = pso;
+    return pso.Get();
 }

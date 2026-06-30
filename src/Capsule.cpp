@@ -3,6 +3,8 @@
 #include "ktvector.hpp"
 #include "Texture.h"
 #include <imgui.h>
+#include "ShaderManager.h"
+#include "Shader.h"
 
 void Capsule::CreateCapsuleMesh(float height, float radius, int latitudes, int longitudes, std::vector<Vertex>& vertices, std::vector<UINT>& indices){
 	float cylinderHeight = (std::max)(0.0f, height - 2.0f * radius);
@@ -114,6 +116,21 @@ void Capsule::Render() const{
 	cmdList->IASetIndexBuffer(&ibView);
 
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	// PSOバインド
+	{
+		std::string vsId = "VertexDirectionalLightingVS";
+		std::string psId = "VertexDirectionalLightingPS";
+		auto shaderComp = _owner->GetComponent<Shader>();
+		if (shaderComp) {
+			vsId = shaderComp->GetVertexShaderID();
+			psId = shaderComp->GetPixelShaderID();
+		}
+		ID3D12PipelineState* pso = ShaderManager::Instance().GetPipelineState(
+			vsId, psId, 0, 3, true, true, D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE
+		);
+		cmdList->SetPipelineState(pso);
+	}
+
 
 	XMMATRIX translation = XMMatrixTranslation(_owner->_transform._position.x, _owner->_transform._position.y, _owner->_transform._position.z);
 	XMFLOAT4 q = XMFLOAT4(_owner->_transform._quaternion.x, _owner->_transform._quaternion.y, _owner->_transform._quaternion.z, _owner->_transform._quaternion.w);
@@ -126,10 +143,10 @@ void Capsule::Render() const{
 	MATERIAL material = {};
 	material.Diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
 	material.TextureEnable = (_texture != nullptr);
-	Renderer::SetConstant(1, &material, sizeof(material));
+	Renderer::SetConstant(3, &material, sizeof(material));
 
 	if (_texture) {
-		Renderer::SetTexture(4, _texture);
+		Renderer::SetTexture(6, _texture);
 	}
 
 	cmdList->DrawIndexedInstanced(_indexCount, 1, 0, 0, 0);

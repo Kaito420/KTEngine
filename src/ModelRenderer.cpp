@@ -14,6 +14,8 @@
 #include "modelRenderer.h"
 #include "Texture.h"
 #include "GameObject.h"
+#include "ShaderManager.h"
+#include "Shader.h"
 
 
 std::unordered_map<std::string, MODEL*> ModelRenderer::m_ModelPool;
@@ -24,14 +26,14 @@ void ModelRenderer::Render() const
 	auto cmdList = Renderer::GetCommandListDX12();
 	if (!cmdList) return;
 
-	// í∏ì_ÉoÉbÉtÉ@ÉrÉÖÅ[ê›íË
+	// _obt@r[›í
 	D3D12_VERTEX_BUFFER_VIEW vbView = {};
 	vbView.BufferLocation = m_Model->VertexBuffer->Resource->GetGPUVirtualAddress();
 	vbView.StrideInBytes = m_Model->VertexBuffer->Stride;
 	vbView.SizeInBytes = m_Model->VertexBuffer->Stride * m_Model->VertexBuffer->Size;
 	cmdList->IASetVertexBuffers(0, 1, &vbView);
 
-	// ÉCÉìÉfÉbÉNÉXÉoÉbÉtÉ@ÉrÉÖÅ[ê›íË
+	// CfbNXobt@r[›í
 	D3D12_INDEX_BUFFER_VIEW ibView = {};
 	ibView.BufferLocation = m_Model->IndexBuffer->Resource->GetGPUVirtualAddress();
 	ibView.SizeInBytes = sizeof(unsigned int) * m_Model->IndexBuffer->Size;
@@ -39,8 +41,23 @@ void ModelRenderer::Render() const
 	cmdList->IASetIndexBuffer(&ibView);
 
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	// PSO„Éê„Ç§„É≥„Éâ
+	{
+		std::string vsId = "VertexDirectionalLightingVS";
+		std::string psId = "VertexDirectionalLightingPS";
+		auto shaderComp = _owner->GetComponent<Shader>();
+		if (shaderComp) {
+			vsId = shaderComp->GetVertexShaderID();
+			psId = shaderComp->GetPixelShaderID();
+		}
+		ID3D12PipelineState* pso = ShaderManager::Instance().GetPipelineState(
+			vsId, psId, 0, 3, true, true, D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE
+		);
+		cmdList->SetPipelineState(pso);
+	}
 
-	// çsóÒåvéZ
+
+	// svZ
 	XMMATRIX translation = XMMatrixTranslation(_owner->_transform._position.x, _owner->_transform._position.y, _owner->_transform._position.z);
 	KTVECTOR3 radians = { XMConvertToRadians(_owner->_transform._rotation.x),
 						  XMConvertToRadians(_owner->_transform._rotation.y),
@@ -53,10 +70,10 @@ void ModelRenderer::Render() const
 
 	for (unsigned int i = 0; i < m_Model->SubsetNum; i++)
 	{
-		Renderer::SetConstant(1, &m_Model->SubsetArray[i].Material.Material, sizeof(MATERIAL));
+		Renderer::SetConstant(3, &m_Model->SubsetArray[i].Material.Material, sizeof(MATERIAL));
 
 		if (m_Model->SubsetArray[i].Material.Texture)
-			Renderer::SetTexture(4, m_Model->SubsetArray[i].Material.Texture);
+			Renderer::SetTexture(6, m_Model->SubsetArray[i].Material.Texture);
 
 		cmdList->DrawIndexedInstanced(m_Model->SubsetArray[i].IndexNum, 1, m_Model->SubsetArray[i].StartIndex, 0, 0);
 	}
@@ -86,7 +103,7 @@ void ModelRenderer::UnloadAll()
 
 		for (unsigned int i = 0; i < pair.second->SubsetNum; i++)
 		{
-			// ÉeÉNÉXÉ`ÉÉÇÕé©ìÆÇ≈ÉfÉXÉgÉâÉNÉ^Ç™ëñÇÁÇ»Ç¢(ê∂ÇÃÉ|ÉCÉìÉ^ÇÃÇΩÇﬂ)ÇΩÇﬂÅAéËìÆÇ≈ÉäÉZÉbÉg(é¿ç€Ç…ÇÕ_texturePoolë§Ç≈ä«óùÇ≥ÇÍÇƒÇ¢ÇÈÇÃÇ≈Ç±Ç±Ç≈ÇÕâï˙ÇÃïKóvÇÕÇ»Ç¢Ç™ÅAéQè∆Çè¡Ç∑ÇΩÇﬂnullptrÇ…ÇµÇƒÇ®Ç≠)
+			// eNX`Õé≈ÉfXgN^»Ç(ÃÉ|C^ÃÇ)ﬂÅAËìÆ≈ÉZbg(€Ç…Ç_texturePool≈ä«óƒÇÃÇ≈Ç≈ÇÕâÃïKvÕÇ»ÇAQ∆Çnullptr…ÇƒÇ)
 			pair.second->SubsetArray[i].Material.Texture = nullptr;
 		}
 
@@ -100,7 +117,7 @@ void ModelRenderer::UnloadAll()
 
 void ModelRenderer::Load(const char* FileName)
 {
-	//t@C»ÇÁâΩ»
+	//t@C»ÇÁâΩ
 	if(FileName == nullptr || strlen(FileName) == 0)
 		return;
 
@@ -131,7 +148,7 @@ void ModelRenderer::LoadModel(const char* FileName, MODEL* Model)
 	MODEL_OBJ modelObj;
 	LoadObj(FileName, &modelObj);
 
-	// í∏ì_ÉoÉbÉtÉ@çÏê¨
+	// _obt@Ïê¨
 	Model->VertexBuffer = Renderer::CreateVertexBuffer(sizeof(Vertex), modelObj.VertexNum);
 	void* data = nullptr;
 	HRESULT hr = Model->VertexBuffer->Resource->Map(0, nullptr, &data);
@@ -140,7 +157,7 @@ void ModelRenderer::LoadModel(const char* FileName, MODEL* Model)
 		Model->VertexBuffer->Resource->Unmap(0, nullptr);
 	}
 
-	// ÉCÉìÉfÉbÉNÉXÉoÉbÉtÉ@çÏê¨
+	// CfbNXobt@Ïê¨
 	Model->IndexBuffer = Renderer::CreateIndexBuffer(modelObj.IndexNum);
 	hr = Model->IndexBuffer->Resource->Map(0, nullptr, &data);
 	if (SUCCEEDED(hr)) {
@@ -148,7 +165,7 @@ void ModelRenderer::LoadModel(const char* FileName, MODEL* Model)
 		Model->IndexBuffer->Resource->Unmap(0, nullptr);
 	}
 
-	// ÉTÉuÉZÉbÉgê›íË
+	// TuZbg›í
 	{
 		Model->SubsetArray = new SUBSET[modelObj.SubsetNum];
 		Model->SubsetNum = modelObj.SubsetNum;
@@ -159,7 +176,7 @@ void ModelRenderer::LoadModel(const char* FileName, MODEL* Model)
 			Model->SubsetArray[i].IndexNum = modelObj.SubsetArray[i].IndexNum;
 			Model->SubsetArray[i].Material.Material = modelObj.SubsetArray[i].Material.Material;
 
-			// ÉeÉNÉXÉ`ÉÉÉçÅ[Éh
+			// eNX`[h
 			Model->SubsetArray[i].Material.Texture = Texture::Load(modelObj.SubsetArray[i].Material.TextureName);
 
 			if (Model->SubsetArray[i].Material.Texture)
@@ -179,7 +196,7 @@ void ModelRenderer::LoadModel(const char* FileName, MODEL* Model)
 
 
 
-//f«////////////////////////////////////////////
+//f////////////////////////////////////////////
 void ModelRenderer::LoadObj(const char* FileName, MODEL_OBJ* ModelObj)
 {
 
@@ -253,7 +270,7 @@ void ModelRenderer::LoadObj(const char* FileName, MODEL_OBJ* ModelObj)
 				c = fgetc(file);
 			} while (c != '\n' && c != '\r');
 
-			//lpÕéOp…
+			//lpÕéOp
 			if (in == 4)
 				in = 6;
 
@@ -280,7 +297,7 @@ void ModelRenderer::LoadObj(const char* FileName, MODEL_OBJ* ModelObj)
 
 
 
-	//vf«
+	//vf
 	XMFLOAT3* position = positionArray;
 	XMFLOAT3* normal = normalArray;
 	XMFLOAT2* texcoord = texcoordArray;
@@ -397,7 +414,7 @@ void ModelRenderer::LoadObj(const char* FileName, MODEL_OBJ* ModelObj)
 				c = fgetc(file);
 			} while (c != '\n' && c != '\r');
 
-			//lpÕéOp…
+			//lpÕéOp
 			if (in == 4)
 			{
 				ModelObj->IndexArray[ic] = vc - 4;
@@ -425,7 +442,7 @@ void ModelRenderer::LoadObj(const char* FileName, MODEL_OBJ* ModelObj)
 
 
 
-//}eA«Ç›///////////////////////////////////////////////////////////////////
+//}eA«Ç///////////////////////////////////////////////////////////////////
 void ModelRenderer::LoadMaterial(const char* FileName, MODEL_MATERIAL** MaterialArray, unsigned int* MaterialNum)
 {
 
@@ -464,7 +481,7 @@ void ModelRenderer::LoadMaterial(const char* FileName, MODEL_MATERIAL** Material
 	materialArray = new MODEL_MATERIAL[materialNum];
 
 
-	//vf«
+	//vf
 	int mc = -1;
 
 	fseek(file, 0, SEEK_SET);

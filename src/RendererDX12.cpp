@@ -261,11 +261,11 @@ namespace RendererDX12 {
 
         // ルートシグネチャ生成
         {
-            D3D12_ROOT_PARAMETER rootParameters[12] = {};
-            D3D12_DESCRIPTOR_RANGE range[12] = {};
+            D3D12_ROOT_PARAMETER rootParameters[14] = {};
+            D3D12_DESCRIPTOR_RANGE range[14] = {};
 
-            // 定数バッファ (0〜3)
-            for (unsigned int i = 0; i < 4; i++) {
+            // 定数バッファ (0〜5)
+            for (unsigned int i = 0; i < 6; i++) {
                 range[i].NumDescriptors = 1;
                 range[i].BaseShaderRegister = i;
                 range[i].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
@@ -277,10 +277,10 @@ namespace RendererDX12 {
                 rootParameters[i].DescriptorTable.pDescriptorRanges = &range[i];
             }
 
-            // テクスチャ (4〜11)
-            for (unsigned int i = 4; i < 12; i++) {
+            // テクスチャ (6〜13)
+            for (unsigned int i = 6; i < 14; i++) {
                 range[i].NumDescriptors = 1;
-                range[i].BaseShaderRegister = i - 4;
+                range[i].BaseShaderRegister = i - 6;
                 range[i].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
                 range[i].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
@@ -409,6 +409,7 @@ namespace RendererDX12 {
     int GetFrameCount() { return FrameCount; }
     ID3D12GraphicsCommandList* GetCommandList() { return g_pd3dCommandList.Get(); }
     ID3D12CommandQueue* GetCommandQueue() { return g_pd3dCommandQueue.Get(); }
+    ID3D12RootSignature* GetRootSignature() { return g_pd3dRootSignature.Get(); }
 
     ID3D11Device* GetDevice11() { return nullptr; }
     ID3D11DeviceContext* GetContext11() { return nullptr; }

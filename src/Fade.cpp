@@ -6,6 +6,8 @@
 #include "SceneTitle.h"
 #include "SceneGame.h"
 #include "SceneResult.h"
+#include "ShaderManager.h"
+#include "Shader.h"
 
 void Fade::Update()
 {
@@ -31,6 +33,21 @@ void Fade::Render() const
 	cmdList->IASetVertexBuffers(0, 1, &vbView);
 
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+	// PSOバインド
+	{
+		std::string vsId = "UnlitTextureVS";
+		std::string psId = "UnlitTexturePS";
+		auto shaderComp = _owner->GetComponent<Shader>();
+		if (shaderComp) {
+			vsId = shaderComp->GetVertexShaderID();
+			psId = shaderComp->GetPixelShaderID();
+		}
+		ID3D12PipelineState* pso = ShaderManager::Instance().GetPipelineState(
+			vsId, psId, 1, 1, false, false, D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE
+		);
+		cmdList->SetPipelineState(pso);
+	}
+
 
 	Camera* camera = Manager::GetCurrentScene()->FindGameObjectByName<Camera>("Camera");
 	if (!camera) return;
@@ -48,10 +65,10 @@ void Fade::Render() const
 	MATERIAL material = {};
 	material.Diffuse = { _color, _color, _color, _alpha };
 	material.TextureEnable = (_texture != nullptr);
-	Renderer::SetConstant(1, &material, sizeof(material));
+	Renderer::SetConstant(3, &material, sizeof(material));
 
 	if (_texture) {
-		Renderer::SetTexture(4, _texture);
+		Renderer::SetTexture(6, _texture);
 	}
 
 	cmdList->DrawInstanced(4, 1, 0, 0);
