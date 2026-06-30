@@ -1,3 +1,4 @@
+#if 0
 //=====================================================================================
 // RendererDX11.cpp
 // Author:Kaito Aoki
@@ -811,3 +812,5 @@ float RendererDX11::GetGameWidth() {
 float RendererDX11::GetGameHeight() {
     return static_cast<float>(_gameHeight);
 }
+
+#endif

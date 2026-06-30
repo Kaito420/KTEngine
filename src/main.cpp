@@ -52,19 +52,15 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
     UpdateWindow(hwnd);
 
     Manager::LoadEngineConfig();
-    // DirectX11 初期化
+    // DirectX12 初期化
     if (!Renderer::Init(hwnd)) return 1;
 
     // ImGui 初期化
-    ImGuiLayer::Init(hwnd, Renderer::GetDevice(), Renderer::GetContext());
+    ImGuiLayer::Init(hwnd);
 
-    //Manager 初期化
-    Manager::Initialize();
-    Input::Initialize(hwnd);
-
-    //シーン用バッファ（一旦サイズ固定）
-    Renderer::InitSceneRenderTarget(1280,720);
-    Renderer::InitGameRenderTarget(1280,720);
+    // レンダーターゲット初期化
+    Renderer::InitSceneRenderTarget(1280, 720);
+    Renderer::InitGameRenderTarget(1280, 720);
 
     // メインループ
     MSG msg = {};
@@ -75,131 +71,31 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
             continue;
         }
 
-        Manager::Update(); // Managerの更新
-
-        //ゲームシーンをテクスチャにレンダリング
+        // ゲーム描画
         Renderer::BeginGameRender();
-        Camera* mainCamera = nullptr;
-        if (Manager::GetCurrentScene()) {
-            mainCamera = Manager::GetCurrentScene()->FindGameObjectByName<Camera>("Camera");
-        }
-        if (mainCamera) {
-            Renderer::SetViewMatrix(mainCamera->GetViewMatrix());
-            Renderer::SetProjectionMatrix(mainCamera->GetProjectionMatrix());
-        }
-        Manager::Render();
+        // Manager::Render(); // コメントアウト
 
+        // シーン描画
         Renderer::BeginSceneRender();
-        Renderer::SetViewMatrix(Manager::GetEditorCamera()->GetViewMatrix());
-        Renderer::SetProjectionMatrix(Manager::GetEditorCamera()->GetProjectionMatrix());
-        Manager::Render();
+        // Manager::Render(); // コメントアウト
 
-        //ImGuiとウィンドウ全体のレンダリング
+        // バックバッファ描画とImGui
         Renderer::BeginFrame();
-
-		//Manager::Render(); // Managerの描画
-
-
         ImGuiLayer::Begin();
-        ImGuizmo::BeginFrame();
-        {
-			Manager::RenderMenuBar();
-            if (Manager::IsShowContentBrowser())
-                fileBrowser.Render();
-            if (Manager::IsShowHierarchy())
-                Manager::GetCurrentScene()->RenderHierarchy();
-            if (Manager::IsShowInspector())
-                Manager::GetCurrentScene()->RenderInspector();
-            Manager::GetCurrentScene()->RenderButton();
 
-            if (Manager::IsShowSceneView()) {
-                ImGui::Begin("Scene View", nullptr, ImGuiWindowFlags_NoScrollbar);
-                {
-                    ImVec2 viewportSize = ImGui::GetContentRegionAvail();
-                    ImVec2 cursorPos = ImGui::GetCursorScreenPos();
-                    Renderer::ResizeSceneBuffer((UINT)viewportSize.x, (UINT)viewportSize.y);
-                    void* myTexture = Renderer::GetSceneSRV();
-                    if (myTexture) {
-                        ImGui::Image(myTexture, viewportSize);
-                        bool isHovered = ImGui::IsItemHovered();
-                        Input::SetSceneViewHovered(isHovered);
-                        
-                        auto selectedObj = Manager::GetCurrentScene()->GetSelectedGameObject();
-                        if (selectedObj) {
-                            ImGuizmo::SetOrthographic(false);
-                            ImGuizmo::SetDrawlist();
-                            
-                            ImGuizmo::SetRect(cursorPos.x, cursorPos.y, viewportSize.x, viewportSize.y);
-                            
-                            EditorCamera* camera = Manager::GetEditorCamera();
-                            DirectX::XMMATRIX view = camera->GetViewMatrix();
-                            DirectX::XMMATRIX proj = camera->GetProjectionMatrix();
-                            
-                            float viewMat[16];
-                            float projMat[16];
-                            DirectX::XMStoreFloat4x4((DirectX::XMFLOAT4X4*)viewMat, view);
-                            DirectX::XMStoreFloat4x4((DirectX::XMFLOAT4X4*)projMat, proj);
-                            
-                            float pos[3] = { selectedObj->_transform._position.x, selectedObj->_transform._position.y, selectedObj->_transform._position.z };
-                            float rot[3] = { selectedObj->_transform._rotation.x, selectedObj->_transform._rotation.y, selectedObj->_transform._rotation.z };
-                            float sca[3] = { selectedObj->_transform._scale.x, selectedObj->_transform._scale.y, selectedObj->_transform._scale.z };
-                            
-                            float matrix[16];
-                            ImGuizmo::RecomposeMatrixFromComponents(pos, rot, sca, matrix);
-                            
-                            static ImGuizmo::OPERATION mCurrentGizmoOperation(ImGuizmo::TRANSLATE);
-                            static ImGuizmo::MODE mCurrentGizmoMode(ImGuizmo::LOCAL);
-                            
-                            if (ImGui::IsKeyPressed(ImGuiKey_T)) mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
-                            if (ImGui::IsKeyPressed(ImGuiKey_E)) mCurrentGizmoOperation = ImGuizmo::ROTATE;
-                            if (ImGui::IsKeyPressed(ImGuiKey_R)) mCurrentGizmoOperation = ImGuizmo::SCALE;
-                            
-                            ImGuizmo::Manipulate(viewMat, projMat, mCurrentGizmoOperation, mCurrentGizmoMode, matrix, NULL, NULL);
-                            
-                            if (ImGuizmo::IsUsing()) {
-                                ImGuizmo::DecomposeMatrixToComponents(matrix, pos, rot, sca);
-                                selectedObj->_transform._position = { pos[0], pos[1], pos[2] };
-                                selectedObj->_transform._rotation = { rot[0], rot[1], rot[2] };
-								selectedObj->_transform._quaternion = KTQUATERNION::FromEulerAngles(rot[0], rot[1], rot[2]);
-                                selectedObj->_transform._scale = { sca[0], sca[1], sca[2] };
-                            }
-                        }
-                    }
-                }
-                ImGui::End();
-            }
+        // テストウィンドウ表示
+        ImGui::ShowDemoWindow();
+        ImGui::Begin("KTEngine Pure D3D12 Test");
+        ImGui::Text("DirectX 12 Pure Migration Phase 1 Success!");
+        ImGui::End();
 
-            if (Manager::IsShowGameView()) {
-                ImGui::Begin("Game View", nullptr, ImGuiWindowFlags_NoScrollbar);//ゲームビュー描画
-                {
-                    ImVec2 viewportSize = ImGui::GetContentRegionAvail(); //描画領域のサイズ取得
-
-                    //サイズが有効かつ現在のテクスチャサイズと異なる場合はリサイズ
-					Renderer::ResizeGameBuffer((UINT)viewportSize.x, (UINT)viewportSize.y);
-
-                    void* myTexture = Renderer::GetGameSRV();
-                    if (myTexture == nullptr)
-                        ImGui::Text("Texture is NULL!");
-                    else {
-                        ImGui::Image(myTexture, viewportSize);
-                        bool isHovered = ImGui::IsItemHovered();
-                        Input::SetGameViewHovered(isHovered);
-                    }
-                }
-                ImGui::End();
-            }
-        }
         ImGuiLayer::End();
-
-
         Renderer::EndFrame();
 
-        Input::Update();    //Inputの更新
-
+        Input::Update();    // Inputの更新
     }
 
     // クリーンアップ
-	Manager::Finalize();
     ImGuiLayer::Shutdown();
     Renderer::Shutdown();
     UnregisterClass(wc.lpszClassName, hInstance);

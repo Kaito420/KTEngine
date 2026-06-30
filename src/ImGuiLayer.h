@@ -11,7 +11,7 @@
 #include <d3d11.h>
 
 namespace ImGuiLayer {
-    void Init(HWND hwnd, ID3D11Device* device, ID3D11DeviceContext* context);
+    void Init(HWND hwnd);
     void Begin();
     void End();
     void Shutdown();
