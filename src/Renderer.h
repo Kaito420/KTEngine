@@ -8,8 +8,10 @@
 #define _RENDERER_H
 
 #include <stdio.h>
+#include <memory>
 
 #include <d3d11.h>
+#include <d3d12.h>
 #include <wrl/client.h>
 using Microsoft::WRL::ComPtr;
 
@@ -67,6 +69,24 @@ struct LIGHT {
     XMFLOAT4 Parameter;
 };
 
+// D3D12 Resources
+struct VERTEX_BUFFER {
+    ComPtr<ID3D12Resource> Resource;
+    unsigned int Stride;
+    unsigned int Size;
+};
+
+struct INDEX_BUFFER {
+    ComPtr<ID3D12Resource> Resource;
+    unsigned int Size;
+};
+
+struct TEXTURE {
+    ComPtr<ID3D12Resource> Resource;
+    unsigned int SRVIndex;
+    ~TEXTURE();
+};
+
 
 enum class GraphicsAPI { DirectX11, DirectX12 };
 
@@ -96,6 +116,13 @@ namespace RendererDX12 {
     void BeginGameRender();
     void* GetGameSRV();
     void ResizeGameBuffer(float width, float height);
+
+    std::unique_ptr<VERTEX_BUFFER> CreateVertexBuffer(unsigned int stride, unsigned int size);
+    std::unique_ptr<INDEX_BUFFER> CreateIndexBuffer(unsigned int size);
+    unsigned int CreateShaderResourceView(ID3D12Resource* resource);
+    void ReleaseShaderResourceView(unsigned int index);
+    void SetConstant(int slot, const void* data, unsigned int size);
+    void SetTexture(int slot, const TEXTURE* texture);
 }
 
 namespace Renderer {
@@ -171,6 +198,13 @@ namespace Renderer {
     float GetGameHeight();
 
     void ResizeGameBuffer(float width, float height);
+
+    // D3D12 Resource Helpers
+    std::unique_ptr<VERTEX_BUFFER> CreateVertexBuffer(unsigned int stride, unsigned int size);
+    std::unique_ptr<INDEX_BUFFER> CreateIndexBuffer(unsigned int size);
+    void ReleaseTextureSrv(unsigned int index);
+    void SetConstant(int slot, const void* data, unsigned int size);
+    void SetTexture(int slot, const TEXTURE* texture);
 }
 
 struct ID3D12Device;

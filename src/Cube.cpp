@@ -1,129 +1,108 @@
-//=====================================================================================
-// Cube.cpp
-// Author:Kaito Aoki
-// Date:2025/09/08
-//=====================================================================================
-
 #include "Cube.h"
 #include "GameObject.h"
 
 void Cube::Awake() {
-
-	//頂点バッファ生成
-	D3D11_BUFFER_DESC bd = {};
-	bd.Usage = D3D11_USAGE_DEFAULT;
-	bd.ByteWidth = sizeof(Vertex) * 36; // 6 faces * 2 triangles * 3 vertices
-	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	bd.CPUAccessFlags = 0;
+	_vertexBuffer = Renderer::CreateVertexBuffer(sizeof(Vertex), 24);
 
 	Vertex v[] = {
-		//手前の面
+		// 前の面
 		{ { -0.5f,  0.5f, -0.5f },{0.0f, 0.0f, -1.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 0.0f} },
 		{ {  0.5f,  0.5f, -0.5f },{0.0f, 0.0f, -1.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {1.0f, 0.0f} },
 		{ { -0.5f, -0.5f, -0.5f },{0.0f, 0.0f, -1.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 1.0f} },
 		{ {  0.5f, -0.5f, -0.5f },{0.0f, 0.0f, -1.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {1.0f, 1.0f} },
 
-		//右の面
+		// 右の面
 		{ { 0.5f,  0.5f, -0.5f },{1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 0.0f} },
 		{ { 0.5f,  0.5f,  0.5f },{1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, {1.0f, 0.0f} },
 		{ { 0.5f, -0.5f, -0.5f },{1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 1.0f} },
 		{ { 0.5f, -0.5f,  0.5f },{1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, {1.0f, 1.0f} },
 
-
-		//上の面
+		// 上の面
 		{ { 0.5f,  0.5f, -0.5f },{0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 0.0f} },
 		{ { -0.5f, 0.5f, -0.5f },{0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 1.0f, 1.0f}, {1.0f, 0.0f} },
 		{ { -0.5f, 0.5f,  0.5f },{0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 1.0f} },
 		{ { 0.5f,  0.5f,  0.5f },{0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 1.0f, 1.0f}, {1.0f, 1.0f} },
 
-
-		//奥の面
+		// 後ろの面
 		{ { -0.5f,  0.5f, 0.5f },{0.0f, 0.0f, 1.0f}, {0.0f, 1.0f, 0.0f, 1.0f}, {0.0f, 0.0f} },
 		{ { -0.5f, -0.5f, 0.5f },{0.0f, 0.0f, 1.0f}, {0.0f, 1.0f, 0.0f, 1.0f}, {1.0f, 0.0f} },
 		{ {  0.5f,  0.5f, 0.5f },{0.0f, 0.0f, 1.0f}, {0.0f, 1.0f, 0.0f, 1.0f}, {0.0f, 1.0f} },
 		{ {  0.5f, -0.5f, 0.5f },{0.0f, 0.0f, 1.0f}, {0.0f, 1.0f, 0.0f, 1.0f}, {1.0f, 1.0f} },
 
-		//左の面
+		// 左の面
 		{ { -0.5f,  0.5f, -0.5f },{-1.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 0.0f, 1.0f}, {0.0f, 0.0f} },
 		{ { -0.5f, -0.5f, -0.5f },{-1.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 0.0f, 1.0f}, {1.0f, 0.0f} },
 		{ { -0.5f,  0.5f,  0.5f },{-1.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 0.0f, 1.0f}, {0.0f, 1.0f} },
 		{ { -0.5f, -0.5f,  0.5f },{-1.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 0.0f, 1.0f}, {1.0f, 1.0f} },
 
-		//下の面
+		// 下の面
 		{ {  0.5f, -0.5f, -0.5f },{0.0f, -1.0f, 0.0f}, {0.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f} },
 		{ { -0.5f, -0.5f,  0.5f },{0.0f, -1.0f, 0.0f}, {0.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 0.0f} },
 		{ { -0.5f, -0.5f, -0.5f },{0.0f, -1.0f, 0.0f}, {0.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 1.0f} },
 		{ {  0.5f, -0.5f,  0.5f },{0.0f, -1.0f, 0.0f}, {0.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f} }
 	};
 
-	D3D11_SUBRESOURCE_DATA data;
-	data.pSysMem = v;
-	data.SysMemPitch = 0;
-	data.SysMemSlicePitch = 0;
+	void* data = nullptr;
+	HRESULT hr = _vertexBuffer->Resource->Map(0, nullptr, &data);
+	if (SUCCEEDED(hr)) {
+		memcpy(data, v, sizeof(v));
+		_vertexBuffer->Resource->Unmap(0, nullptr);
+	}
 
-	Renderer::CreateBuffer(&bd, &data, _vertexBuffer.GetAddressOf());
+	_indexBuffer = Renderer::CreateIndexBuffer(36);
 
-	//インデックスバッファ生成
-
-	unsigned short indices[] = {
-	0, 1, 2, 2, 1, 3,
-	4, 5, 6, 6, 5, 7,
-	8, 9, 10, 10, 11, 8,
-	12, 13, 14, 13, 15, 14,
-	16, 17, 18, 17, 19, 18,
-	20, 21, 22, 21, 20, 23
+	unsigned int indices[] = {
+		0, 1, 2, 2, 1, 3,
+		4, 5, 6, 6, 5, 7,
+		8, 9, 10, 10, 11, 8,
+		12, 13, 14, 13, 15, 14,
+		16, 17, 18, 17, 19, 18,
+		20, 21, 22, 21, 20, 23
 	};
 
-	bd.Usage = D3D11_USAGE_DEFAULT;
-	bd.ByteWidth = sizeof(unsigned short) * 36;	//バッファサイズ*頂点数分
-	bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
-	bd.CPUAccessFlags = 0;
-
-	data.pSysMem = indices;
-	data.SysMemPitch = 0;
-	data.SysMemSlicePitch = 0;
-
-	Renderer::CreateBuffer(&bd, &data, _indexBuffer.GetAddressOf());
+	hr = _indexBuffer->Resource->Map(0, nullptr, &data);
+	if (SUCCEEDED(hr)) {
+		memcpy(data, indices, sizeof(indices));
+		_indexBuffer->Resource->Unmap(0, nullptr);
+	}
 }
 
 void Cube::Render()const {
+	auto cmdList = Renderer::GetCommandListDX12();
+	if (!cmdList) return;
 
-	//頂点バッファの設定
-	UINT stride = sizeof(Vertex);
-	UINT offset = 0;
-	Renderer::IASetVertexBuffers(0, 1, _vertexBuffer.GetAddressOf(), &stride, &offset);
-	//インデックスバッファの設定
-	Renderer::IASetIndexBuffer(_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
+	// 頂点バッファビュー設定
+	D3D12_VERTEX_BUFFER_VIEW vbView = {};
+	vbView.BufferLocation = _vertexBuffer->Resource->GetGPUVirtualAddress();
+	vbView.StrideInBytes = _vertexBuffer->Stride;
+	vbView.SizeInBytes = _vertexBuffer->Stride * _vertexBuffer->Size;
+	cmdList->IASetVertexBuffers(0, 1, &vbView);
 
-	//マトリクス設定
-	//平行移動行列
+	// インデックスバッファビュー設定
+	D3D12_INDEX_BUFFER_VIEW ibView = {};
+	ibView.BufferLocation = _indexBuffer->Resource->GetGPUVirtualAddress();
+	ibView.SizeInBytes = sizeof(unsigned int) * _indexBuffer->Size;
+	ibView.Format = DXGI_FORMAT_R32_UINT;
+	cmdList->IASetIndexBuffer(&ibView);
+
+	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	// 行列計算
 	XMMATRIX translation = XMMatrixTranslation(_owner->_transform._position.x, _owner->_transform._position.y, _owner->_transform._position.z);
-
-	//回転行列
 	XMFLOAT4 q = XMFLOAT4(_owner->_transform._quaternion.x, _owner->_transform._quaternion.y, _owner->_transform._quaternion.z, _owner->_transform._quaternion.w);
-
 	XMMATRIX rotation = XMMatrixRotationQuaternion(XMLoadFloat4(&q));
-
-	//スケーリング行列
 	XMMATRIX scaling = XMMatrixScaling(_owner->_transform._scale.x, _owner->_transform._scale.y, _owner->_transform._scale.z);
-
-	//ワールド行列
 	XMMATRIX worldMatrix =  scaling * rotation * translation;
 
-	Renderer::SetWorldMatrix(worldMatrix);
+	Renderer::SetConstant(0, &worldMatrix, sizeof(worldMatrix));
 
 	MATERIAL material = {};
 	material.Diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
 	material.TextureEnable = false;
-	Renderer::SetMaterial(material);
+	Renderer::SetConstant(1, &material, sizeof(material));
 
-	//プリミティブトポロジの設定（三角形リスト）
-	Renderer::IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	//描画コール
-	Renderer::DrawIndexed(36, 0, 0); // 36 indices for the cube
-
+	cmdList->DrawIndexedInstanced(36, 1, 0, 0, 0);
 }
 
 void Cube::ShowUI() {
-
 }

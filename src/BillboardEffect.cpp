@@ -8,21 +8,9 @@ static XMMATRIX g_billboardMatrix = XMMatrixIdentity();
 
 void BillboardEffect::Awake()
 {
-	ID3D11Device* pDevice = Renderer::GetDevice();
-	// 頂点バッファ生成
-	D3D11_BUFFER_DESC bd;
-	ZeroMemory(&bd, sizeof(bd));
-	bd.Usage = D3D11_USAGE_DYNAMIC;
-	bd.ByteWidth = sizeof(Vertex) * 4;	//四角形用
-	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	Renderer::CreateBuffer(&bd, NULL, _vertexBuffer.GetAddressOf());
+	_vertexBuffer = Renderer::CreateVertexBuffer(sizeof(Vertex), 4);
 
-
-	D3D11_MAPPED_SUBRESOURCE msr;
-	Renderer::Map(_vertexBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &msr);
-	Vertex* vertex = (Vertex*)msr.pData;
-
+	Vertex vertex[4];
 	vertex[0].position = XMFLOAT3(-0.5f, +0.5f, 0.0f);
 	vertex[1].position = XMFLOAT3(+0.5f, +0.5f, 0.0f);
 	vertex[2].position = XMFLOAT3(-0.5f, -0.5f, 0.0f);
@@ -37,7 +25,13 @@ void BillboardEffect::Awake()
 		vertex[i].color = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 		vertex[i].normal = XMFLOAT3(0.0f, 0.0f, -1.0f);
 	}
-	Renderer::Unmap(_vertexBuffer.Get(), 0);
+
+	void* data = nullptr;
+	HRESULT hr = _vertexBuffer->Resource->Map(0, nullptr, &data);
+	if (SUCCEEDED(hr)) {
+		memcpy(data, vertex, sizeof(vertex));
+		_vertexBuffer->Resource->Unmap(0, nullptr);
+	}
 
 	_texture = Texture::Load("asset/texture/explosion.png");
 	_numXCut = 4;
@@ -45,13 +39,12 @@ void BillboardEffect::Awake()
 	_loop = true;
 	_maxFrame = _numXCut * _numYCut;
 	_frame = 0;
-	
 }
 
 void BillboardEffect::Update()
 {
-	//カメラマトリクスからいろいろ計算
 	Camera* camera = Manager::GetCurrentScene()->FindGameObjectByName<Camera>("Camera");
+	if (!camera) return;
 
 	XMMATRIX view = camera->GetViewMatrix();
 	XMMATRIX viewInv = XMMatrixTranspose(view);
@@ -70,20 +63,13 @@ void BillboardEffect::Update()
 
 void BillboardEffect::Render() const
 {
-	Renderer::SetDepthEnable(false);
-
-	//1カット当たりのwidth,hight
 	float w = 1.0 / _numXCut;
 	float h = 1.0 / _numYCut;
 
-	//対応するカットの左上の座標
 	float u = (_frame % _numXCut) * w;
 	float v = (_frame / _numXCut) * h;
 
-	D3D11_MAPPED_SUBRESOURCE msr;
-	Renderer::Map(_vertexBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &msr);
-	Vertex* vertex = (Vertex*)msr.pData;
-
+	Vertex vertex[4];
 	vertex[0].position = XMFLOAT3(-0.5f, +0.5f, 0.0f);
 	vertex[1].position = XMFLOAT3(+0.5f, +0.5f, 0.0f);
 	vertex[2].position = XMFLOAT3(-0.5f, -0.5f, 0.0f);
@@ -98,43 +84,45 @@ void BillboardEffect::Render() const
 		vertex[i].color = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 		vertex[i].normal = XMFLOAT3(0.0f, 1.0f, 0.0f);
 	}
-	Renderer::Unmap(_vertexBuffer.Get(), 0);
 
-	//頂点バッファ設定
-	UINT stride = sizeof(Vertex);
-	UINT offset = 0;
-	Renderer::IASetVertexBuffers(0, 1, _vertexBuffer.GetAddressOf(), &stride, &offset);
+	void* data = nullptr;
+	HRESULT hr = _vertexBuffer->Resource->Map(0, nullptr, &data);
+	if (SUCCEEDED(hr)) {
+		memcpy(data, vertex, sizeof(vertex));
+		_vertexBuffer->Resource->Unmap(0, nullptr);
+	}
 
-	//マトリクス設定
+	auto cmdList = Renderer::GetCommandListDX12();
+	if (!cmdList) return;
+
+	D3D12_VERTEX_BUFFER_VIEW vbView = {};
+	vbView.BufferLocation = _vertexBuffer->Resource->GetGPUVirtualAddress();
+	vbView.StrideInBytes = _vertexBuffer->Stride;
+	vbView.SizeInBytes = _vertexBuffer->Stride * _vertexBuffer->Size;
+	cmdList->IASetVertexBuffers(0, 1, &vbView);
+
+	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+
 	XMMATRIX translation = XMMatrixTranslation(_owner->_transform._position.x, _owner->_transform._position.y, _owner->_transform._position.z);
-
 	KTVECTOR3 radians = { XMConvertToRadians(_owner->_transform._rotation.x),
 						  XMConvertToRadians(_owner->_transform._rotation.y),
 						  XMConvertToRadians(_owner->_transform._rotation.z) };
-
 	XMMATRIX rotation = XMMatrixRotationRollPitchYaw(radians.x, radians.y, radians.z);
-
 	XMMATRIX scale = XMMatrixScaling(_owner->_transform._scale.x, _owner->_transform._scale.y, _owner->_transform._scale.z);
-
 	XMMATRIX worldMatrix = rotation * scale * g_billboardMatrix * translation;
 
-	Renderer::SetWorldMatrix(worldMatrix);
-
-	//プリミティブトポロジ設定
-	Renderer::IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+	Renderer::SetConstant(0, &worldMatrix, sizeof(worldMatrix));
 
 	MATERIAL material = {};
 	material.Diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
-	material.TextureEnable = true;
-	Renderer::SetMaterial(material);
+	material.TextureEnable = (_texture != nullptr);
+	Renderer::SetConstant(1, &material, sizeof(material));
 
-	Renderer::PSSetShaderResources(0, 1, &_texture);
+	if (_texture) {
+		Renderer::SetTexture(4, _texture);
+	}
 
-	//ポリゴン描画
-	Renderer::Draw(4, 0);
-
-	Renderer::SetDepthEnable(true);
-
+	cmdList->DrawInstanced(4, 1, 0, 0);
 }
 
 void BillboardEffect::SetEffect(const char* fileName, int xCut, int yCut, bool loop)

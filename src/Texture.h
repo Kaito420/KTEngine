@@ -8,18 +8,19 @@
 #define _TEXTURE_H_
 
 #include <string>
-#include <d3d11.h>
 #include <unordered_map>
+#include <memory>
+#include "Renderer.h"
 
-//ƒNƒ‰ƒX‚É‚·‚éˆÓ–¡‚ª‚ ‚é‚Ì‚©ŒŸ“¢’†
+//ã‚¯ãƒ©ã‚¹ã«ã™ã‚‹æ„å‘³ãŒã‚ã‚‹ã®ã‹æ¤œè¨ä¸­
 
 class Texture {
 
 private:
-	static std::unordered_map<std::string, ID3D11ShaderResourceView*> _texturePool;
+	static std::unordered_map<std::string, std::unique_ptr<TEXTURE>> _texturePool;
 
 public:
-	static ID3D11ShaderResourceView* Load(const char* FileName);
+	static const TEXTURE* Load(const char* FileName);
 };
 
 #endif // !_TEXTURE_H_

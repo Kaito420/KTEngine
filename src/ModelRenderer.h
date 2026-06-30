@@ -7,18 +7,20 @@
 #ifndef _MODELRENDERER_H_
 #define _MODELRENDERER_H_
 
-// ƒ}ƒeƒŠƒAƒ‹\‘¢‘Ì
+#include "Renderer.h"
+
+// ãƒãƒ†ãƒªã‚¢ãƒ«æ§‹é€ ä½“
 struct MODEL_MATERIAL
 {
 	char						Name[256];
 	MATERIAL					Material;
 	char						TextureName[256];
-	ID3D11ShaderResourceView* Texture;
+	const TEXTURE* Texture;
 
 };
 
 
-// •`‰æƒTƒuƒZƒbƒg\‘¢‘Ì
+// ã‚µãƒ–ã‚»ãƒƒãƒˆæ§‹é€ ä½“
 struct SUBSET
 {
 	unsigned int	StartIndex;
@@ -27,7 +29,7 @@ struct SUBSET
 };
 
 
-// ƒ‚ƒfƒ‹\‘¢‘Ì
+// ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆãƒ‡ãƒ¼ã‚¿æ§‹é€ ä½“
 struct MODEL_OBJ
 {
 	Vertex* VertexArray;
@@ -42,8 +44,8 @@ struct MODEL_OBJ
 
 struct MODEL
 {
-	ID3D11Buffer* VertexBuffer;
-	ID3D11Buffer* IndexBuffer;
+	std::unique_ptr<VERTEX_BUFFER> VertexBuffer;
+	std::unique_ptr<INDEX_BUFFER> IndexBuffer;
 
 	SUBSET* SubsetArray;
 	unsigned int	SubsetNum;
@@ -51,7 +53,6 @@ struct MODEL
 
 
 #include "Component.h"
-#include "Renderer.h"
 #include <string>
 #include <unordered_map>
 #include <cereal/types/base_class.hpp>
@@ -82,7 +83,7 @@ public:
 	template <class Archive>
 	void serialize(Archive& ar) {
 		ar(cereal::base_class<Component>(this));
-		//Œ»İ‚Ìƒ‚ƒfƒ‹ƒ|ƒCƒ“ƒ^‚©‚çƒtƒ@ƒCƒ‹–¼‚ğ‹tˆø‚«
+		//ç¾åœ¨ã®ãƒ¢ãƒ‡ãƒ«ãƒã‚¤ãƒ³ã‚¿ã‹ã‚‰ãƒ•ã‚¡ã‚¤ãƒ«åã‚’é€†å¼•ã
 		std::string filename = "";
 		if (m_Model) {
 			for (const auto& pair : m_ModelPool) {
@@ -92,11 +93,11 @@ public:
 				}
 			}
 		}
-		//ƒVƒŠƒAƒ‰ƒCƒYÀs(‘‚«‚İ‚Í filename ‚ğ•Û‘¶A“Ç‚İ‚İ‚Í filename ‚Éƒf[ƒ^‚ª“ü‚é)
+		//ã‚·ãƒªã‚¢ãƒ©ã‚¤ã‚ºå®Ÿè¡Œ(æ›¸ãè¾¼ã¿æ™‚ã¯ filename ã‚’ä¿å­˜ã€èª­ã¿è¾¼ã¿æ™‚ã¯ filename ã«ãƒ‡ãƒ¼ã‚¿ãŒå…¥ã‚‹)
 		ar(cereal::make_nvp("FileName", filename));
 
-		//ƒ[ƒh—pƒƒWƒbƒN:æ“¾‚µ‚½ƒtƒ@ƒCƒ‹–¼‚Åƒ[ƒh
-		//(•Û‘¶‚É‚àŒÄ‚Î‚ê‚Ä‚µ‚Ü‚¤‚ªALoadŠÖ”“à‚Åd•¡ƒ`ƒFƒbƒN‚µ‚Ä‚¢‚é‚½‚ß–â‘è‚È‚¢)
+		//ãƒ­ãƒ¼ãƒ‰ç”¨ãƒ­ã‚¸ãƒƒã‚¯:å–å¾—ã—ãŸãƒ•ã‚¡ã‚¤ãƒ«åã§ãƒ­ãƒ¼ãƒ‰
+		//(ä¿å­˜æ™‚ã«ã‚‚å‘¼ã°ã‚Œã¦ã—ã¾ã†ãŒã€Loadé–¢æ•°å†…ã§é‡è¤‡ãƒã‚§ãƒƒã‚¯ã—ã¦ã„ã‚‹ãŸã‚å•é¡Œãªã„)
 		if (!filename.empty()) {
 			Load(filename.c_str());
 		}

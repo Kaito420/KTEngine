@@ -15,8 +15,8 @@
 class Capsule : public Component {
 	friend class cereal::access;
 private:
-	ComPtr<ID3D11Buffer> _vertexBuffer;
-	ComPtr<ID3D11Buffer> _indexBuffer;
+	std::unique_ptr<VERTEX_BUFFER> _vertexBuffer;
+	std::unique_ptr<INDEX_BUFFER> _indexBuffer;
 	int _indexCount = 0;
 	void CreateCapsuleMesh(float height, float radius, int latiudes, int longitudes,
 		std::vector<Vertex>& vertices, std::vector<UINT>& indices);
@@ -24,7 +24,7 @@ private:
 	void RebuildBuffers();
 	void UpdateBuffers();
 public:
-	ComPtr<ID3D11ShaderResourceView> _texture = nullptr;
+	const TEXTURE* _texture = nullptr;
 	int _latitudes = 16;
 	int _longitudes = 16;
 

@@ -17,16 +17,11 @@ class Wave : public Component{
 
 private:
 
-	ID3D11Buffer* m_VertexBuffer{};
-	ID3D11Buffer* m_IndexBuffer{};
+	std::unique_ptr<VERTEX_BUFFER> m_vertexBuffer;
+	std::unique_ptr<INDEX_BUFFER> m_indexBuffer;
 
-	ID3D11ShaderResourceView* m_Texture{};
-	ID3D11ShaderResourceView* m_TextureEnv{};
-
-
-	ID3D11VertexShader* m_VertexShader{};
-	ID3D11PixelShader* m_PixelShader{};
-	ID3D11InputLayout* m_VertexLayout{};
+	const TEXTURE* m_texture = nullptr;
+	const TEXTURE* m_textureEnv = nullptr;
 
 	Vertex m_Vertex[21][21];
 

@@ -54,16 +54,16 @@ public:
 
 class Plane {
 public:
-	KTVECTOR3 n;	//–@üƒxƒNƒgƒ‹
-	float d;		//•½–ÊƒIƒtƒZƒbƒg
+	KTVECTOR3 n;	//æ³•ç·šãƒ™ã‚¯ãƒˆãƒ«
+	float d;		//å¹³é¢ã‚ªãƒ•ã‚»ãƒƒãƒˆ
 };
 
 struct ContactPoint {
-	KTVECTOR3 position; // ÚG“_‚ÌˆÊ’u
-	float penetration; // Z“ü[“x
-	float normalImpulseSum = 0.0f; // –@ü•ûŒü‚Ì—İÏƒCƒ“ƒpƒ‹ƒX
-	KTVECTOR3 tangentImpulseSum = { 0.0f, 0.0f, 0.0f }; // Úü•ûŒü‚Ì—İÏƒCƒ“ƒpƒ‹ƒX
-	float velocityBias = 0.0f; // ”½”­‚âˆÊ’u•â³‚Ì‚½‚ß‚Ì–Ú•W‘¬“x
+	KTVECTOR3 position; // æ¥è§¦ç‚¹ã®ä½ç½®
+	float penetration; // æµ¸å…¥æ·±åº¦
+	float normalImpulseSum = 0.0f; // æ³•ç·šæ–¹å‘ã®ç´¯ç©ã‚¤ãƒ³ãƒ‘ãƒ«ã‚¹
+	KTVECTOR3 tangentImpulseSum = { 0.0f, 0.0f, 0.0f }; // æ¥ç·šæ–¹å‘ã®ç´¯ç©ã‚¤ãƒ³ãƒ‘ãƒ«ã‚¹
+	float velocityBias = 0.0f; // åç™ºã‚„ä½ç½®è£œæ­£ã®ãŸã‚ã®ç›®æ¨™é€Ÿåº¦
 };
 
 struct AABB {
@@ -78,24 +78,24 @@ struct AABB {
 };
 
 struct CollisionManifold {
-	Collider* a;	// ƒRƒŠƒWƒ‡ƒ“A
-	Collider* b;	// ƒRƒŠƒWƒ‡ƒ“B
-	KTVECTOR3 normal; // Õ“Ë–@ü(B->A•ûŒü)
+	Collider* a;	// ã‚³ãƒªã‚¸ãƒ§ãƒ³A
+	Collider* b;	// ã‚³ãƒªã‚¸ãƒ§ãƒ³B
+	KTVECTOR3 normal; // è¡çªæ³•ç·š(B->Aæ–¹å‘)
 	float penetrationDepth = 0.0f;
-	std::vector<ContactPoint> contacts; // ÚG“_‚ÌƒŠƒXƒg
-	bool hasCollision = false; // Õ“Ë‚ª”­¶‚µ‚Ä‚¢‚é‚©‚Ç‚¤‚©
+	std::vector<ContactPoint> contacts; // æ¥è§¦ç‚¹ã®ãƒªã‚¹ãƒˆ
+	bool hasCollision = false; // è¡çªãŒç™ºç”Ÿã—ã¦ã„ã‚‹ã‹ã©ã†ã‹
 
 };
 
 /// <summary>
-/// ü•ªŠÔ‚ÌÅ‹ßÚ“_“ñ“_‚ğ•Ô‚·ŠÖ”
+/// ç·šåˆ†é–“ã®æœ€è¿‘æ¥ç‚¹äºŒç‚¹ã‚’è¿”ã™é–¢æ•°
 /// </summary>
-/// <param name="s1">ü•ª1‚Ìn“_</param>
-/// <param name="e1">ü•ª1‚ÌI“_</param>
-/// <param name="s2">ü•ª2‚Ìn“_</param>
-/// <param name="e2">ü•ª2‚ÌI“_</param>
-/// <param name="c1">Å‹ßÚ“_</param>
-/// <param name="c2">Å‹ßÚ“_</param>
+/// <param name="s1">ç·šåˆ†1ã®å§‹ç‚¹</param>
+/// <param name="e1">ç·šåˆ†1ã®çµ‚ç‚¹</param>
+/// <param name="s2">ç·šåˆ†2ã®å§‹ç‚¹</param>
+/// <param name="e2">ç·šåˆ†2ã®çµ‚ç‚¹</param>
+/// <param name="c1">æœ€è¿‘æ¥ç‚¹</param>
+/// <param name="c2">æœ€è¿‘æ¥ç‚¹</param>
 void ClosestPointSegSeg(const KTVECTOR3& s1, const KTVECTOR3& e1,
 	const KTVECTOR3& s2, const KTVECTOR3& e2,
 	KTVECTOR3& c1, KTVECTOR3& c2);
@@ -105,8 +105,8 @@ class Collider : public Component{
 protected:
 	KTVECTOR3 _center;
 
-	ComPtr<ID3D11Buffer> _vertexBuffer;
-	ComPtr<ID3D11Buffer> _indexBuffer;
+	std::unique_ptr<VERTEX_BUFFER> _vertexBuffer;
+	std::unique_ptr<INDEX_BUFFER> _indexBuffer;
 
 public:
 	AABB _aabb;
@@ -117,11 +117,11 @@ public:
 
 
 	/// <summary>
-	/// Œ»İƒtƒŒ[ƒ€‚Å“–‚½‚Á‚Ä‚¢‚éƒRƒŠƒWƒ‡ƒ“
+	/// ç¾åœ¨ãƒ•ãƒ¬ãƒ¼ãƒ ã§å½“ãŸã£ã¦ã„ã‚‹ã‚³ãƒªã‚¸ãƒ§ãƒ³
 	/// </summary>
 	std::unordered_set<Collider*> _currentOverlaps;
 	/// <summary>
-	/// ‘OƒtƒŒ[ƒ€‚Å“–‚½‚Á‚Ä‚¢‚½ƒRƒŠƒWƒ‡ƒ“
+	/// å‰ãƒ•ãƒ¬ãƒ¼ãƒ ã§å½“ãŸã£ã¦ã„ãŸã‚³ãƒªã‚¸ãƒ§ãƒ³
 	/// </summary>
 	std::unordered_set<Collider*> _previousOverlaps;
 
@@ -164,14 +164,14 @@ public:
 	void Start() override;
 	void OnDestroy() override;
 
-	// GameObject‚Ìî•ñ‚ÅXV‚·‚é
+	// GameObjectã®æƒ…å ±ã§æ›´æ–°ã™ã‚‹
 	void Update() override;
 
-	//ƒfƒoƒbƒO•`‰æ—p
+	//ãƒ‡ãƒãƒƒã‚°æç”»ç”¨
 	void Render()const override;
 
 	bool Collide(Collider* other, CollisionManifold& outCollisionManifold) {
-		return other->CollideWith(this, outCollisionManifold);	//‚±‚±‚Å©g‚Æ‘Šè‚ª“ü‚ê‘Ö‚í‚é
+		return other->CollideWith(this, outCollisionManifold);	//ã“ã“ã§è‡ªèº«ã¨ç›¸æ‰‹ãŒå…¥ã‚Œæ›¿ã‚ã‚‹
 	}
 
 	bool CollideWith(ColliderBox* other, CollisionManifold& outCollisionManifold) {
@@ -216,15 +216,15 @@ public:
 	void Start() override;
 	void OnDestroy() override;
 
-	// GameObject‚Ìî•ñ‚ÅXV‚·‚é
+	// GameObjectã®æƒ…å ±ã§æ›´æ–°ã™ã‚‹
 	void Update() override;
 
-	//ƒfƒoƒbƒO•`‰æ—p
+	//ãƒ‡ãƒãƒƒã‚°æç”»ç”¨
 	void Render()const override;
 
 
 	bool Collide(Collider* other, CollisionManifold& outCollisionManifold) {
-		return other->CollideWith(this, outCollisionManifold);	//‚±‚±‚Å©g‚Æ‘Šè‚ª“ü‚ê‘Ö‚í‚é
+		return other->CollideWith(this, outCollisionManifold);	//ã“ã“ã§è‡ªèº«ã¨ç›¸æ‰‹ãŒå…¥ã‚Œæ›¿ã‚ã‚‹
 	}
 
 	bool CollideWith(ColliderBox* other, CollisionManifold& outCollisionManifold) {
@@ -277,13 +277,13 @@ public:
 	void Start() override;
 	void OnDestroy() override;
 
-	// GameObject‚Ìî•ñ‚ÅXV‚·‚é
+	// GameObjectã®æƒ…å ±ã§æ›´æ–°ã™ã‚‹
 	void Update() override;
 
-	//ƒfƒoƒbƒO•`‰æ—p
+	//ãƒ‡ãƒãƒƒã‚°æç”»ç”¨
 	void Render()const override;
 	bool Collide(Collider* other, CollisionManifold& outCollisionManifold) {
-		return other->CollideWith(this, outCollisionManifold);	//‚±‚±‚Å©g‚Æ‘Šè‚ª“ü‚ê‘Ö‚í‚é
+		return other->CollideWith(this, outCollisionManifold);	//ã“ã“ã§è‡ªèº«ã¨ç›¸æ‰‹ãŒå…¥ã‚Œæ›¿ã‚ã‚‹
 	}
 
 	bool CollideWith(ColliderBox* other, CollisionManifold& outCollisionManifold) {

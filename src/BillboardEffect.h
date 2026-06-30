@@ -14,8 +14,8 @@ class BillboardEffect : public Component {
 	int _maxFrame = 0;
 	bool _loop = false;
 	bool _anim = true;
-	ComPtr<ID3D11Buffer> _vertexBuffer;
-	ID3D11ShaderResourceView* _texture = nullptr;
+	std::unique_ptr<VERTEX_BUFFER> _vertexBuffer;
+	const TEXTURE* _texture = nullptr;
 public:
 	void Awake() override;
 	void Update() override;

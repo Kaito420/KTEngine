@@ -17,8 +17,8 @@
 class Sphere : public Component {
 	friend class cereal::access;
 private:
-	ComPtr<ID3D11Buffer> _vertexBuffer;
-	ComPtr<ID3D11Buffer> _indexBuffer;
+	std::unique_ptr<VERTEX_BUFFER> _vertexBuffer;
+	std::unique_ptr<INDEX_BUFFER> _indexBuffer;
 	int _indexCount = 0;
 
 	void CreateSphereMesh(float radius, int sliceCount, int stackCount,
@@ -30,7 +30,7 @@ private:
 	void UpdateBuffers();
 public:
 
-	ComPtr<ID3D11ShaderResourceView> _texture = nullptr;
+	const TEXTURE* _texture = nullptr;
 
 	void Awake() override;
 	void Render()const override;

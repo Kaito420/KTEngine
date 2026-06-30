@@ -21,39 +21,40 @@ void Fade::Update()
 
 void Fade::Render() const
 {
-	//頂点バッファ設定
-	UINT stride = sizeof(Vertex);
-	UINT offset = 0;
-	Renderer::IASetVertexBuffers(0, 1, _vertexBuffer.GetAddressOf(), &stride, &offset);
+	auto cmdList = Renderer::GetCommandListDX12();
+	if (!cmdList) return;
 
-	//マトリクス設定
+	D3D12_VERTEX_BUFFER_VIEW vbView = {};
+	vbView.BufferLocation = _vertexBuffer->Resource->GetGPUVirtualAddress();
+	vbView.StrideInBytes = _vertexBuffer->Stride;
+	vbView.SizeInBytes = _vertexBuffer->Stride * _vertexBuffer->Size;
+	cmdList->IASetVertexBuffers(0, 1, &vbView);
+
+	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+
 	Camera* camera = Manager::GetCurrentScene()->FindGameObjectByName<Camera>("Camera");
-	XMMATRIX translation = XMMatrixTranslation(camera->_transform._position.x, camera->_transform._position.y, camera->_transform._position.z + 0.2f);
+	if (!camera) return;
 
+	XMMATRIX translation = XMMatrixTranslation(camera->_transform._position.x, camera->_transform._position.y, camera->_transform._position.z + 0.2f);
 	KTVECTOR3 radians = { XMConvertToRadians(_owner->_transform._rotation.x),
 						  XMConvertToRadians(_owner->_transform._rotation.y),
 						  XMConvertToRadians(_owner->_transform._rotation.z) };
-
 	XMMATRIX rotation = XMMatrixRotationRollPitchYaw(radians.x, radians.y, radians.z);
-
 	XMMATRIX scale = XMMatrixScaling(_owner->_transform._scale.x, _owner->_transform._scale.y, _owner->_transform._scale.z);
-
 	XMMATRIX worldMatrix = scale * rotation * translation;
 
-	Renderer::SetWorldMatrix(worldMatrix);
-
-	//プリミティブトポロジ設定
-	Renderer::IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+	Renderer::SetConstant(0, &worldMatrix, sizeof(worldMatrix));
 
 	MATERIAL material = {};
 	material.Diffuse = { _color, _color, _color, _alpha };
-	material.TextureEnable = false;
-	Renderer::SetMaterial(material);
+	material.TextureEnable = (_texture != nullptr);
+	Renderer::SetConstant(1, &material, sizeof(material));
 
-	Renderer::PSSetShaderResources(0, 1, &_texture);
+	if (_texture) {
+		Renderer::SetTexture(4, _texture);
+	}
 
-	//ポリゴン描画
-	Renderer::Draw(4, 0);
+	cmdList->DrawInstanced(4, 1, 0, 0);
 }
 
 void Fade::OnDestroy()

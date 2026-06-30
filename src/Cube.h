@@ -15,8 +15,8 @@
 class Cube : public Component{
 	friend class cereal::access;
 private:
-	ComPtr<ID3D11Buffer> _vertexBuffer;
-	ComPtr<ID3D11Buffer> _indexBuffer;
+	std::unique_ptr<VERTEX_BUFFER> _vertexBuffer;
+	std::unique_ptr<INDEX_BUFFER> _indexBuffer;
 
 public:
 

@@ -221,60 +221,39 @@ void ColliderBox::Awake() {
 
 	_extents = _owner->_transform._scale * 0.5f;
 
-	D3D11_BUFFER_DESC bd = {};
-	bd.Usage = D3D11_USAGE_DYNAMIC;
-	bd.ByteWidth = sizeof(Vertex) * 8;
-	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	Renderer::CreateBuffer(&bd, NULL, _vertexBuffer.GetAddressOf());
+	_vertexBuffer = Renderer::CreateVertexBuffer(sizeof(Vertex), 8);
 
-	D3D11_MAPPED_SUBRESOURCE msr;
-	Renderer::Map(_vertexBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &msr);
-	Vertex* vertex = (Vertex*)msr.pData;
-
-	//デバッグ用ワイヤーフレーム頂点バッファ生成
-	vertex[0] = { { -_extents.x, +_extents.y, +_extents.z},{0,0,0},{0,1,0,1},{0,0} };	//0　上段左上
-	vertex[1] = { { +_extents.x, +_extents.y, +_extents.z},{0,0,0},{0,1,0,1},{0,0} };	//1　上段右上
-	vertex[2] = { { +_extents.x, +_extents.y, -_extents.z},{0,0,0},{0,1,0,1},{0,0} };	//2　上段右下
-	vertex[3] = { { -_extents.x, +_extents.y, -_extents.z},{0,0,0},{0,1,0,1},{0,0} };	//3　上段左下
-	vertex[4] = { { -_extents.x, -_extents.y, +_extents.z},{0,0,0},{0,1,0,1},{0,0} };	//4　下段左上
-	vertex[5] = { { +_extents.x, -_extents.y, +_extents.z},{0,0,0},{0,1,0,1},{0,0} };	//5　下段右上
-	vertex[6] = { { +_extents.x, -_extents.y, -_extents.z},{0,0,0},{0,1,0,1},{0,0} };	//6　下段右下
-	vertex[7] = { { -_extents.x, -_extents.y, -_extents.z},{0,0,0},{0,1,0,1},{0,0} };	//7　下段左下
-
-	Renderer::Unmap(_vertexBuffer.Get(), 0);
-
-	//インデックスバッファ生成
-	unsigned short indices[] =
-	{
-		//上面
-		0,1,
-		1,2,
-		2,3,
-		3,0,
-		//下面
-		4,5,
-		5,6,
-		6,7,
-		7,4,
-		//側面
-		0,4,
-		1,5,
-		2,6,
-		3,7
+	Vertex vertex[8] = {
+		{ { -_extents.x, +_extents.y, +_extents.z},{0,0,0},{0,1,0,1},{0,0} },
+		{ { +_extents.x, +_extents.y, +_extents.z},{0,0,0},{0,1,0,1},{0,0} },
+		{ { +_extents.x, +_extents.y, -_extents.z},{0,0,0},{0,1,0,1},{0,0} },
+		{ { -_extents.x, +_extents.y, -_extents.z},{0,0,0},{0,1,0,1},{0,0} },
+		{ { -_extents.x, -_extents.y, +_extents.z},{0,0,0},{0,1,0,1},{0,0} },
+		{ { +_extents.x, -_extents.y, +_extents.z},{0,0,0},{0,1,0,1},{0,0} },
+		{ { +_extents.x, -_extents.y, -_extents.z},{0,0,0},{0,1,0,1},{0,0} },
+		{ { -_extents.x, -_extents.y, -_extents.z},{0,0,0},{0,1,0,1},{0,0} }
 	};
 
-	D3D11_BUFFER_DESC ibd = {};
-	ibd.Usage = D3D11_USAGE_DEFAULT;
-	ibd.ByteWidth = sizeof(unsigned short) * _countof(indices);
-	ibd.BindFlags = D3D11_BIND_INDEX_BUFFER;
-	ibd.CPUAccessFlags = 0;
+	void* data = nullptr;
+	HRESULT hr = _vertexBuffer->Resource->Map(0, nullptr, &data);
+	if (SUCCEEDED(hr)) {
+		memcpy(data, vertex, sizeof(vertex));
+		_vertexBuffer->Resource->Unmap(0, nullptr);
+	}
 
-	D3D11_SUBRESOURCE_DATA data = {};
-	data.pSysMem = indices;
+	_indexBuffer = Renderer::CreateIndexBuffer(24);
 
-	Renderer::CreateBuffer(&ibd, &data, _indexBuffer.GetAddressOf());
+	unsigned int indices[] = {
+		0,1, 1,2, 2,3, 3,0,
+		4,5, 5,6, 6,7, 7,4,
+		0,4, 1,5, 2,6, 3,7
+	};
 
+	hr = _indexBuffer->Resource->Map(0, nullptr, &data);
+	if (SUCCEEDED(hr)) {
+		memcpy(data, indices, sizeof(indices));
+		_indexBuffer->Resource->Unmap(0, nullptr);
+	}
 }
 
 void ColliderBox::Start(){
@@ -312,53 +291,54 @@ void ColliderBox::Update() {
 
 }
 
-void ColliderBox::Render()const {
+void ColliderBox::Render() const {
+	Vertex vertex[8] = {
+		{ { -_extents.x, +_extents.y, +_extents.z},{0,0,0},{0,1,0,1},{0,0} },
+		{ { +_extents.x, +_extents.y, +_extents.z},{0,0,0},{0,1,0,1},{0,0} },
+		{ { +_extents.x, +_extents.y, -_extents.z},{0,0,0},{0,1,0,1},{0,0} },
+		{ { -_extents.x, +_extents.y, -_extents.z},{0,0,0},{0,1,0,1},{0,0} },
+		{ { -_extents.x, -_extents.y, +_extents.z},{0,0,0},{0,1,0,1},{0,0} },
+		{ { +_extents.x, -_extents.y, +_extents.z},{0,0,0},{0,1,0,1},{0,0} },
+		{ { +_extents.x, -_extents.y, -_extents.z},{0,0,0},{0,1,0,1},{0,0} },
+		{ { -_extents.x, -_extents.y, -_extents.z},{0,0,0},{0,1,0,1},{0,0} }
+	};
 
-	D3D11_MAPPED_SUBRESOURCE msr;
-	Renderer::Map(_vertexBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &msr);
-	Vertex* vertex = (Vertex*)msr.pData;
+	void* data = nullptr;
+	HRESULT hr = _vertexBuffer->Resource->Map(0, nullptr, &data);
+	if (SUCCEEDED(hr)) {
+		memcpy(data, vertex, sizeof(vertex));
+		_vertexBuffer->Resource->Unmap(0, nullptr);
+	}
 
-	//デバッグ用ワイヤーフレーム頂点バッファ生成
-	vertex[0] = { { - _extents.x, + _extents.y, + _extents.z},{0,0,0},{0,1,0,1},{0,0} };	//0　上段左上
-	vertex[1] = { { + _extents.x, + _extents.y, + _extents.z},{0,0,0},{0,1,0,1},{0,0} };	//1　上段右上
-	vertex[2] = { { + _extents.x, + _extents.y, - _extents.z},{0,0,0},{0,1,0,1},{0,0} };	//2　上段右下
-	vertex[3] = { { - _extents.x, + _extents.y, - _extents.z},{0,0,0},{0,1,0,1},{0,0} };	//3　上段左下
-	vertex[4] = { { - _extents.x, - _extents.y, + _extents.z},{0,0,0},{0,1,0,1},{0,0} };	//4　下段左上
-	vertex[5] = { { + _extents.x, - _extents.y, + _extents.z},{0,0,0},{0,1,0,1},{0,0} };	//5　下段右上
-	vertex[6] = { { + _extents.x, - _extents.y, - _extents.z},{0,0,0},{0,1,0,1},{0,0} };	//6　下段右下
-	vertex[7] = { { - _extents.x, - _extents.y, - _extents.z},{0,0,0},{0,1,0,1},{0,0} };	//7　下段左下
+	auto cmdList = Renderer::GetCommandListDX12();
+	if (!cmdList) return;
 
-	Renderer::Unmap(_vertexBuffer.Get(), 0);
+	D3D12_VERTEX_BUFFER_VIEW vbView = {};
+	vbView.BufferLocation = _vertexBuffer->Resource->GetGPUVirtualAddress();
+	vbView.StrideInBytes = _vertexBuffer->Stride;
+	vbView.SizeInBytes = _vertexBuffer->Stride * _vertexBuffer->Size;
+	cmdList->IASetVertexBuffers(0, 1, &vbView);
 
-	//頂点バッファ設定
-	UINT stride = sizeof(Vertex);
-	UINT offset = 0;
-	Renderer::IASetVertexBuffers(0, 1, _vertexBuffer.GetAddressOf(), &stride, &offset);
-	Renderer::IASetIndexBuffer(_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
-	//マトリクス設定
+	D3D12_INDEX_BUFFER_VIEW ibView = {};
+	ibView.BufferLocation = _indexBuffer->Resource->GetGPUVirtualAddress();
+	ibView.SizeInBytes = sizeof(unsigned int) * _indexBuffer->Size;
+	ibView.Format = DXGI_FORMAT_R32_UINT;
+	cmdList->IASetIndexBuffer(&ibView);
+
 	XMMATRIX translation = XMMatrixTranslation(_owner->_transform._position.x, _owner->_transform._position.y, _owner->_transform._position.z);
-
 	XMFLOAT4 q = XMFLOAT4(_owner->_transform._quaternion.x, _owner->_transform._quaternion.y, _owner->_transform._quaternion.z, _owner->_transform._quaternion.w);
-
 	XMMATRIX rotation = XMMatrixRotationQuaternion(XMLoadFloat4(&q));
-
-	XMMATRIX scale = XMMatrixScaling(_owner->_transform._scale.x, _owner->_transform._scale.y, _owner->_transform._scale.z);
-
 	XMMATRIX worldMatrix = rotation * translation;
 
-	Renderer::SetWorldMatrix(worldMatrix);
-
-	//プリミティブトポロジ設定
-	Renderer::IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
+	Renderer::SetConstant(0, &worldMatrix, sizeof(worldMatrix));
 
 	MATERIAL material = {};
 	material.Diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
 	material.TextureEnable = false;
-	Renderer::SetMaterial(material);
+	Renderer::SetConstant(1, &material, sizeof(material));
 
-	//ポリゴン描画
-	Renderer::DrawIndexed(24, 0, 0);
-
+	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
+	cmdList->DrawIndexedInstanced(24, 1, 0, 0, 0);
 }
 
 bool ColliderBox::CheckVSOBB(const ColliderBox* other, CollisionManifold& manifold) const {

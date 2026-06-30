@@ -8,8 +8,8 @@
 
 class Particle : public Component {
 	friend class cereal::access;
-	ID3D11Buffer* _VertexBuffer;
-	ID3D11ShaderResourceView* _texture;
+	std::unique_ptr<VERTEX_BUFFER> _vertexBuffer;
+	const TEXTURE* _texture = nullptr;
 	struct PARTICLE {
 		bool enable;
 		int Life;

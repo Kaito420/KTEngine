@@ -117,4 +117,28 @@ namespace Renderer {
     int GetFrameCountDX12() { return RendererDX12::GetFrameCount(); }
     ID3D12GraphicsCommandList* GetCommandListDX12() { return RendererDX12::GetCommandList(); }
     ID3D12CommandQueue* GetCommandQueueDX12() { return RendererDX12::GetCommandQueue(); }
+
+    std::unique_ptr<VERTEX_BUFFER> CreateVertexBuffer(unsigned int stride, unsigned int size) {
+        return RendererDX12::CreateVertexBuffer(stride, size);
+    }
+
+    std::unique_ptr<INDEX_BUFFER> CreateIndexBuffer(unsigned int size) {
+        return RendererDX12::CreateIndexBuffer(size);
+    }
+
+    void ReleaseTextureSrv(unsigned int index) {
+        RendererDX12::ReleaseShaderResourceView(index);
+    }
+
+    void SetConstant(int slot, const void* data, unsigned int size) {
+        RendererDX12::SetConstant(slot, data, size);
+    }
+
+    void SetTexture(int slot, const TEXTURE* texture) {
+        RendererDX12::SetTexture(slot, texture);
+    }
+}
+
+TEXTURE::~TEXTURE() {
+    Renderer::ReleaseTextureSrv(SRVIndex);
 }

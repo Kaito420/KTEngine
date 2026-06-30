@@ -19,8 +19,8 @@ private:
 
 
 public:
-	ComPtr<ID3D11Buffer> _vertexBuffer;
-	ID3D11ShaderResourceView* _texture = nullptr;
+	std::unique_ptr<VERTEX_BUFFER> _vertexBuffer;
+	const TEXTURE* _texture = nullptr;
 
 	void Awake() override;
 
