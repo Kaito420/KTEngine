@@ -20,19 +20,29 @@ const TEXTURE* Texture::Load(const char* FileName) {
 	wchar_t wFileName[512];
 	mbstowcs(wFileName, FileName, strlen(FileName) + 1);
 
-	// ƒeƒNƒXƒ`ƒƒ“Ç‚İ‚İ
+	// ãƒ†ã‚¯ã‚¹ãƒãƒ£ãƒ­ãƒ¼ãƒ‰
 	TexMetadata metadata;
 	ScratchImage image;
 	HRESULT hr = LoadFromWICFile(wFileName, WIC_FLAGS_NONE, &metadata, image);
-	assert(SUCCEEDED(hr));
+	if (FAILED(hr)) {
+		OutputDebugStringA("Failed to load WIC texture file: ");
+		OutputDebugStringA(FileName);
+		OutputDebugStringA("\n");
+		return nullptr;
+	}
 
-	// D3D12ƒeƒNƒXƒ`ƒƒiƒfƒtƒHƒ‹ƒgƒq[ƒvjì¬
+	// D3D12ãƒ†ã‚¯ã‚¹ãƒãƒ£ãƒªã‚½ãƒ¼ã‚¹ã®ä½œæˆ
 	ID3D12Device* device = Renderer::GetDeviceDX12();
 	ComPtr<ID3D12Resource> res;
 	hr = CreateTexture(device, metadata, &res);
-	assert(SUCCEEDED(hr));
+	if (FAILED(hr)) {
+		OutputDebugStringA("Failed to create D3D12 texture resource: ");
+		OutputDebugStringA(FileName);
+		OutputDebugStringA("\n");
+		return nullptr;
+	}
 
-	// ƒAƒbƒvƒ[ƒhƒoƒbƒtƒ@‚ğì¬‚µ‚Äƒf[ƒ^“]‘—‚ğs‚¤
+	// ã‚¢ãƒƒãƒ—ãƒ­ãƒ¼ãƒ‰ãƒãƒƒãƒ•ã‚¡ã‚’ä½œæˆã—ã¦ãƒ‡ãƒ¼ã‚¿è»¢é€ã‚’è¡Œã†
 	UINT64 uploadSize = 0;
 	std::vector<D3D12_PLACED_SUBRESOURCE_FOOTPRINT> layouts(metadata.mipLevels);
 	std::vector<UINT> numRows(metadata.mipLevels);
@@ -73,7 +83,7 @@ const TEXTURE* Texture::Load(const char* FileName) {
 	);
 	assert(SUCCEEDED(hr));
 
-	// ƒAƒbƒvƒ[ƒhƒoƒbƒtƒ@‚ÉCPU‘¤‚Åƒf[ƒ^‚ğƒRƒs[
+	// ã‚¢ãƒƒãƒ—ãƒ­ãƒ¼ãƒ‰ãƒãƒƒãƒ•ã‚¡ã«CPUå´ã§ãƒ‡ãƒ¼ã‚¿ã‚’ã‚³ãƒ”ãƒ¼
 	void* mappedData = nullptr;
 	hr = uploadBuffer->Map(0, nullptr, &mappedData);
 	assert(SUCCEEDED(hr));
@@ -88,7 +98,7 @@ const TEXTURE* Texture::Load(const char* FileName) {
 	}
 	uploadBuffer->Unmap(0, nullptr);
 
-	// ˆê“I‚ÈƒRƒ}ƒ“ƒhƒAƒƒP[ƒ^‚ÆƒRƒ}ƒ“ƒhƒŠƒXƒg‚ğì¬‚µ‚ÄGPU“]‘—‚ğÀs
+	// ä¸€æ™‚çš„ãªã‚³ãƒãƒ³ãƒ‰ã‚¢ãƒ­ã‚±ãƒ¼ã‚¿ã¨ã‚³ãƒãƒ³ãƒ‰ãƒªã‚¹ãƒˆã‚’ä½œæˆã—ã¦GPUè»¢é€ã‚’å®Ÿè¡Œ
 	ComPtr<ID3D12CommandAllocator> tempAlloc;
 	hr = device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&tempAlloc));
 	assert(SUCCEEDED(hr));
@@ -97,7 +107,7 @@ const TEXTURE* Texture::Load(const char* FileName) {
 	hr = device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, tempAlloc.Get(), nullptr, IID_PPV_ARGS(&tempCmdList));
 	assert(SUCCEEDED(hr));
 
-	// ƒRƒs[æ‚ÉƒŠƒ\[ƒXƒoƒŠƒA‚ğ’£‚é (COMMON -> COPY_DEST)
+	// ã‚³ãƒ”ãƒ¼å…ˆã«ãƒªã‚½ãƒ¼ã‚¹ãƒãƒªã‚¢ã‚’å¼µã‚‹ (COMMON -> COPY_DEST)
 	D3D12_RESOURCE_BARRIER barrier = {};
 	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 	barrier.Transition.pResource = res.Get();
@@ -105,7 +115,7 @@ const TEXTURE* Texture::Load(const char* FileName) {
 	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
 	tempCmdList->ResourceBarrier(1, &barrier);
 
-	// ƒRƒs[ƒRƒ}ƒ“ƒh‚Ì”­s
+	// ã‚³ãƒ”ãƒ¼ã‚³ãƒãƒ³ãƒ‰ã®ç™ºè¡Œ
 	for (size_t i = 0; i < metadata.mipLevels; i++) {
 		D3D12_TEXTURE_COPY_LOCATION dstLoc = {};
 		dstLoc.pResource = res.Get();
@@ -120,7 +130,7 @@ const TEXTURE* Texture::Load(const char* FileName) {
 		tempCmdList->CopyTextureRegion(&dstLoc, 0, 0, 0, &srcLoc, nullptr);
 	}
 
-	// ƒŠƒ\[ƒXƒoƒŠƒA‚ğ–ß‚· (COPY_DEST -> PIXEL_SHADER_RESOURCE)
+	// ãƒªã‚½ãƒ¼ã‚¹ãƒãƒªã‚¢ã‚’æˆ»ã™ (COPY_DEST -> PIXEL_SHADER_RESOURCE)
 	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
 	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 	tempCmdList->ResourceBarrier(1, &barrier);
@@ -132,7 +142,7 @@ const TEXTURE* Texture::Load(const char* FileName) {
 	ID3D12CommandList* cmdLists[] = { tempCmdList.Get() };
 	queue->ExecuteCommandLists(1, cmdLists);
 
-	// “¯Šú‘Ò‹@—p‚ÌƒtƒFƒ“ƒX¶¬
+	// åŒæœŸå¾…æ©Ÿç”¨ã®ãƒ•ã‚§ãƒ³ã‚¹ç”Ÿæˆ
 	ComPtr<ID3D12Fence> fence;
 	hr = device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
 	assert(SUCCEEDED(hr));
@@ -145,7 +155,7 @@ const TEXTURE* Texture::Load(const char* FileName) {
 	}
 	CloseHandle(event);
 
-	// SRVì¬
+	// SRVä½œæˆ
 	unsigned int srvIndex = RendererDX12::CreateShaderResourceView(res.Get());
 
 	auto tex = std::make_unique<TEXTURE>();

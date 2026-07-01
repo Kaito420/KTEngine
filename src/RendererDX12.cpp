@@ -118,7 +118,7 @@ namespace RendererDX12 {
     ComPtr<ID3D12RootSignature> g_pd3dRootSignature = nullptr;
 
     static const unsigned int CONSTANT_BUFFER_SIZE = 256;
-    static const unsigned int CONSTANT_BUFFER_MAX = 1000;
+    static const unsigned int CONSTANT_BUFFER_MAX = 30000;
     ComPtr<ID3D12Resource> g_constantBuffer[FrameCount];
     byte* g_constantBufferPointer[FrameCount] = { nullptr };
     unsigned int g_constantBufferView[FrameCount][CONSTANT_BUFFER_MAX];
@@ -237,7 +237,7 @@ namespace RendererDX12 {
         g_pd3dDevice->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&g_pd3dDsvDescHeap));
 
         D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-        srvHeapDesc.NumDescriptors = 10000;
+        srvHeapDesc.NumDescriptors = 100000;
         srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
         srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
         g_pd3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&g_pd3dSrvDescHeap));
@@ -299,7 +299,7 @@ namespace RendererDX12 {
 
         // SRVプールの初期化
         g_srvDescriptorPool.clear();
-        for (unsigned int i = 3; i < 10000; i++) {
+        for (unsigned int i = 3; i < 100000; i++) {
             g_srvDescriptorPool.push_back(i);
         }
 
