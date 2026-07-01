@@ -138,6 +138,7 @@ namespace RendererDX12 {
     void SetLight(LIGHT light);
     void SetCameraPosition(XMFLOAT4 cameraPos);
     void BindShaderConstants();
+    void WaitForLastSubmittedFrame();
 }
 
 namespace Renderer {
@@ -239,6 +240,7 @@ namespace Renderer {
     bool GetDepthEnableDX12();
     bool GetDepthWriteDX12();
     void BindShaderConstantsDX12();
+    void FlushGPUDX12();
 }
 
 #endif // !_RENDERER_H

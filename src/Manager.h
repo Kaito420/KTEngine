@@ -40,6 +40,9 @@ private:
 
 	static EditorCamera _editorCamera;
 
+	static bool _playPending;
+	static bool _stopPending;
+
 public:
 	static void LoadEngineConfig();
 	static void SaveEngineConfig(GraphicsAPI api);

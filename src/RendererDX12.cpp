@@ -11,6 +11,7 @@
 #pragma comment(lib, "dxgi.lib")
 
 #include "imgui.h"
+#include "Texture.h"
 #include "backends/imgui_impl_win32.h"
 #include "backends/imgui_impl_dx12.h"
 
@@ -93,6 +94,7 @@ namespace RendererDX12 {
         { 100.0f, 1.5f, 0.0f, 0.0f } // Parameter
     };
     XMFLOAT4 g_currentCameraPos = { 0.0f, 0.0f, 0.0f, 0.0f };
+    const TEXTURE* g_defaultTexture = nullptr;
 
     void SetViewMatrix(XMMATRIX view) { g_currentViewMatrix = view; }
     void SetProjectionMatrix(XMMATRIX projection) { g_currentProjMatrix = projection; }
@@ -408,6 +410,9 @@ namespace RendererDX12 {
             }
             g_constantBufferIndex[i] = 0;
         }
+
+        // デフォルトテクスチャのロード
+        g_defaultTexture = Texture::Load("asset\\texture\\Space.jpg");
 
         return true;
     }
@@ -852,6 +857,9 @@ namespace RendererDX12 {
     }
 
     void SetTexture(int slot, const TEXTURE* texture) {
+        if (!texture) {
+            texture = g_defaultTexture;
+        }
         if (!texture) return;
         D3D12_GPU_DESCRIPTOR_HANDLE handle = g_pd3dSrvDescHeap->GetGPUDescriptorHandleForHeapStart();
         handle.ptr += texture->SRVIndex * g_srvDescriptorSize;

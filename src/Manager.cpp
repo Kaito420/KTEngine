@@ -37,6 +37,8 @@ bool Manager::_showContentBrowser = true;
 bool Manager::_showGameView = true;
 bool Manager::_showSceneView = true;
 EditorCamera Manager::_editorCamera;
+bool Manager::_playPending = false;
+bool Manager::_stopPending = false;
 
 //====ヘルパー関数: Windowsのファイル保存ダイアログを開く====
 std::string SaveFileDialog(const char* filter) {
@@ -91,13 +93,43 @@ void Manager::Initialize() {
 }
 
 void Manager::Finalize() {
+	// 終了時にメモリ解放する前にGPUを待機
+	Renderer::FlushGPUDX12();
 
-	//終了時にメモリ解放（セーブ処理はユーザーに委ねている）
 	_editorScene.reset();
 	_runtimeScene.reset();
 }
 
 void Manager::Update() {
+	if (_stopPending) {
+		_stopPending = false;
+		// シーンを破棄する前にGPUの描画完了を待機
+		Renderer::FlushGPUDX12();
+		if (_runtimeScene) {
+			_runtimeScene->Finalize();
+			_runtimeScene.reset();
+		}
+		_mode = EngineMode::Editor;
+	}
+
+	if (_playPending) {
+		_playPending = false;
+		if (_editorScene) {
+			std::stringstream ss;
+			{
+				cereal::BinaryOutputArchive outArchive(ss);
+				outArchive(_editorScene);
+			}
+			{
+				cereal::BinaryInputArchive inArchive(ss);
+				inArchive(_runtimeScene);
+			}
+			if (_runtimeScene) {
+				_mode = EngineMode::Runtime;
+				_runtimeScene->OnLoaded();
+			}
+		}
+	}
 
 	if (_mode == EngineMode::Editor) {
 		if (_editorScene)
@@ -278,37 +310,10 @@ void Manager::SaveSceneAs(){
 
 void Manager::Play(){
 	if (_mode == EngineMode::Runtime)return;
-	if (!_editorScene)return;
-
-	//エディタシーンの状態をメモリ上にシリアライズ
-	std::stringstream ss;
-	{//一時保存なのでバイナリで高速に行う
-		cereal::BinaryOutputArchive outArchive(ss);
-		outArchive(_editorScene);
-	}
-
-	//メモリからデシリアライズしてランタイムシーンを生成
-	{
-		cereal::BinaryInputArchive inArchive(ss);
-		inArchive(_runtimeScene);
-	}
-
-	if (_runtimeScene) {
-		_mode = EngineMode::Runtime;
-		_runtimeScene->OnLoaded(); //ID復元やPhysicsSystem再構築
-		
-	}
-
+	_playPending = true;
 }
 
 void Manager::Stop(){
 	if (_mode == EngineMode::Editor)return;
-
-	//現在のランタイムシーンを終了してEditorに戻す
-	if (_runtimeScene) {
-		_runtimeScene->Finalize();
-		_runtimeScene.reset();
-	}
-
-	_mode = EngineMode::Editor;
+	_stopPending = true;
 }
