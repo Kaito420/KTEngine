@@ -39,6 +39,8 @@ bool Manager::_showSceneView = true;
 EditorCamera Manager::_editorCamera;
 bool Manager::_playPending = false;
 bool Manager::_stopPending = false;
+bool Manager::_newScenePending = false;
+std::string Manager::_openScenePendingPath = "";
 
 //====ヘルパー関数: Windowsのファイル保存ダイアログを開く====
 std::string SaveFileDialog(const char* filter) {
@@ -131,6 +133,21 @@ void Manager::Update() {
 		}
 	}
 
+	if (_newScenePending) {
+		_newScenePending = false;
+		Renderer::FlushGPUDX12();
+		_editorScene = std::make_shared<Scene>();
+		_editorScene->Initialize();
+		_currentScenePath = "";
+	}
+
+	if (!_openScenePendingPath.empty()) {
+		std::string path = _openScenePendingPath;
+		_openScenePendingPath.clear();
+		Renderer::FlushGPUDX12();
+		_OpenSceneInternal(path);
+	}
+
 	if (_mode == EngineMode::Editor) {
 		if (_editorScene)
 			_editorScene->UpdateEditor();
@@ -173,9 +190,7 @@ std::shared_ptr<Scene> Manager::GetCurrentScene() {
 }
 
 void Manager::NewScene(){
-	_editorScene = std::make_shared<Scene>();
-	_editorScene->Initialize();
-	_currentScenePath = "";	//新規シーンはまだ保存されていないのでパスは空にしておく
+	_newScenePending = true;
 }
 
 void Manager::SaveScene(const std::string& filePath){
@@ -191,6 +206,10 @@ void Manager::SaveScene(const std::string& filePath){
 }
 
 void Manager::OpenScene(const std::string& filePath){
+	_openScenePendingPath = filePath;
+}
+
+void Manager::_OpenSceneInternal(const std::string& filePath){
 	std::ifstream is(filePath);
 	if (is.is_open()) {
 		try {

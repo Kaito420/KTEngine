@@ -42,6 +42,10 @@ private:
 
 	static bool _playPending;
 	static bool _stopPending;
+	static bool _newScenePending;
+	static std::string _openScenePendingPath;
+
+	static void _OpenSceneInternal(const std::string& filePath);
 
 public:
 	static void LoadEngineConfig();
