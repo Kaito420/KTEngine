@@ -7,6 +7,7 @@
 #include "Light.h"
 
 void Light::Awake(){
+	_executeInEditor = true;	// エディター実行を有効にする
 	_lightData.Enable = true;
 	_lightData.Direction = XMFLOAT4(0.0f, -1.0f, -1.0f, 0.0f);
 	_lightData.Ambient = XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f);

@@ -97,9 +97,7 @@ void Cube::Render()const {
 			vsId = shaderComp->GetVertexShaderID();
 			psId = shaderComp->GetPixelShaderID();
 		}
-		ID3D12PipelineState* pso = ShaderManager::Instance().GetPipelineState(
-			vsId, psId, 0, 3, true, true, D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE
-		);
+		ID3D12PipelineState* pso = ShaderManager::Instance().GetPipelineState(vsId, psId, 0, Renderer::GetCullModeDX12(), Renderer::GetDepthEnableDX12(), Renderer::GetDepthWriteDX12(), D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
 		cmdList->SetPipelineState(pso);
 	}
 
@@ -111,14 +109,15 @@ void Cube::Render()const {
 	XMMATRIX scaling = XMMatrixScaling(_owner->_transform._scale.x, _owner->_transform._scale.y, _owner->_transform._scale.z);
 	XMMATRIX worldMatrix =  scaling * rotation * translation;
 
-	Renderer::SetConstant(0, &worldMatrix, sizeof(worldMatrix));
+	Renderer::SetWorldMatrix(worldMatrix);
 
 	MATERIAL material = {};
 	material.Diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
 	material.TextureEnable = false;
 	Renderer::SetConstant(3, &material, sizeof(material));
 
-	cmdList->DrawIndexedInstanced(36, 1, 0, 0, 0);
+		Renderer::BindShaderConstantsDX12();
+cmdList->DrawIndexedInstanced(36, 1, 0, 0, 0);
 }
 
 void Cube::ShowUI() {

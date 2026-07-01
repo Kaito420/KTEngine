@@ -67,6 +67,48 @@ namespace RendererDX12 {
     void RecreateSceneBuffer(float width, float height);
     void RecreateGameBuffer(float width, float height);
 
+    D3D12_CULL_MODE g_currentCullMode = D3D12_CULL_MODE_BACK;
+    bool g_currentDepthEnable = true;
+    bool g_currentDepthWrite = true;
+
+    D3D12_CULL_MODE GetCullMode() { return g_currentCullMode; }
+    bool GetDepthEnable() { return g_currentDepthEnable; }
+    bool GetDepthWrite() { return g_currentDepthWrite; }
+
+    void SetDepthEnable(bool enable) { g_currentDepthEnable = enable; g_currentDepthWrite = enable; }
+    void SetDepthReadOnly() { g_currentDepthWrite = false; }
+    void SetCullModeBack() { g_currentCullMode = D3D12_CULL_MODE_BACK; }
+    void SetCullModeFront() { g_currentCullMode = D3D12_CULL_MODE_FRONT; }
+    void SetCullModeNone() { g_currentCullMode = D3D12_CULL_MODE_NONE; }
+
+    XMMATRIX g_currentViewMatrix = XMMatrixIdentity();
+    XMMATRIX g_currentProjMatrix = XMMatrixIdentity();
+    LIGHT g_currentLightData = {
+        TRUE, // Enable
+        { FALSE, FALSE, FALSE }, // Dummy
+        { 0.0f, -1.0f, -1.0f, 0.0f }, // Direction
+        { 0.8f, 0.8f, 0.8f, 1.0f }, // Diffuse
+        { 0.2f, 0.2f, 0.2f, 1.0f }, // Ambient
+        { -5.0f, 10.0f, 5.0f, 0.0f }, // Position
+        { 100.0f, 1.5f, 0.0f, 0.0f } // Parameter
+    };
+    XMFLOAT4 g_currentCameraPos = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+    void SetViewMatrix(XMMATRIX view) { g_currentViewMatrix = view; }
+    void SetProjectionMatrix(XMMATRIX projection) { g_currentProjMatrix = projection; }
+    void SetLight(LIGHT light) { g_currentLightData = light; }
+    void SetCameraPosition(XMFLOAT4 cameraPos) { g_currentCameraPos = cameraPos; }
+
+    void BindShaderConstants() {
+        XMMATRIX transposedView = XMMatrixTranspose(g_currentViewMatrix);
+        XMMATRIX transposedProj = XMMatrixTranspose(g_currentProjMatrix);
+        
+        SetConstant(1, &transposedView, sizeof(transposedView));
+        SetConstant(2, &transposedProj, sizeof(transposedProj));
+        SetConstant(4, &g_currentLightData, sizeof(g_currentLightData));
+        SetConstant(5, &g_currentCameraPos, sizeof(g_currentCameraPos));
+    }
+
     // ビューポート/シザー
     D3D12_VIEWPORT g_viewport = {};
     D3D12_RECT g_scissorRect = {};

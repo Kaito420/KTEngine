@@ -103,9 +103,7 @@ void Particle::Render() const
 			vsId = shaderComp->GetVertexShaderID();
 			psId = shaderComp->GetPixelShaderID();
 		}
-		ID3D12PipelineState* pso = ShaderManager::Instance().GetPipelineState(
-			vsId, psId, 1, 1, true, false, D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE
-		);
+		ID3D12PipelineState* pso = ShaderManager::Instance().GetPipelineState(vsId, psId, 1, Renderer::GetCullModeDX12(), Renderer::GetDepthEnableDX12(), Renderer::GetDepthWriteDX12(), D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
 		cmdList->SetPipelineState(pso);
 	}
 
@@ -126,9 +124,10 @@ void Particle::Render() const
 			XMMATRIX scale = XMMatrixScaling(1, 1, 1);
 			XMMATRIX worldMatrix = rotation * scale * g_billboardMtx * translation;
 
-			Renderer::SetConstant(0, &worldMatrix, sizeof(worldMatrix));
+			Renderer::SetWorldMatrix(worldMatrix);
 
-			cmdList->DrawInstanced(4, 1, 0, 0);
+				Renderer::BindShaderConstantsDX12();
+cmdList->DrawInstanced(4, 1, 0, 0);
 		}
 	}
 }

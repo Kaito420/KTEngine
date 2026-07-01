@@ -36,28 +36,26 @@ namespace Renderer {
         return nullptr;
     }
 
-    void SetDepthEnable(bool enable) {}
-    void SetDepthReadOnly() {}
+    void SetDepthEnable(bool enable) { RendererDX12::SetDepthEnable(enable); }
+    void SetDepthReadOnly() { RendererDX12::SetDepthReadOnly(); }
     void SetWorldMatrix(XMMATRIX world) {
         XMMATRIX transposed = XMMatrixTranspose(world);
         SetConstant(0, &transposed, sizeof(transposed));
     }
     void SetViewMatrix(XMMATRIX view) {
-        XMMATRIX transposed = XMMatrixTranspose(view);
-        SetConstant(1, &transposed, sizeof(transposed));
+        RendererDX12::SetViewMatrix(view);
     }
     void SetProjectionMatrix(XMMATRIX projection) {
-        XMMATRIX transposed = XMMatrixTranspose(projection);
-        SetConstant(2, &transposed, sizeof(transposed));
+        RendererDX12::SetProjectionMatrix(projection);
     }
     void SetMaterial(MATERIAL material) {
         SetConstant(3, &material, sizeof(material));
     }
     void SetLight(LIGHT light) {
-        SetConstant(4, &light, sizeof(light));
+        RendererDX12::SetLight(light);
     }
     void SetCameraPosition(XMFLOAT4 cameraPos) {
-        SetConstant(5, &cameraPos, sizeof(cameraPos));
+        RendererDX12::SetCameraPosition(cameraPos);
     }
     void SetWorldProjection2D() {}
     void SetWorldProjection3D() {}
@@ -65,9 +63,9 @@ namespace Renderer {
     void CreatePixelShader() {}
     void CreateVertexShader(ID3D11VertexShader** vertexShader, ID3D11InputLayout** vertexLayout, const char* fileName) {}
     void CreatePixelShader(ID3D11PixelShader** pixelShader, const char* fileName) {}
-    void SetCullModeBack() {}
-    void SetCullModeFront() {}
-    void SetCullModeNone() {}
+    void SetCullModeBack() { RendererDX12::SetCullModeBack(); }
+    void SetCullModeFront() { RendererDX12::SetCullModeFront(); }
+    void SetCullModeNone() { RendererDX12::SetCullModeNone(); }
     void SetDefaultShader() {}
     void ShaderReload() {}
 
@@ -134,6 +132,10 @@ namespace Renderer {
     ID3D12CommandQueue* GetCommandQueueDX12() { return RendererDX12::GetCommandQueue(); }
     ID3D12RootSignature* GetRootSignatureDX12() { return RendererDX12::GetRootSignature(); }
     void PrintDebugMessagesDX12() { RendererDX12::PrintDebugMessages(); }
+    D3D12_CULL_MODE GetCullModeDX12() { return RendererDX12::GetCullMode(); }
+    bool GetDepthEnableDX12() { return RendererDX12::GetDepthEnable(); }
+    bool GetDepthWriteDX12() { return RendererDX12::GetDepthWrite(); }
+    void BindShaderConstantsDX12() { RendererDX12::BindShaderConstants(); }
 
     std::unique_ptr<VERTEX_BUFFER> CreateVertexBuffer(unsigned int stride, unsigned int size) {
         return RendererDX12::CreateVertexBuffer(stride, size);

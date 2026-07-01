@@ -153,9 +153,7 @@ void Sphere::Render()const {
 			vsId = shaderComp->GetVertexShaderID();
 			psId = shaderComp->GetPixelShaderID();
 		}
-		ID3D12PipelineState* pso = ShaderManager::Instance().GetPipelineState(
-			vsId, psId, 0, 3, true, true, D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE
-		);
+		ID3D12PipelineState* pso = ShaderManager::Instance().GetPipelineState(vsId, psId, 0, Renderer::GetCullModeDX12(), Renderer::GetDepthEnableDX12(), Renderer::GetDepthWriteDX12(), D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
 		cmdList->SetPipelineState(pso);
 	}
 
@@ -166,7 +164,7 @@ void Sphere::Render()const {
 	XMMATRIX scaling = XMMatrixScaling(_owner->_transform._scale.x, _owner->_transform._scale.y, _owner->_transform._scale.z);
 	XMMATRIX worldMatrix = scaling * rotation * translation;
 
-	Renderer::SetConstant(0, &worldMatrix, sizeof(worldMatrix));
+	Renderer::SetWorldMatrix(worldMatrix);
 
 	MATERIAL material = {};
 	material.Diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
@@ -177,7 +175,8 @@ void Sphere::Render()const {
 		Renderer::SetTexture(6, _texture);
 	}
 
-	cmdList->DrawIndexedInstanced(_indexCount, 1, 0, 0, 0);
+		Renderer::BindShaderConstantsDX12();
+cmdList->DrawIndexedInstanced(_indexCount, 1, 0, 0, 0);
 }
 
 void Sphere::ShowUI() {

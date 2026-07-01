@@ -86,12 +86,19 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
         if (mainCamera) {
             Renderer::SetViewMatrix(mainCamera->GetViewMatrix());
             Renderer::SetProjectionMatrix(mainCamera->GetProjectionMatrix());
+            Renderer::SetCameraPosition(XMFLOAT4(mainCamera->_transform._position.x, mainCamera->_transform._position.y, mainCamera->_transform._position.z, 1.0f));
         }
         Manager::Render();
 
         Renderer::BeginSceneRender();
         Renderer::SetViewMatrix(Manager::GetEditorCamera()->GetViewMatrix());
         Renderer::SetProjectionMatrix(Manager::GetEditorCamera()->GetProjectionMatrix());
+        {
+            XMMATRIX invView = XMMatrixInverse(nullptr, Manager::GetEditorCamera()->GetViewMatrix());
+            XMFLOAT4 editorCamPos;
+            XMStoreFloat4(&editorCamPos, invView.r[3]);
+            Renderer::SetCameraPosition(editorCamPos);
+        }
         Manager::Render();
 
         //ImGuiとウィンドウ全体のレンダリング

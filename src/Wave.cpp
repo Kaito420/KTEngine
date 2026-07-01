@@ -129,9 +129,7 @@ void Wave::Render() const{
 			vsId = shaderComp->GetVertexShaderID();
 			psId = shaderComp->GetPixelShaderID();
 		}
-		ID3D12PipelineState* pso = ShaderManager::Instance().GetPipelineState(
-			vsId, psId, 1, 1, true, true, D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE
-		);
+		ID3D12PipelineState* pso = ShaderManager::Instance().GetPipelineState(vsId, psId, 1, Renderer::GetCullModeDX12(), Renderer::GetDepthEnableDX12(), Renderer::GetDepthWriteDX12(), D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
 		cmdList->SetPipelineState(pso);
 	}
 
@@ -143,7 +141,7 @@ void Wave::Render() const{
 	trans = XMMatrixTranslation(_owner->_transform._position.x, _owner->_transform._position.y, _owner->_transform._position.z);
 	world = scale * rot * trans;
 
-	Renderer::SetConstant(0, &world, sizeof(world));
+	Renderer::SetWorldMatrix(world);
 
 	MATERIAL material{};
 	material.Diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -157,5 +155,6 @@ void Wave::Render() const{
 		Renderer::SetTexture(5, m_textureEnv);
 	}
 
-	cmdList->DrawIndexedInstanced(((22 * 2) * 20 - 2), 1, 0, 0, 0);
+		Renderer::BindShaderConstantsDX12();
+cmdList->DrawIndexedInstanced(((22 * 2) * 20 - 2), 1, 0, 0, 0);
 }

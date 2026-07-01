@@ -50,9 +50,7 @@ void ModelRenderer::Render() const
 			vsId = shaderComp->GetVertexShaderID();
 			psId = shaderComp->GetPixelShaderID();
 		}
-		ID3D12PipelineState* pso = ShaderManager::Instance().GetPipelineState(
-			vsId, psId, 0, 3, true, true, D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE
-		);
+		ID3D12PipelineState* pso = ShaderManager::Instance().GetPipelineState(vsId, psId, 0, Renderer::GetCullModeDX12(), Renderer::GetDepthEnableDX12(), Renderer::GetDepthWriteDX12(), D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
 		cmdList->SetPipelineState(pso);
 	}
 
@@ -66,7 +64,7 @@ void ModelRenderer::Render() const
 	XMMATRIX scaling = XMMatrixScaling(_owner->_transform._scale.x, _owner->_transform._scale.y, _owner->_transform._scale.z);
 	XMMATRIX worldMatrix = scaling * rotation * translation;
 
-	Renderer::SetConstant(0, &worldMatrix, sizeof(worldMatrix));
+	Renderer::SetWorldMatrix(worldMatrix);
 
 	for (unsigned int i = 0; i < m_Model->SubsetNum; i++)
 	{
@@ -75,7 +73,8 @@ void ModelRenderer::Render() const
 		if (m_Model->SubsetArray[i].Material.Texture)
 			Renderer::SetTexture(6, m_Model->SubsetArray[i].Material.Texture);
 
-		cmdList->DrawIndexedInstanced(m_Model->SubsetArray[i].IndexNum, 1, m_Model->SubsetArray[i].StartIndex, 0, 0);
+			Renderer::BindShaderConstantsDX12();
+cmdList->DrawIndexedInstanced(m_Model->SubsetArray[i].IndexNum, 1, m_Model->SubsetArray[i].StartIndex, 0, 0);
 	}
 }
 

@@ -125,6 +125,19 @@ namespace RendererDX12 {
     void SetConstant(int slot, const void* data, unsigned int size);
     void SetTexture(int slot, const TEXTURE* texture);
     void PrintDebugMessages();
+    D3D12_CULL_MODE GetCullMode();
+    bool GetDepthEnable();
+    bool GetDepthWrite();
+    void SetDepthEnable(bool enable);
+    void SetDepthReadOnly();
+    void SetCullModeBack();
+    void SetCullModeFront();
+    void SetCullModeNone();
+    void SetViewMatrix(XMMATRIX view);
+    void SetProjectionMatrix(XMMATRIX projection);
+    void SetLight(LIGHT light);
+    void SetCameraPosition(XMFLOAT4 cameraPos);
+    void BindShaderConstants();
 }
 
 namespace Renderer {
@@ -222,6 +235,10 @@ namespace Renderer {
     ID3D12CommandQueue* GetCommandQueueDX12();
     ID3D12RootSignature* GetRootSignatureDX12();
     void PrintDebugMessagesDX12();
+    D3D12_CULL_MODE GetCullModeDX12();
+    bool GetDepthEnableDX12();
+    bool GetDepthWriteDX12();
+    void BindShaderConstantsDX12();
 }
 
 #endif // !_RENDERER_H
