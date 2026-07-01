@@ -12,6 +12,7 @@
 
 #include "imgui.h"
 #include "Texture.h"
+#include "ShaderManager.h"
 #include "backends/imgui_impl_win32.h"
 #include "backends/imgui_impl_dx12.h"
 
@@ -410,6 +411,19 @@ namespace RendererDX12 {
             }
             g_constantBufferIndex[i] = 0;
         }
+
+        // 各種標準シェーダーの事前ロード
+        ShaderManager::Instance().LoadVertexShader("UnlitTexture", "shader/UnlitTextureVS.cso");
+        ShaderManager::Instance().LoadPixelShader("UnlitTexture", "shader/UnlitTexturePS.cso");
+
+        ShaderManager::Instance().LoadVertexShader("DirectionalLight", "shader/VertexDirectionalLightingVS.cso");
+        ShaderManager::Instance().LoadPixelShader("DirectionalLight", "shader/VertexDirectionalLightingPS.cso");
+
+        ShaderManager::Instance().LoadVertexShader("Toon", "shader/ToonVS.cso");
+        ShaderManager::Instance().LoadPixelShader("Toon", "shader/ToonPS.cso");
+
+        ShaderManager::Instance().LoadVertexShader("UnlitColor", "shader/UnlitColorVS.cso");
+        ShaderManager::Instance().LoadPixelShader("UnlitColor", "shader/UnlitColorPS.cso");
 
         // デフォルトテクスチャのロード
         g_defaultTexture = Texture::Load("asset\\texture\\Space.jpg");

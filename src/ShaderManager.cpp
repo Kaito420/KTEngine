@@ -7,8 +7,8 @@ void ShaderManager::LoadVertexShader(const std::string& id, const char* fileName
     FILE* file = nullptr;
     fopen_s(&file, fileName, "rb");
     if (!file) {
-        // ‚à‚µshader/ƒtƒHƒ‹ƒ_‚Ì’†‚É‚È‚¢ê‡‚ÍAÀsƒtƒHƒ‹ƒ_ƒpƒX‚âˆÙ‚È‚éŠK‘w‚ğ’T‚·‚½‚ß‚Ì‘ã‘Öˆ—
-        // iKTEngine‚Å‚Íshader/ƒtƒHƒ‹ƒ_‚ÉHLSL‚ª‚ ‚èAcso‚Íx64/Debug‚È‚Ç‚Ìƒrƒ‹ƒho—ÍƒfƒBƒŒƒNƒgƒŠ‚É‚ ‚é‚±‚Æ‚ª‘½‚¢j
+        // ã‚‚ã—shader/ãƒ•ã‚©ãƒ«ãƒ€ã®ä¸­ã«ãªã„å ´åˆã¯ã€å®Ÿè¡Œãƒ•ã‚©ãƒ«ãƒ€ãƒ‘ã‚¹ã‚„ç•°ãªã‚‹éšå±¤ã‚’æ¢ã™ãŸã‚ã®ä»£æ›¿å‡¦ç†
+        // ï¼ˆKTEngineã§ã¯shader/ãƒ•ã‚©ãƒ«ãƒ€ã«HLSLãŒã‚ã‚Šã€csoã¯x64/Debugãªã©ã®ãƒ“ãƒ«ãƒ‰å‡ºåŠ›ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªã«ã‚ã‚‹ã“ã¨ãŒå¤šã„ï¼‰
         char altPath[512];
         sprintf_s(altPath, "shader/%s", fileName);
         fopen_s(&file, altPath, "rb");
@@ -19,7 +19,12 @@ void ShaderManager::LoadVertexShader(const std::string& id, const char* fileName
     }
 
     if (!file) {
-        assert(false && "Vertex Shader file not found");
+        OutputDebugStringA("Vertex Shader file not found: ");
+        OutputDebugStringA(fileName);
+        OutputDebugStringA(" (Fallback to UnlitTextureVS)\n");
+        if (_vertexShaderBinaries.count("UnlitTexture") > 0) {
+            _vertexShaderBinaries[id] = _vertexShaderBinaries["UnlitTexture"];
+        }
         return;
     }
 
@@ -48,7 +53,12 @@ void ShaderManager::LoadPixelShader(const std::string& id, const char* fileName)
     }
 
     if (!file) {
-        assert(false && "Pixel Shader file not found");
+        OutputDebugStringA("Pixel Shader file not found: ");
+        OutputDebugStringA(fileName);
+        OutputDebugStringA(" (Fallback to UnlitTexturePS)\n");
+        if (_pixelShaderBinaries.count("UnlitTexture") > 0) {
+            _pixelShaderBinaries[id] = _pixelShaderBinaries["UnlitTexture"];
+        }
         return;
     }
 
@@ -77,10 +87,10 @@ ID3D12PipelineState* ShaderManager::GetPipelineState(
         return _pipelineStates[key].Get();
     }
 
-    // ƒVƒF[ƒ_[ƒoƒCƒiƒŠæ“¾
+    // ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼ãƒã‚¤ãƒŠãƒªå–å¾—
     if (_vertexShaderBinaries.count(vsId) == 0 || _pixelShaderBinaries.count(psId) == 0) {
-        // ƒ[ƒh‚³‚ê‚Ä‚¢‚È‚¢ê‡‚ÍAƒfƒtƒHƒ‹ƒg‚Ìƒtƒ@ƒCƒ‹–¼‚Åƒ[ƒh‚ğ‚İ‚é
-        // —á: id‚ª "UnlitTextureVS" ‚È‚çA"UnlitTextureVS.cso" ‚ğ’T‚·
+        // ãƒ­ãƒ¼ãƒ‰ã•ã‚Œã¦ã„ãªã„å ´åˆã¯ã€ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆã®ãƒ•ã‚¡ã‚¤ãƒ«åã§ãƒ­ãƒ¼ãƒ‰ã‚’è©¦ã¿ã‚‹
+        // ä¾‹: idãŒ "UnlitTextureVS" ãªã‚‰ã€"UnlitTextureVS.cso" ã‚’æ¢ã™
         if (_vertexShaderBinaries.count(vsId) == 0) {
             std::string fileName = vsId + ".cso";
             LoadVertexShader(vsId, fileName.c_str());
@@ -90,17 +100,22 @@ ID3D12PipelineState* ShaderManager::GetPipelineState(
             LoadPixelShader(psId, fileName.c_str());
         }
         
-        // Äƒ`ƒFƒbƒN
+        // äºˆå‚™ãƒã‚§ãƒƒã‚¯
         if (_vertexShaderBinaries.count(vsId) == 0 || _pixelShaderBinaries.count(psId) == 0) {
-            assert(false && "Requested VS/PS binary not found in map!");
-            return nullptr;
+            OutputDebugStringA("Requested VS/PS binary not found in map! Falling back to UnlitTexture.\n");
+            if (_vertexShaderBinaries.count(vsId) == 0 && _vertexShaderBinaries.count("UnlitTexture") > 0) {
+                _vertexShaderBinaries[vsId] = _vertexShaderBinaries["UnlitTexture"];
+            }
+            if (_pixelShaderBinaries.count(psId) == 0 && _pixelShaderBinaries.count("UnlitTexture") > 0) {
+                _pixelShaderBinaries[psId] = _pixelShaderBinaries["UnlitTexture"];
+            }
         }
     }
 
     const auto& vsBin = _vertexShaderBinaries[vsId];
     const auto& psBin = _pixelShaderBinaries[psId];
 
-    // PSOì¬‚ÌDESC’è‹`
+    // PSOä½œæˆã®DESCå®šç¾©
     D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
     psoDesc.pRootSignature = Renderer::GetRootSignatureDX12();
     assert(psoDesc.pRootSignature != nullptr && "Root Signature is null when creating Pipeline State!");
@@ -110,7 +125,7 @@ ID3D12PipelineState* ShaderManager::GetPipelineState(
     psoDesc.PS.pShaderBytecode = psBin.data();
     psoDesc.PS.BytecodeLength = psBin.size();
 
-    // “ü—ÍƒŒƒCƒAƒEƒg’è‹` (POSITION, NORMAL, COLOR, TEXCOORD)
+    // å…¥åŠ›ãƒ¬ã‚¤ã‚¢ã‚¦ãƒˆå®šç¾© (POSITION, NORMAL, COLOR, TEXCOORD)
     static const D3D12_INPUT_ELEMENT_DESC inputElementDescs[] = {
         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
         { "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -120,7 +135,7 @@ ID3D12PipelineState* ShaderManager::GetPipelineState(
     psoDesc.InputLayout.pInputElementDescs = inputElementDescs;
     psoDesc.InputLayout.NumElements = _countof(inputElementDescs);
 
-    // ƒuƒŒƒ“ƒhƒXƒe[ƒg‚Ìİ’è
+    // ãƒ–ãƒ¬ãƒ³ãƒ‰ã‚¹ãƒ†ãƒ¼ãƒˆã®è¨­å®š
     D3D12_RENDER_TARGET_BLEND_DESC rtBlend = {};
     if (blendMode == 0) { // Opaque
         rtBlend.BlendEnable = FALSE;
@@ -151,7 +166,7 @@ ID3D12PipelineState* ShaderManager::GetPipelineState(
     psoDesc.BlendState.IndependentBlendEnable = FALSE;
     psoDesc.BlendState.RenderTarget[0] = rtBlend;
 
-    // ƒ‰ƒXƒ^ƒ‰ƒCƒUƒXƒe[ƒg
+    // ãƒ©ã‚¹ã‚¿ãƒ©ã‚¤ã‚¶ã‚¹ãƒ†ãƒ¼ãƒˆ
     psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
     psoDesc.RasterizerState.CullMode = (D3D12_CULL_MODE)cullMode;
     psoDesc.RasterizerState.FrontCounterClockwise = FALSE;
@@ -164,13 +179,13 @@ ID3D12PipelineState* ShaderManager::GetPipelineState(
     psoDesc.RasterizerState.ForcedSampleCount = 0;
     psoDesc.RasterizerState.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
 
-    // [“xƒXƒeƒ“ƒVƒ‹ƒXƒe[ƒg
+    // æ·±åº¦ã‚¹ãƒ†ãƒ³ã‚·ãƒ«ã‚¹ãƒ†ãƒ¼ãƒˆ
     psoDesc.DepthStencilState.DepthEnable = depthEnable ? TRUE : FALSE;
     psoDesc.DepthStencilState.DepthWriteMask = depthWrite ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
     psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
     psoDesc.DepthStencilState.StencilEnable = FALSE;
 
-    // ƒvƒŠƒ~ƒeƒBƒuƒgƒ|ƒƒW‚ÆƒŒƒ“ƒ_[ƒ^[ƒQƒbƒgİ’è
+    // ãƒ—ãƒªãƒŸãƒ†ã‚£ãƒ–ãƒˆãƒãƒ­ã‚¸ã¨ãƒ¬ãƒ³ãƒ€ãƒ¼ã‚¿ãƒ¼ã‚²ãƒƒãƒˆè¨­å®š
     psoDesc.PrimitiveTopologyType = topologyType;
     psoDesc.NumRenderTargets = 1;
     psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -183,7 +198,7 @@ ID3D12PipelineState* ShaderManager::GetPipelineState(
     ComPtr<ID3D12PipelineState> pso;
     HRESULT hr = device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pso));
     if (FAILED(hr)) {
-        // Ú×‚ÈƒGƒ‰[ƒƒO‚ğo—Í
+        // è©³ç´°ãªã‚¨ãƒ©ãƒ¼ãƒ­ã‚°ã‚’å‡ºåŠ›
         FILE* fp = nullptr;
         fopen_s(&fp, "d3d12_log.txt", "a");
         if (fp) {
@@ -195,7 +210,7 @@ ID3D12PipelineState* ShaderManager::GetPipelineState(
                 blendMode, cullMode, depthEnable ? 1 : 0, depthWrite ? 1 : 0, (int)topologyType);
             fclose(fp);
         }
-        // D3D12ƒfƒoƒbƒOƒƒbƒZ[ƒW‚à‹­§o—Í
+        // D3D12ãƒ‡ãƒãƒƒã‚°ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã‚‚å¼·åˆ¶å‡ºåŠ›
         Renderer::PrintDebugMessagesDX12();
         assert(false && "CreateGraphicsPipelineState failed!");
         return nullptr;
