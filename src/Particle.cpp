@@ -80,6 +80,10 @@ void Particle::Update()
 
 void Particle::Render() const
 {
+	int blendMode = 1;
+	if (Renderer::IsGeometryPass() && blendMode != 0) return;
+	if (!Renderer::IsGeometryPass() && blendMode == 0) return;
+
 	auto cmdList = Renderer::GetCommandListDX12();
 	if (!cmdList) return;
 
@@ -127,8 +131,7 @@ void Particle::Render() const
 
 			Renderer::SetWorldMatrix(worldMatrix);
 
-				Renderer::BindShaderConstantsDX12();
-cmdList->DrawInstanced(4, 1, 0, 0);
+			cmdList->DrawInstanced(4, 1, 0, 0);
 		}
 	}
 }

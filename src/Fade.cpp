@@ -23,6 +23,10 @@ void Fade::Update()
 
 void Fade::Render() const
 {
+	int blendMode = 1;
+	if (Renderer::IsGeometryPass() && blendMode != 0) return;
+	if (!Renderer::IsGeometryPass() && blendMode == 0) return;
+
 	auto cmdList = Renderer::GetCommandListDX12();
 	if (!cmdList) return;
 
@@ -70,8 +74,7 @@ void Fade::Render() const
 		Renderer::SetTexture(6, _texture);
 	}
 
-		Renderer::BindShaderConstantsDX12();
-cmdList->DrawInstanced(4, 1, 0, 0);
+	cmdList->DrawInstanced(4, 1, 0, 0);
 }
 
 void Fade::OnDestroy()

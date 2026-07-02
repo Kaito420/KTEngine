@@ -128,6 +128,10 @@ void Sphere::Awake() {
 }
 
 void Sphere::Render()const {
+	int blendMode = 0;
+	if (Renderer::IsGeometryPass() && blendMode != 0) return;
+	if (!Renderer::IsGeometryPass() && blendMode == 0) return;
+
 	auto cmdList = Renderer::GetCommandListDX12();
 	if (!cmdList) return;
 
@@ -196,8 +200,7 @@ void Sphere::Render()const {
 		Renderer::SetTexture(6, _texture);
 	}
 
-		Renderer::BindShaderConstantsDX12();
-cmdList->DrawIndexedInstanced(_indexCount, 1, 0, 0, 0);
+	cmdList->DrawIndexedInstanced(_indexCount, 1, 0, 0, 0);
 }
 
 void Sphere::ShowUI() {

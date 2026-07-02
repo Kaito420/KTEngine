@@ -104,6 +104,10 @@ void Wave::Update()
 }
 
 void Wave::Render() const{
+	int blendMode = 1;
+	if (Renderer::IsGeometryPass() && blendMode != 0) return;
+	if (!Renderer::IsGeometryPass() && blendMode == 0) return;
+
 	auto cmdList = Renderer::GetCommandListDX12();
 	if (!cmdList) return;
 
@@ -176,6 +180,5 @@ void Wave::Render() const{
 		Renderer::SetTexture(5, m_textureEnv);
 	}
 
-		Renderer::BindShaderConstantsDX12();
-cmdList->DrawIndexedInstanced(((22 * 2) * 20 - 2), 1, 0, 0, 0);
+	cmdList->DrawIndexedInstanced(((22 * 2) * 20 - 2), 1, 0, 0, 0);
 }

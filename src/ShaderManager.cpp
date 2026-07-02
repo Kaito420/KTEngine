@@ -101,8 +101,13 @@ ID3D12PipelineState* ShaderManager::GetPipelineState(
     }
 
     PipelineStateKey key = { actualVsId, actualPsId, blendMode, cullMode, depthEnable, depthWrite, topologyType };
+    if (_lastPSO != nullptr && key == _lastKey) {
+        return _lastPSO;
+    }
     if (_pipelineStates.count(key) > 0) {
-        return _pipelineStates[key].Get();
+        _lastKey = key;
+        _lastPSO = _pipelineStates[key].Get();
+        return _lastPSO;
     }
 
     // 各シェーダーバイナリ取得
@@ -253,5 +258,7 @@ ID3D12PipelineState* ShaderManager::GetPipelineState(
     }
 
     _pipelineStates[key] = pso;
-    return pso.Get();
+    _lastKey = key;
+    _lastPSO = pso.Get();
+    return _lastPSO;
 }

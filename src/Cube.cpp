@@ -70,6 +70,10 @@ void Cube::Awake() {
 }
 
 void Cube::Render()const {
+	int blendMode = 0;
+	if (Renderer::IsGeometryPass() && blendMode != 0) return;
+	if (!Renderer::IsGeometryPass() && blendMode == 0) return;
+
 	auto cmdList = Renderer::GetCommandListDX12();
 	if (!cmdList) return;
 
@@ -136,9 +140,7 @@ void Cube::Render()const {
 	}
 
 	Renderer::SetConstant(3, &material, sizeof(material));
-
-		Renderer::BindShaderConstantsDX12();
-cmdList->DrawIndexedInstanced(36, 1, 0, 0, 0);
+	cmdList->DrawIndexedInstanced(36, 1, 0, 0, 0);
 }
 
 void Cube::ShowUI() {

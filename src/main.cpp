@@ -78,39 +78,45 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
         Manager::Update(); // Managerの更新
 
         // ゲームビューテクスチャにレンダリング
-        Renderer::SetGeometryPass(true);
-        Renderer::BeginGameRender();
-        Camera* mainCamera = nullptr;
-        if (Manager::GetCurrentScene()) {
-            mainCamera = Manager::GetCurrentScene()->FindGameObjectByName<Camera>("Camera");
-        }
-        if (mainCamera) {
-            Renderer::SetViewMatrix(mainCamera->GetViewMatrix());
-            Renderer::SetProjectionMatrix(mainCamera->GetProjectionMatrix());
-            Renderer::SetCameraPosition(XMFLOAT4(mainCamera->_transform._position.x, mainCamera->_transform._position.y, mainCamera->_transform._position.z, 1.0f));
-        }
-        Manager::Render();
+        if (Manager::IsShowGameView()) {
+            Renderer::SetGeometryPass(true);
+            Renderer::BeginGameRender();
+            Camera* mainCamera = nullptr;
+            if (Manager::GetCurrentScene()) {
+                mainCamera = Manager::GetCurrentScene()->FindGameObjectByName<Camera>("Camera");
+            }
+            if (mainCamera) {
+                Renderer::SetViewMatrix(mainCamera->GetViewMatrix());
+                Renderer::SetProjectionMatrix(mainCamera->GetProjectionMatrix());
+                Renderer::SetCameraPosition(XMFLOAT4(mainCamera->_transform._position.x, mainCamera->_transform._position.y, mainCamera->_transform._position.z, 1.0f));
+            }
+            Renderer::BindShaderConstantsDX12();
+            Manager::Render();
 
-        Renderer::SetGeometryPass(false);
-        Renderer::ApplyDeferredLighting();
-        Manager::Render();
+            Renderer::SetGeometryPass(false);
+            Renderer::ApplyDeferredLighting();
+            Manager::Render();
+        }
 
         // シーンビューテクスチャにレンダリング
-        Renderer::SetGeometryPass(true);
-        Renderer::BeginSceneRender();
-        Renderer::SetViewMatrix(Manager::GetEditorCamera()->GetViewMatrix());
-        Renderer::SetProjectionMatrix(Manager::GetEditorCamera()->GetProjectionMatrix());
-        {
-            XMMATRIX invView = XMMatrixInverse(nullptr, Manager::GetEditorCamera()->GetViewMatrix());
-            XMFLOAT4 editorCamPos;
-            XMStoreFloat4(&editorCamPos, invView.r[3]);
-            Renderer::SetCameraPosition(editorCamPos);
-        }
-        Manager::Render();
+        if (Manager::IsShowSceneView()) {
+            Renderer::SetGeometryPass(true);
+            Renderer::BeginSceneRender();
+            Renderer::SetViewMatrix(Manager::GetEditorCamera()->GetViewMatrix());
+            Renderer::SetProjectionMatrix(Manager::GetEditorCamera()->GetProjectionMatrix());
+            {
+                XMMATRIX invView = XMMatrixInverse(nullptr, Manager::GetEditorCamera()->GetViewMatrix());
+                XMFLOAT4 editorCamPos;
+                XMStoreFloat4(&editorCamPos, invView.r[3]);
+                Renderer::SetCameraPosition(editorCamPos);
+            }
+            Renderer::BindShaderConstantsDX12();
+            Manager::Render();
 
-        Renderer::SetGeometryPass(false);
-        Renderer::ApplyDeferredLighting();
-        Manager::Render();
+            Renderer::SetGeometryPass(false);
+            Renderer::ApplyDeferredLighting();
+            Manager::Render();
+        }
 
         //ImGuiとウィンドウ全体のレンダリング
         Renderer::BeginFrame();

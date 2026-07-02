@@ -23,6 +23,10 @@ std::unordered_map<std::string, MODEL*> ModelRenderer::m_ModelPool;
 
 void ModelRenderer::Render() const
 {
+	int blendMode = 0;
+	if (Renderer::IsGeometryPass() && blendMode != 0) return;
+	if (!Renderer::IsGeometryPass() && blendMode == 0) return;
+
 	auto cmdList = Renderer::GetCommandListDX12();
 	if (!cmdList) return;
 
@@ -94,8 +98,7 @@ void ModelRenderer::Render() const
 		if (m_Model->SubsetArray[i].Material.Texture)
 			Renderer::SetTexture(6, m_Model->SubsetArray[i].Material.Texture);
 
-			Renderer::BindShaderConstantsDX12();
-cmdList->DrawIndexedInstanced(m_Model->SubsetArray[i].IndexNum, 1, m_Model->SubsetArray[i].StartIndex, 0, 0);
+		cmdList->DrawIndexedInstanced(m_Model->SubsetArray[i].IndexNum, 1, m_Model->SubsetArray[i].StartIndex, 0, 0);
 	}
 }
 

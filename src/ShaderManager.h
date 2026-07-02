@@ -18,6 +18,12 @@ struct PipelineStateKey {
     bool depthWrite;
     D3D12_PRIMITIVE_TOPOLOGY_TYPE topologyType;
 
+    bool operator==(const PipelineStateKey& other) const {
+        return vsId == other.vsId && psId == other.psId && blendMode == other.blendMode &&
+               cullMode == other.cullMode && depthEnable == other.depthEnable &&
+               depthWrite == other.depthWrite && topologyType == other.topologyType;
+    }
+
     bool operator<(const PipelineStateKey& other) const {
         if (vsId != other.vsId) return vsId < other.vsId;
         if (psId != other.psId) return psId < other.psId;
@@ -34,6 +40,8 @@ private:
     std::map<std::string, std::vector<unsigned char>> _vertexShaderBinaries;
     std::map<std::string, std::vector<unsigned char>> _pixelShaderBinaries;
     std::map<PipelineStateKey, ComPtr<ID3D12PipelineState>> _pipelineStates;
+    PipelineStateKey _lastKey = {};
+    ID3D12PipelineState* _lastPSO = nullptr;
 
     ShaderManager() = default;
     ~ShaderManager() = default;
