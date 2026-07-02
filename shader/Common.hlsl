@@ -18,13 +18,24 @@ cbuffer ProjectionBuffer : register(b2){
 
 struct MATERIAL
 {
+    // [新しいマテリアルメンバ] (PBR / G-Buffer 用)
+    float4 BaseColor;
+    float4 EmissionColor;
+    float Metallic;
+    float Specular;
+    float Roughness;
+    float NormalWeight;
+    int ShadingModelID;
+    float3 DummyPbr;
+    
+    // [古いマテリアルメンバ] (既存フォワード用)
     float4 Ambient;
     float4 Diffuse;
-    float4 Specular;
+    float4 SpecularOld;
     float4 Emission;
     float Shininess;
     bool TextureEnable;
-    float2 Dummy;
+    float2 DummyOld;
 };
 
 cbuffer MaterialBuffer : register(b3)
@@ -35,12 +46,20 @@ cbuffer MaterialBuffer : register(b3)
 struct LIGHT
 {
     bool Enable;
-    bool3 Dummy;
+    int DiffuseModel;   // 0:Lambert, 1:half-Lambert, 2:normalized-Lambert
+    int ShadingModel;   // 0:Smooth, 1:Toon
+    int SpecularModel;  // 0:off, 1:Phong
+    
     float4 Direction;
     float4 Diffuse;
     float4 Ambient;
     float4 Position;
-    float4 Parameter;
+    float4 Parameter;   // 予備パラメータ
+    
+    float4 RimColor;
+    float RimPower;
+    int RimLightModel;
+    float2 DummyLight;
 };
 
 cbuffer LightBuffer : register(b4)
@@ -67,3 +86,27 @@ struct PS_IN{
     float4 Diffuse : COLOR0;
     float2 TexCoord : TEXCOORD0;
 };
+
+struct PS_OUTPUT
+{
+    float4 Color : SV_TARGET0;
+};
+
+struct PS_OUTPUT_GEOMETRY
+{
+    float4 Color : SV_TARGET0;
+    float4 Normal : SV_TARGET1;
+    float4 Position : SV_TARGET2;
+    float4 MaterialMetallic : SV_TARGET3;
+    float4 MaterialSpecular : SV_TARGET4;
+    float4 MaterialRoughness : SV_TARGET5;
+};
+
+Texture2D<float4> TextureBaseColor : register(t0);
+Texture2D<float4> TextureNormal : register(t1);
+Texture2D<float4> TexturePosition : register(t2);
+Texture2D<float4> TextureMaterialMetallic : register(t3);
+Texture2D<float4> TextureMaterialSpecular : register(t4);
+Texture2D<float4> TextureMaterialRoughness : register(t5);
+
+SamplerState Sampler : register(s0);

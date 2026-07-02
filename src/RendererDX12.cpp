@@ -43,6 +43,44 @@ namespace RendererDX12 {
 
     std::list<unsigned int> g_srvDescriptorPool;
 
+    struct GBufferTarget {
+        ComPtr<ID3D12Resource> Resource = nullptr;
+        unsigned int RtvIndex = 0;
+        unsigned int SrvIndex = 0;
+        
+        void Release() {
+            Resource.Reset();
+            if (SrvIndex != 0) {
+                FreeSrvIndex(SrvIndex);
+                SrvIndex = 0;
+            }
+        }
+    };
+    
+    struct GBufferSet {
+        GBufferTarget Color;
+        GBufferTarget Normal;
+        GBufferTarget Position;
+        GBufferTarget Metallic;
+        GBufferTarget Specular;
+        GBufferTarget Roughness;
+        
+        void Release() {
+            Color.Release();
+            Normal.Release();
+            Position.Release();
+            Metallic.Release();
+            Specular.Release();
+            Roughness.Release();
+        }
+    };
+    
+    GBufferSet g_sceneGBuffer;
+    GBufferSet g_gameGBuffer;
+
+    ComPtr<ID3D12Resource> g_fullScreenQuadVB = nullptr;
+    D3D12_VERTEX_BUFFER_VIEW g_fullScreenQuadVBView = {};
+
     // シーン用レンダーターゲット
     ComPtr<ID3D12Resource> g_sceneRenderTarget = nullptr;
     ComPtr<ID3D12Resource> g_sceneDepthBuffer = nullptr;
@@ -226,7 +264,7 @@ namespace RendererDX12 {
 
         // 記述子ヒープ作成
         D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
-        rtvHeapDesc.NumDescriptors = 4; // BackBuffer*2 + Scene + Game
+        rtvHeapDesc.NumDescriptors = 16; // BackBuffer*2 + Scene + Game + SceneGBuffer*6 + GameGBuffer*6
         rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
         rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
         g_pd3dDevice->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&g_pd3dRtvDescHeap));
@@ -425,6 +463,48 @@ namespace RendererDX12 {
         ShaderManager::Instance().LoadVertexShader("UnlitColor", "shader/UnlitColorVS.cso");
         ShaderManager::Instance().LoadPixelShader("UnlitColor", "shader/UnlitColorPS.cso");
 
+        ShaderManager::Instance().LoadVertexShader("Geometry", "shader/GeometryVS.cso");
+        ShaderManager::Instance().LoadPixelShader("Geometry", "shader/GeometryPS.cso");
+
+        ShaderManager::Instance().LoadVertexShader("Deferred", "shader/DeferredVS.cso");
+        ShaderManager::Instance().LoadPixelShader("Deferred", "shader/DeferredPS.cso");
+
+        // 全画面矩形用頂点データの作成
+        {
+            Vertex vertices[] = {
+                { XMFLOAT3(-1.0f,  1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT2(0.0f, 0.0f) },
+                { XMFLOAT3( 1.0f,  1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT2(1.0f, 0.0f) },
+                { XMFLOAT3(-1.0f, -1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT2(0.0f, 1.0f) },
+                
+                { XMFLOAT3(-1.0f, -1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT2(0.0f, 1.0f) },
+                { XMFLOAT3( 1.0f,  1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT2(1.0f, 0.0f) },
+                { XMFLOAT3( 1.0f, -1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT2(1.0f, 1.0f) },
+            };
+
+            auto heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+            auto bufferDesc = CD3DX12_RESOURCE_DESC::Buffer(sizeof(vertices));
+
+            HRESULT hr = g_pd3dDevice->CreateCommittedResource(
+                &heapProperties,
+                D3D12_HEAP_FLAG_NONE,
+                &bufferDesc,
+                D3D12_RESOURCE_STATE_GENERIC_READ,
+                nullptr,
+                IID_PPV_ARGS(&g_fullScreenQuadVB)
+            );
+            assert(SUCCEEDED(hr));
+
+            void* pData = nullptr;
+            hr = g_fullScreenQuadVB->Map(0, nullptr, &pData);
+            assert(SUCCEEDED(hr));
+            memcpy(pData, vertices, sizeof(vertices));
+            g_fullScreenQuadVB->Unmap(0, nullptr);
+
+            g_fullScreenQuadVBView.BufferLocation = g_fullScreenQuadVB->GetGPUVirtualAddress();
+            g_fullScreenQuadVBView.SizeInBytes = sizeof(vertices);
+            g_fullScreenQuadVBView.StrideInBytes = sizeof(Vertex);
+        }
+
         // デフォルトテクスチャのロード
         g_defaultTexture = Texture::Load("asset\\texture\\Space.jpg");
 
@@ -433,6 +513,11 @@ namespace RendererDX12 {
 
     void Shutdown() {
         WaitForLastSubmittedFrame();
+
+        g_fullScreenQuadVB.Reset();
+
+        g_sceneGBuffer.Release();
+        g_gameGBuffer.Release();
 
         g_sceneRenderTarget.Reset();
         g_sceneDepthBuffer.Reset();
@@ -622,6 +707,49 @@ namespace RendererDX12 {
         g_sceneResizePending = true;
     }
 
+    void CreateGBufferResource(GBufferTarget& target, float width, float height, DXGI_FORMAT format, unsigned int rtvIndex, XMFLOAT4 clearColor) {
+        target.Release();
+        target.RtvIndex = rtvIndex;
+        target.SrvIndex = AllocateSrvIndex();
+        
+        D3D12_RESOURCE_DESC desc = {};
+        desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+        desc.Width = (UINT64)width;
+        desc.Height = (UINT)height;
+        desc.DepthOrArraySize = 1;
+        desc.MipLevels = 1;
+        desc.Format = format;
+        desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+        desc.SampleDesc.Count = 1;
+        desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+
+        D3D12_CLEAR_VALUE clearVal = {};
+        clearVal.Format = format;
+        clearVal.Color[0] = clearColor.x;
+        clearVal.Color[1] = clearColor.y;
+        clearVal.Color[2] = clearColor.z;
+        clearVal.Color[3] = clearColor.w;
+
+        auto rtHeapProps = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+        g_pd3dDevice->CreateCommittedResource(
+            &rtHeapProps,
+            D3D12_HEAP_FLAG_NONE,
+            &desc,
+            D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+            &clearVal,
+            IID_PPV_ARGS(&target.Resource)
+        );
+
+        g_pd3dDevice->CreateRenderTargetView(target.Resource.Get(), nullptr, GetRtvHandle(target.RtvIndex));
+
+        D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+        srvDesc.Format = format;
+        srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+        srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+        srvDesc.Texture2D.MipLevels = 1;
+        g_pd3dDevice->CreateShaderResourceView(target.Resource.Get(), &srvDesc, GetSrvCpuHandle(target.SrvIndex));
+    }
+
     void RecreateSceneBuffer(float width, float height) {
         g_sceneWidth = width;
         g_sceneHeight = height;
@@ -691,6 +819,14 @@ namespace RendererDX12 {
             IID_PPV_ARGS(&g_sceneDepthBuffer)
         );
         g_pd3dDevice->CreateDepthStencilView(g_sceneDepthBuffer.Get(), nullptr, GetDsvHandle(1));
+
+        // Scene G-Bufferの作成
+        CreateGBufferResource(g_sceneGBuffer.Color, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 4, XMFLOAT4(0.15f, 0.15f, 0.15f, 1.0f));
+        CreateGBufferResource(g_sceneGBuffer.Normal, width, height, DXGI_FORMAT_R16G16B16A16_FLOAT, 5, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
+        CreateGBufferResource(g_sceneGBuffer.Position, width, height, DXGI_FORMAT_R32G32B32A32_FLOAT, 6, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
+        CreateGBufferResource(g_sceneGBuffer.Metallic, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 7, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
+        CreateGBufferResource(g_sceneGBuffer.Specular, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 8, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
+        CreateGBufferResource(g_sceneGBuffer.Roughness, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 9, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
     }
 
     bool InitGameRenderTarget(int width, int height) {
@@ -782,6 +918,14 @@ namespace RendererDX12 {
             IID_PPV_ARGS(&g_gameDepthBuffer)
         );
         g_pd3dDevice->CreateDepthStencilView(g_gameDepthBuffer.Get(), nullptr, GetDsvHandle(2));
+
+        // Game G-Bufferの作成
+        CreateGBufferResource(g_gameGBuffer.Color, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 10, XMFLOAT4(0.1f, 0.1f, 0.1f, 1.0f));
+        CreateGBufferResource(g_gameGBuffer.Normal, width, height, DXGI_FORMAT_R16G16B16A16_FLOAT, 11, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
+        CreateGBufferResource(g_gameGBuffer.Position, width, height, DXGI_FORMAT_R32G32B32A32_FLOAT, 12, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
+        CreateGBufferResource(g_gameGBuffer.Metallic, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 13, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
+        CreateGBufferResource(g_gameGBuffer.Specular, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 14, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
+        CreateGBufferResource(g_gameGBuffer.Roughness, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 15, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
     }
 
     // SRVアロケータヘルパー
@@ -878,6 +1022,12 @@ namespace RendererDX12 {
         D3D12_GPU_DESCRIPTOR_HANDLE handle = g_pd3dSrvDescHeap->GetGPUDescriptorHandleForHeapStart();
         handle.ptr += texture->SRVIndex * g_srvDescriptorSize;
         g_pd3dCommandList->SetGraphicsRootDescriptorTable((UINT)slot, handle);
+    }
+
+    void DrawFullScreenQuad() {
+        g_pd3dCommandList->IASetVertexBuffers(0, 1, &g_fullScreenQuadVBView);
+        g_pd3dCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        g_pd3dCommandList->DrawInstanced(6, 1, 0, 0);
     }
 
     void PrintDebugMessages() {
