@@ -77,7 +77,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
 
         Manager::Update(); // Managerの更新
 
-        //ゲームシーンをテクスチャにレンダリング
+        // ゲームビューテクスチャにレンダリング
+        Renderer::SetGeometryPass(true);
         Renderer::BeginGameRender();
         Camera* mainCamera = nullptr;
         if (Manager::GetCurrentScene()) {
@@ -90,6 +91,12 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
         }
         Manager::Render();
 
+        Renderer::SetGeometryPass(false);
+        Renderer::ApplyDeferredLighting();
+        Manager::Render();
+
+        // シーンビューテクスチャにレンダリング
+        Renderer::SetGeometryPass(true);
         Renderer::BeginSceneRender();
         Renderer::SetViewMatrix(Manager::GetEditorCamera()->GetViewMatrix());
         Renderer::SetProjectionMatrix(Manager::GetEditorCamera()->GetProjectionMatrix());
@@ -99,6 +106,10 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
             XMStoreFloat4(&editorCamPos, invView.r[3]);
             Renderer::SetCameraPosition(editorCamPos);
         }
+        Manager::Render();
+
+        Renderer::SetGeometryPass(false);
+        Renderer::ApplyDeferredLighting();
         Manager::Render();
 
         //ImGuiとウィンドウ全体のレンダリング

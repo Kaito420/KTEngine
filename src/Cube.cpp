@@ -98,6 +98,7 @@ void Cube::Render()const {
 			psId = shaderComp->GetPixelShaderID();
 		}
 		ID3D12PipelineState* pso = ShaderManager::Instance().GetPipelineState(vsId, psId, 0, Renderer::GetCullModeDX12(), Renderer::GetDepthEnableDX12(), Renderer::GetDepthWriteDX12(), D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
+		if (pso == nullptr) return;
 		cmdList->SetPipelineState(pso);
 	}
 
@@ -114,6 +115,26 @@ void Cube::Render()const {
 	MATERIAL material = {};
 	material.Diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
 	material.TextureEnable = false;
+
+	auto shaderComp = _owner->GetComponent<Shader>();
+	if (shaderComp) {
+		material.BaseColor = shaderComp->GetBaseColor();
+		material.EmissionColor = shaderComp->GetEmissionColor();
+		material.Metallic = shaderComp->GetMetallic();
+		material.SpecularPbr = shaderComp->GetSpecular();
+		material.Roughness = shaderComp->GetRoughness();
+		material.NormalWeight = shaderComp->GetNormalWeight();
+		material.ShadingModelID = shaderComp->GetShadingModelID();
+	} else {
+		material.BaseColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+		material.EmissionColor = { 0.0f, 0.0f, 0.0f, 0.0f };
+		material.Metallic = 0.0f;
+		material.SpecularPbr = 0.5f;
+		material.Roughness = 0.5f;
+		material.NormalWeight = 1.0f;
+		material.ShadingModelID = 0;
+	}
+
 	Renderer::SetConstant(3, &material, sizeof(material));
 
 		Renderer::BindShaderConstantsDX12();

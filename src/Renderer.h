@@ -50,23 +50,42 @@ struct Vertex {
 // マテリアル構造体
 struct MATERIAL
 {
+    // [新しいマテリアルメンバ] (Deferred / PBR 用)
+    XMFLOAT4    BaseColor;
+    XMFLOAT4    EmissionColor;
+    float       Metallic;
+    float       SpecularPbr;
+    float       Roughness;
+    float       NormalWeight;
+    int         ShadingModelID;
+    float       DummyPbr[3];
+
+    // [古いマテリアルメンバ] (既存フォワード用互換)
     XMFLOAT4	Ambient;
     XMFLOAT4	Diffuse;
     XMFLOAT4	Specular;
     XMFLOAT4	Emission;
     float		Shininess;
     BOOL        TextureEnable;
-    float		Dummy[2];
+    float		DummyOld[2];
 };
 
 struct LIGHT {
-	BOOL	Enable;
-    BOOL	Dummy[3];
-	XMFLOAT4 Direction;
-	XMFLOAT4 Diffuse;
-	XMFLOAT4 Ambient;
+    BOOL Enable;
+    int DiffuseModel;   // 0:Lambert, 1:half-Lambert, 2:normalized-Lambert
+    int ShadingModel;   // 0:Smooth, 1:Toon
+    int SpecularModel;  // 0:off, 1:Phong
+    
+    XMFLOAT4 Direction;
+    XMFLOAT4 Diffuse;
+    XMFLOAT4 Ambient;
     XMFLOAT4 Position;
     XMFLOAT4 Parameter;
+    
+    XMFLOAT4 RimColor;
+    float RimPower;
+    int RimLightModel;
+    float DummyLight[2];
 };
 
 // D3D12 Resources
@@ -124,6 +143,10 @@ namespace RendererDX12 {
     void ReleaseShaderResourceView(unsigned int index);
     void SetConstant(int slot, const void* data, unsigned int size);
     void SetTexture(int slot, const TEXTURE* texture);
+    void DrawFullScreenQuad();
+    bool IsGeometryPass();
+    void SetGeometryPass(bool active);
+    void ApplyDeferredLighting();
     void PrintDebugMessages();
     D3D12_CULL_MODE GetCullMode();
     bool GetDepthEnable();
@@ -221,6 +244,10 @@ namespace Renderer {
     void ReleaseTextureSrv(unsigned int index);
     void SetConstant(int slot, const void* data, unsigned int size);
     void SetTexture(int slot, const TEXTURE* texture);
+    void DrawFullScreenQuad();
+    bool IsGeometryPass();
+    void SetGeometryPass(bool active);
+    void ApplyDeferredLighting();
 }
 
 struct ID3D12Device;

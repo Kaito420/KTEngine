@@ -157,6 +157,22 @@ namespace Renderer {
     void SetTexture(int slot, const TEXTURE* texture) {
         RendererDX12::SetTexture(slot, texture);
     }
+
+    void DrawFullScreenQuad() {
+        RendererDX12::DrawFullScreenQuad();
+    }
+
+    bool IsGeometryPass() {
+        return RendererDX12::IsGeometryPass();
+    }
+
+    void SetGeometryPass(bool active) {
+        RendererDX12::SetGeometryPass(active);
+    }
+
+    void ApplyDeferredLighting() {
+        RendererDX12::ApplyDeferredLighting();
+    }
 }
 
 TEXTURE::~TEXTURE() {

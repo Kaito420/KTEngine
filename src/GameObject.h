@@ -26,24 +26,24 @@ class GameObject {
 	friend class Scene;
 private:
 
-	bool _awakened = false; //Awake‚ªÀs‚³‚ê‚½‚©‚Ç‚¤‚©
-	bool _started = false; //Start‚ªÀs‚³‚ê‚½‚©‚Ç‚¤‚©
-	static uint32_t _nextId; //Ÿ‚ÉŠ„‚è“–‚Ä‚éID
+	bool _awakened = false; //AwakeãŒå®Ÿè¡Œã•ã‚ŒãŸã‹ã©ã†ã‹
+	bool _started = false; //StartãŒå®Ÿè¡Œã•ã‚ŒãŸã‹ã©ã†ã‹
+	static uint32_t _nextId; //æ¬¡ã«å‰²ã‚Šå½“ã¦ã‚‹ID
 protected:
 	bool _destroy = false;
 
 public:
 	uint32_t _id;
 	std::string _name = "gameObject";
-	bool _active = true; //ƒAƒNƒeƒBƒuó‘Ôitrue:—LŒø, false:–³Œøj
-	bool _executeInEditor = false; //ƒGƒfƒBƒ^ƒ‚[ƒh‚Å‚àÀs‚·‚é‚©‚Ç‚¤‚©
-	std::list<std::shared_ptr<Component>> _components; //‚±‚ÌGameObject‚ÉƒAƒ^ƒbƒ`‚³‚ê‚Ä‚¢‚éƒRƒ“ƒ|[ƒlƒ“ƒg‚ÌƒŠƒXƒg
+	bool _active = true; //ã‚¢ã‚¯ãƒ†ã‚£ãƒ–çŠ¶æ…‹ï¼ˆtrue:æœ‰åŠ¹, false:ç„¡åŠ¹ï¼‰
+	bool _executeInEditor = false; //ã‚¨ãƒ‡ã‚£ã‚¿ãƒ¢ãƒ¼ãƒ‰ã§ã‚‚å®Ÿè¡Œã™ã‚‹ã‹ã©ã†ã‹
+	std::list<std::shared_ptr<Component>> _components; //ã“ã®GameObjectã«ã‚¢ã‚¿ãƒƒãƒã•ã‚Œã¦ã„ã‚‹ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã®ãƒªã‚¹ãƒˆ
 
 	struct Transform {
 		KTVECTOR3 _position = { 0.0f, 0.0f, 0.0f };
 		KTVECTOR3 _scale = { 1.0f, 1.0f, 1.0f };
 		KTVECTOR3 _rotation = { 0.0f, 0.0f, 0.0f };	//Degree
-		KTQUATERNION _quaternion = { 0.0f, 0.0f, 0.0f, 1.0f }; //‰ñ“]‚ğ•\‚·ƒNƒH[ƒ^ƒjƒIƒ“
+		KTQUATERNION _quaternion = { 0.0f, 0.0f, 0.0f, 1.0f }; //å›è»¢ã‚’è¡¨ã™ã‚¯ã‚©ãƒ¼ã‚¿ãƒ‹ã‚ªãƒ³
 		
 		template <class Archive>
 		void serialize(Archive& ar) {
@@ -53,11 +53,12 @@ public:
 			ar(cereal::make_nvp("Quaternion", _quaternion));
 		}
 	};
-	Transform _transform; //ˆÊ’uAƒXƒP[ƒ‹A‰ñ“]‚ğ•Û‚·‚éTransform\‘¢‘Ì
+	Transform _transform; //ä½ç½®ã€ã‚¹ã‚±ãƒ¼ãƒ«ã€å›è»¢ã‚’ä¿æŒã™ã‚‹Transformæ§‹é€ ä½“
 	GameObject() {
-		_id = _nextId++;	//ƒRƒ“ƒXƒgƒ‰ƒNƒ^‚É‚ÄIDŒˆ’è‚µAŸ‰ñˆÈ~‚ÌID‚ğƒCƒ“ƒNƒŠƒƒ“ƒg
+		_id = _nextId++;	//ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿ã«ã¦IDæ±ºå®šã—ã€æ¬¡å›ä»¥é™ã®IDã‚’ã‚¤ãƒ³ã‚¯ãƒªãƒ¡ãƒ³ãƒˆ
 	}
 	virtual ~GameObject() {}
+	virtual void ShowUI() {}
 
 	bool Active(bool active) { _active = active; return _active; }
 	bool GetActive() const { return _active; }
@@ -107,51 +108,51 @@ public:
 	}
 
 	/// <summary>
-	/// ƒCƒ“ƒXƒ^ƒ“ƒX¶¬’¼Œã‚ÉÀsiƒRƒ“ƒ|[ƒlƒ“ƒg—LŒø–³Œø‚ÉŠÖŒW‚È‚­ŒÄ‚Î‚ê‚éj
+	/// ã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚¹ç”Ÿæˆç›´å¾Œã«å®Ÿè¡Œï¼ˆã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆæœ‰åŠ¹ç„¡åŠ¹ã«é–¢ä¿‚ãªãå‘¼ã°ã‚Œã‚‹ï¼‰
 	/// </summary>
 	virtual void Awake() {}
 
 	/// <summary>
-	/// Å‰‚ÌUpdate’¼‘O‚ÉÀsi‰‰ñ‚Ì‚İA”ñƒAƒNƒeƒBƒu‚ÌÛ‚Í–³‹j
+	/// æœ€åˆã®Updateç›´å‰ã«å®Ÿè¡Œï¼ˆåˆå›ã®ã¿ã€éã‚¢ã‚¯ãƒ†ã‚£ãƒ–ã®éš›ã¯ç„¡è¦–ï¼‰
 	/// </summary>
 	virtual void Start() {}
 
 	/// <summary>
-	/// –ˆƒtƒŒ[ƒ€Àsi”ñƒAƒNƒeƒBƒu‚ÌÛ‚Í–³‹j
+	/// æ¯ãƒ•ãƒ¬ãƒ¼ãƒ å®Ÿè¡Œï¼ˆéã‚¢ã‚¯ãƒ†ã‚£ãƒ–ã®éš›ã¯ç„¡è¦–ï¼‰
 	/// </summary>
 	virtual void Update() {}
 
 	/// <summary>
-	/// ƒGƒfƒBƒ^ã‚Å–ˆƒtƒŒ[ƒ€Àsi”ñƒAƒNƒeƒBƒu‚ÌÛ‚Í–³‹j
+	/// ã‚¨ãƒ‡ã‚£ã‚¿ä¸Šã§æ¯ãƒ•ãƒ¬ãƒ¼ãƒ å®Ÿè¡Œï¼ˆéã‚¢ã‚¯ãƒ†ã‚£ãƒ–ã®éš›ã¯ç„¡è¦–ï¼‰
 	/// </summary>
 	virtual void UpdateEditor();
 
 	/// <summary>
-	/// //UpdateŒã‚ÉÀsi”ñƒAƒNƒeƒBƒu‚ÌÛ‚Í–³‹j
+	/// //Updateå¾Œã«å®Ÿè¡Œï¼ˆéã‚¢ã‚¯ãƒ†ã‚£ãƒ–ã®éš›ã¯ç„¡è¦–ï¼‰
 	/// </summary>
 	virtual void LateUpdate() {}
 
 	/// <summary>
-	/// LateUpdateŒã‚ÉÀsi”ñƒAƒNƒeƒBƒu‚ÌÛ‚Í–³‹j
+	/// LateUpdateå¾Œã«å®Ÿè¡Œï¼ˆéã‚¢ã‚¯ãƒ†ã‚£ãƒ–ã®éš›ã¯ç„¡è¦–ï¼‰
 	/// </summary>
 	virtual void Render() const {}
 
 	/// <summary>
-	/// íœ’¼‘O‚ÉÀsi”ñƒAƒNƒeƒBƒu‚ÌÛ‚Í–³‹j
+	/// å‰Šé™¤ç›´å‰ã«å®Ÿè¡Œï¼ˆéã‚¢ã‚¯ãƒ†ã‚£ãƒ–ã®éš›ã¯ç„¡è¦–ï¼‰
 	/// </summary>
 	virtual void OnDestroy() {}
 
 
 
 	/// <summary>
-	/// ƒRƒ“ƒ|[ƒlƒ“ƒg‚ğ’Ç‰Á‚·‚é
+	/// ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã‚’è¿½åŠ ã™ã‚‹
 	/// </summary>
 	template <typename T, typename... Args>
 	T* AddComponent(Args&&... args) {
 		static_assert(std::is_base_of<Component, T>::value, "T must be derived from Component");
 		auto component = std::make_shared<T>(std::forward<Args>(args)...);
-		component->_owner = this; //ƒRƒ“ƒ|[ƒlƒ“ƒg‚É‚±‚ÌGameObject‚Ìƒ|ƒCƒ“ƒ^‚ğİ’è
-		component->Active(true); //’Ç‰Á‚µ‚½ƒRƒ“ƒ|[ƒlƒ“ƒg‚ğ—LŒø‰»
+		component->_owner = this; //ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã«ã“ã®GameObjectã®ãƒã‚¤ãƒ³ã‚¿ã‚’è¨­å®š
+		component->Active(true); //è¿½åŠ ã—ãŸã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã‚’æœ‰åŠ¹åŒ–
 		component->Awake();
 		component->Awakened();
 
@@ -160,13 +161,13 @@ public:
 	}
 
 	/// <summary>
-	/// ƒRƒ“ƒ|[ƒlƒ“ƒg‚ğíœ‚·‚é
+	/// ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã‚’å‰Šé™¤ã™ã‚‹
 	/// </summary>
 	/// <param name="component"></param>
 	void RemoveComponent(Component* component);
 
 	/// <summary>
-	/// w’è‚µ‚½Œ^‚ÌƒRƒ“ƒ|[ƒlƒ“ƒg‚ğæ“¾‚·‚é
+	/// æŒ‡å®šã—ãŸå‹ã®ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã‚’å–å¾—ã™ã‚‹
 	/// </summary>
 	template <typename T>
 	T* GetComponent() {
@@ -176,11 +177,11 @@ public:
 				return castedComponent;
 			}
 		}
-		return nullptr; //w’è‚µ‚½Œ^‚ÌƒRƒ“ƒ|[ƒlƒ“ƒg‚ªŒ©‚Â‚©‚ç‚È‚©‚Á‚½ê‡‚Ínullptr‚ğ•Ô‚·
+		return nullptr; //æŒ‡å®šã—ãŸå‹ã®ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆãŒè¦‹ã¤ã‹ã‚‰ãªã‹ã£ãŸå ´åˆã¯nullptrã‚’è¿”ã™
 	}
 
 	/// <summary>
-	/// ƒRƒ“ƒ|[ƒlƒ“ƒg‚ÌUpdate‚ğŒÄ‚Ño‚·
+	/// ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã®Updateã‚’å‘¼ã³å‡ºã™
 	/// </summary>
 	void UpdateComponents() {
 		for (const auto& component : _components) {
@@ -195,7 +196,7 @@ public:
 	}
 
 	/// <summary>
-	/// ƒRƒ“ƒ|[ƒlƒ“ƒg‚ÌLateUpdate‚ğŒÄ‚Ño‚·
+	/// ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã®LateUpdateã‚’å‘¼ã³å‡ºã™
 	/// </summary>
 	void LateUpdateComponents() {
 		for (const auto& component : _components) {
@@ -206,7 +207,7 @@ public:
 	}
 
 	/// <summary>
-	/// ƒRƒ“ƒ|[ƒlƒ“ƒg‚Ì•`‰æ‚ğŒÄ‚Ño‚·
+	/// ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã®æç”»ã‚’å‘¼ã³å‡ºã™
 	/// </summary>
 	void RenderComponents() const {
 		for (const auto& component : _components) {
@@ -254,7 +255,7 @@ public:
 		if (std::is_same<Archive, cereal::JSONInputArchive>::value ||
 			std::is_same<Archive, cereal::BinaryInputArchive>::value) {
 			for(auto& component: _components){
-				component->SetOwner(this); //ƒ[ƒh‚É_owner‚ğÄİ’è
+				component->SetOwner(this); //ãƒ­ãƒ¼ãƒ‰æ™‚ã«_ownerã‚’å†è¨­å®š
 			}
 		}
 	}

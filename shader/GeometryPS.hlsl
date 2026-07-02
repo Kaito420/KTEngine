@@ -4,7 +4,11 @@ PS_OUTPUT_GEOMETRY main(PS_IN input)
 {
     PS_OUTPUT_GEOMETRY output;
     
-    output.Color = TextureBaseColor.Sample(Sampler, input.TexCoord) * Material.BaseColor;
+    if (Material.TextureEnable) {
+        output.Color = TextureBaseColor.Sample(Sampler, input.TexCoord) * Material.BaseColor;
+    } else {
+        output.Color = Material.BaseColor;
+    }
     
     output.Normal = input.Normal;
     output.Normal.a = 1.0f;

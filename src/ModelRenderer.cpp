@@ -51,6 +51,7 @@ void ModelRenderer::Render() const
 			psId = shaderComp->GetPixelShaderID();
 		}
 		ID3D12PipelineState* pso = ShaderManager::Instance().GetPipelineState(vsId, psId, 0, Renderer::GetCullModeDX12(), Renderer::GetDepthEnableDX12(), Renderer::GetDepthWriteDX12(), D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
+		if (pso == nullptr) return;
 		cmdList->SetPipelineState(pso);
 	}
 
@@ -68,7 +69,27 @@ void ModelRenderer::Render() const
 
 	for (unsigned int i = 0; i < m_Model->SubsetNum; i++)
 	{
-		Renderer::SetConstant(3, &m_Model->SubsetArray[i].Material.Material, sizeof(MATERIAL));
+		MATERIAL material = m_Model->SubsetArray[i].Material.Material;
+		material.BaseColor = material.Diffuse;
+		material.EmissionColor = material.Emission;
+		material.Metallic = 0.0f;
+		material.SpecularPbr = 0.5f;
+		material.Roughness = 0.5f;
+		material.NormalWeight = 1.0f;
+		material.ShadingModelID = 0;
+
+		auto shaderComp = _owner->GetComponent<Shader>();
+		if (shaderComp) {
+			material.BaseColor = shaderComp->GetBaseColor();
+			material.EmissionColor = shaderComp->GetEmissionColor();
+			material.Metallic = shaderComp->GetMetallic();
+			material.SpecularPbr = shaderComp->GetSpecular();
+			material.Roughness = shaderComp->GetRoughness();
+			material.NormalWeight = shaderComp->GetNormalWeight();
+			material.ShadingModelID = shaderComp->GetShadingModelID();
+		}
+
+		Renderer::SetConstant(3, &material, sizeof(MATERIAL));
 
 		if (m_Model->SubsetArray[i].Material.Texture)
 			Renderer::SetTexture(6, m_Model->SubsetArray[i].Material.Texture);

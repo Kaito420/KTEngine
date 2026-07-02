@@ -12,6 +12,7 @@
 #include <string>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include "ktvector.hpp"
 
 class Shader : public Component {
 	friend class cereal::access;
@@ -20,6 +21,15 @@ private:
 	std::string	_vertexLayoutID;
 	std::string _pixelShaderID;
 
+	// Material properties for Deferred Rendering
+	XMFLOAT4 _baseColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+	XMFLOAT4 _emissionColor = { 0.0f, 0.0f, 0.0f, 0.0f };
+	float _metallic = 0.0f;
+	float _specular = 0.5f;
+	float _roughness = 0.5f;
+	float _normalWeight = 1.0f;
+	int _shadingModelID = 0; // 0: Smooth, 1: Toon
+
 public:
 	void Awake() override;
     void SetVertexShader(std::string id);
@@ -27,6 +37,22 @@ public:
 	std::string GetVertexShaderID() const { return _vertexShaderID; }
 	std::string GetVertexLayoutID() const { return _vertexLayoutID; }
 	std::string GetPixelShaderID() const { return _pixelShaderID; }
+
+	// Getters and Setters for Material
+	XMFLOAT4 GetBaseColor() const { return _baseColor; }
+	void SetBaseColor(const XMFLOAT4& val) { _baseColor = val; }
+	XMFLOAT4 GetEmissionColor() const { return _emissionColor; }
+	void SetEmissionColor(const XMFLOAT4& val) { _emissionColor = val; }
+	float GetMetallic() const { return _metallic; }
+	void SetMetallic(float val) { _metallic = val; }
+	float GetSpecular() const { return _specular; }
+	void SetSpecular(float val) { _specular = val; }
+	float GetRoughness() const { return _roughness; }
+	void SetRoughness(float val) { _roughness = val; }
+	float GetNormalWeight() const { return _normalWeight; }
+	void SetNormalWeight(float val) { _normalWeight = val; }
+	int GetShadingModelID() const { return _shadingModelID; }
+	void SetShadingModelID(int val) { _shadingModelID = val; }
 
 	void ShowUI() override;
 	std::string GetComponentName() override { return "Shader"; }
@@ -37,6 +63,13 @@ public:
 		ar(cereal::make_nvp("VertexShaderID", _vertexShaderID));
 		ar(cereal::make_nvp("VertexLayoutID", _vertexLayoutID));
 		ar(cereal::make_nvp("PixelShaderID", _pixelShaderID));
+		ar(cereal::make_nvp("BaseColor", _baseColor));
+		ar(cereal::make_nvp("EmissionColor", _emissionColor));
+		ar(cereal::make_nvp("Metallic", _metallic));
+		ar(cereal::make_nvp("Specular", _specular));
+		ar(cereal::make_nvp("Roughness", _roughness));
+		ar(cereal::make_nvp("NormalWeight", _normalWeight));
+		ar(cereal::make_nvp("ShadingModelID", _shadingModelID));
 	}
 };
 

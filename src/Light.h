@@ -19,6 +19,7 @@ public:
 	LIGHT _lightData;
 	void Awake() override;
 	void Update() override;
+	void ShowUI() override;
 
 	template <class Archive>
 	void serialize(Archive& ar) {

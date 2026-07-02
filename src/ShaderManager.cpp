@@ -82,38 +82,54 @@ ID3D12PipelineState* ShaderManager::GetPipelineState(
     bool depthWrite,
     D3D12_PRIMITIVE_TOPOLOGY_TYPE topologyType
 ) {
-    PipelineStateKey key = { vsId, psId, blendMode, cullMode, depthEnable, depthWrite, topologyType };
+    // ジオメトリパス中は不透明(blendMode == 0)のみ描画
+    if (Renderer::IsGeometryPass() && blendMode != 0) {
+        return nullptr;
+    }
+    // フォワードパス中は透過(blendMode != 0)のみ描画
+    if (!Renderer::IsGeometryPass() && blendMode == 0) {
+        return nullptr;
+    }
+
+    std::string actualVsId = vsId;
+    std::string actualPsId = psId;
+
+    // ジオメトリパス中かつ不透明オブジェクトの場合、自動的にジオメトリパス用PSOに切り替える
+    if (Renderer::IsGeometryPass() && blendMode == 0) {
+        actualVsId = "Geometry";
+        actualPsId = "Geometry";
+    }
+
+    PipelineStateKey key = { actualVsId, actualPsId, blendMode, cullMode, depthEnable, depthWrite, topologyType };
     if (_pipelineStates.count(key) > 0) {
         return _pipelineStates[key].Get();
     }
 
-    // シェーダーバイナリ取得
-    if (_vertexShaderBinaries.count(vsId) == 0 || _pixelShaderBinaries.count(psId) == 0) {
-        // ロードされていない場合は、デフォルトのファイル名でロードを試みる
-        // 例: idが "UnlitTextureVS" なら、"UnlitTextureVS.cso" を探す
-        if (_vertexShaderBinaries.count(vsId) == 0) {
-            std::string fileName = vsId + ".cso";
-            LoadVertexShader(vsId, fileName.c_str());
+    // 各シェーダーバイナリ取得
+    if (_vertexShaderBinaries.count(actualVsId) == 0 || _pixelShaderBinaries.count(actualPsId) == 0) {
+        if (_vertexShaderBinaries.count(actualVsId) == 0) {
+            std::string fileName = actualVsId + ".cso";
+            LoadVertexShader(actualVsId, fileName.c_str());
         }
-        if (_pixelShaderBinaries.count(psId) == 0) {
-            std::string fileName = psId + ".cso";
-            LoadPixelShader(psId, fileName.c_str());
+        if (_pixelShaderBinaries.count(actualPsId) == 0) {
+            std::string fileName = actualPsId + ".cso";
+            LoadPixelShader(actualPsId, fileName.c_str());
         }
         
         // 予備チェック
-        if (_vertexShaderBinaries.count(vsId) == 0 || _pixelShaderBinaries.count(psId) == 0) {
+        if (_vertexShaderBinaries.count(actualVsId) == 0 || _pixelShaderBinaries.count(actualPsId) == 0) {
             OutputDebugStringA("Requested VS/PS binary not found in map! Falling back to UnlitTexture.\n");
-            if (_vertexShaderBinaries.count(vsId) == 0 && _vertexShaderBinaries.count("UnlitTexture") > 0) {
-                _vertexShaderBinaries[vsId] = _vertexShaderBinaries["UnlitTexture"];
+            if (_vertexShaderBinaries.count(actualVsId) == 0 && _vertexShaderBinaries.count("UnlitTexture") > 0) {
+                _vertexShaderBinaries[actualVsId] = _vertexShaderBinaries["UnlitTexture"];
             }
-            if (_pixelShaderBinaries.count(psId) == 0 && _pixelShaderBinaries.count("UnlitTexture") > 0) {
-                _pixelShaderBinaries[psId] = _pixelShaderBinaries["UnlitTexture"];
+            if (_pixelShaderBinaries.count(actualPsId) == 0 && _pixelShaderBinaries.count("UnlitTexture") > 0) {
+                _pixelShaderBinaries[actualPsId] = _pixelShaderBinaries["UnlitTexture"];
             }
         }
     }
 
-    const auto& vsBin = _vertexShaderBinaries[vsId];
-    const auto& psBin = _pixelShaderBinaries[psId];
+    const auto& vsBin = _vertexShaderBinaries[actualVsId];
+    const auto& psBin = _pixelShaderBinaries[actualPsId];
 
     // PSO作成のDESC定義
     D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};

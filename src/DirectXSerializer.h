@@ -11,7 +11,7 @@
 #include <DirectXMath.h>
 #include "Renderer.h"
 
-//DirectXMathの型のシリアライズ関数
+//DirectXMath縺ｮ蝙九�ｮ繧ｷ繝ｪ繧｢繝ｩ繧､繧ｺ髢｢謨ｰ
 namespace DirectX {
 	//XMFLOAT2
 	template <class Archive>
@@ -32,12 +32,19 @@ namespace DirectX {
 	}
 }
 
-//RendererDX11の構造体シリアライズ関数
+//RendererDX11縺ｮ讒矩菴薙す繝ｪ繧｢繝ｩ繧､繧ｺ髢｢謨ｰ
 
 //MATERIAL
 template <class Archive>
 void serialize(Archive& ar, MATERIAL& m) {
-	ar(cereal::make_nvp("Ambient", m.Ambient),
+	ar(cereal::make_nvp("BaseColor", m.BaseColor),
+		cereal::make_nvp("EmissionColor", m.EmissionColor),
+		cereal::make_nvp("Metallic", m.Metallic),
+		cereal::make_nvp("SpecularPbr", m.SpecularPbr),
+		cereal::make_nvp("Roughness", m.Roughness),
+		cereal::make_nvp("NormalWeight", m.NormalWeight),
+		cereal::make_nvp("ShadingModelID", m.ShadingModelID),
+		cereal::make_nvp("Ambient", m.Ambient),
 		cereal::make_nvp("Diffuse", m.Diffuse),
 		cereal::make_nvp("Specular", m.Specular),
 		cereal::make_nvp("Emission", m.Emission),
@@ -49,11 +56,17 @@ void serialize(Archive& ar, MATERIAL& m) {
 template <class Archive>
 void serialize(Archive& ar, LIGHT& l) {
 	ar(cereal::make_nvp("Enable", l.Enable),
+		cereal::make_nvp("DiffuseModel", l.DiffuseModel),
+		cereal::make_nvp("ShadingModel", l.ShadingModel),
+		cereal::make_nvp("SpecularModel", l.SpecularModel),
 		cereal::make_nvp("Direction", l.Direction),
 		cereal::make_nvp("Diffuse", l.Diffuse),
 		cereal::make_nvp("Ambient", l.Ambient),
 		cereal::make_nvp("Position", l.Position),
-		cereal::make_nvp("Parameter", l.Parameter));
+		cereal::make_nvp("Parameter", l.Parameter),
+		cereal::make_nvp("RimColor", l.RimColor),
+		cereal::make_nvp("RimPower", l.RimPower),
+		cereal::make_nvp("RimLightModel", l.RimLightModel));
 }
 
 #endif // !_DIRECTXSERIALIZER_H_

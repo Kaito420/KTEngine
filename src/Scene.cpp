@@ -314,6 +314,8 @@ void Scene::RenderInspector()
 					ImGui::EndTable();
 				}
 
+				selectedObj->ShowUI();
+
 				ImGui::Separator();
 
 				Component* componentToRemove = nullptr;

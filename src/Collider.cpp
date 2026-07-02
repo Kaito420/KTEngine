@@ -350,6 +350,7 @@ void ColliderBox::Render() const {
 			psId = shaderComp->GetPixelShaderID();
 		}
 		ID3D12PipelineState* pso = ShaderManager::Instance().GetPipelineState(vsId, psId, 1, Renderer::GetCullModeDX12(), Renderer::GetDepthEnableDX12(), Renderer::GetDepthWriteDX12(), D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE);
+		if (pso == nullptr) return;
 		cmdList->SetPipelineState(pso);
 	}
 

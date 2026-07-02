@@ -125,15 +125,25 @@ namespace RendererDX12 {
     XMMATRIX g_currentProjMatrix = XMMatrixIdentity();
     LIGHT g_currentLightData = {
         TRUE, // Enable
-        { FALSE, FALSE, FALSE }, // Dummy
+        0,    // DiffuseModel (Lambert)
+        0,    // ShadingModel (Smooth)
+        1,    // SpecularModel (Phong)
         { 0.0f, -1.0f, -1.0f, 0.0f }, // Direction
         { 0.8f, 0.8f, 0.8f, 1.0f }, // Diffuse
         { 0.2f, 0.2f, 0.2f, 1.0f }, // Ambient
         { -5.0f, 10.0f, 5.0f, 0.0f }, // Position
-        { 100.0f, 1.5f, 0.0f, 0.0f } // Parameter
+        { 100.0f, 1.5f, 0.0f, 0.0f }, // Parameter
+        { 1.0f, 1.0f, 1.0f, 1.0f }, // RimColor
+        2.0f, // RimPower
+        0,    // RimLightModel (Off)
+        { 0.0f, 0.0f } // DummyLight
     };
     XMFLOAT4 g_currentCameraPos = { 0.0f, 0.0f, 0.0f, 0.0f };
     const TEXTURE* g_defaultTexture = nullptr;
+    
+    bool g_isGeometryPass = false;
+    bool IsGeometryPass() { return g_isGeometryPass; }
+    void SetGeometryPass(bool active) { g_isGeometryPass = active; }
 
     void SetViewMatrix(XMMATRIX view) { g_currentViewMatrix = view; }
     void SetProjectionMatrix(XMMATRIX projection) { g_currentProjMatrix = projection; }
@@ -560,7 +570,16 @@ namespace RendererDX12 {
     ID3D11Device* GetDevice11() { return nullptr; }
     ID3D11DeviceContext* GetContext11() { return nullptr; }
 
+    enum class CurrentRenderContext {
+        None,
+        Game,
+        Scene
+    };
+    CurrentRenderContext g_currentRenderContext = CurrentRenderContext::None;
+
     void BeginGameRender() {
+        g_currentRenderContext = CurrentRenderContext::Game;
+
         if (g_sceneResizePending) {
             RecreateSceneBuffer(g_scenePendingWidth, g_scenePendingHeight);
             g_sceneResizePending = false;
@@ -580,20 +599,58 @@ namespace RendererDX12 {
         g_pd3dCommandList->SetGraphicsRootSignature(g_pd3dRootSignature.Get());
 
         if (g_gameRenderTarget) {
-            D3D12_RESOURCE_BARRIER barrier = {};
-            barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-            barrier.Transition.pResource = g_gameRenderTarget.Get();
-            barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-            barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-            g_pd3dCommandList->ResourceBarrier(1, &barrier);
+            if (g_isGeometryPass) {
+                // MRT ジオメトリパス
+                D3D12_RESOURCE_BARRIER barriers[6] = {};
+                ID3D12Resource* resources[6] = {
+                    g_gameGBuffer.Color.Resource.Get(),
+                    g_gameGBuffer.Normal.Resource.Get(),
+                    g_gameGBuffer.Position.Resource.Get(),
+                    g_gameGBuffer.Metallic.Resource.Get(),
+                    g_gameGBuffer.Specular.Resource.Get(),
+                    g_gameGBuffer.Roughness.Resource.Get()
+                };
+                for (int i = 0; i < 6; i++) {
+                    barriers[i].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+                    barriers[i].Transition.pResource = resources[i];
+                    barriers[i].Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+                    barriers[i].Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+                }
+                g_pd3dCommandList->ResourceBarrier(6, barriers);
 
-            D3D12_CPU_DESCRIPTOR_HANDLE rtv = GetRtvHandle(3);
-            D3D12_CPU_DESCRIPTOR_HANDLE dsv = GetDsvHandle(2);
-            g_pd3dCommandList->OMSetRenderTargets(1, &rtv, FALSE, &dsv);
+                D3D12_CPU_DESCRIPTOR_HANDLE rtvs[6];
+                for (int i = 0; i < 6; i++) {
+                    rtvs[i] = GetRtvHandle(10 + i);
+                }
+                D3D12_CPU_DESCRIPTOR_HANDLE dsv = GetDsvHandle(2);
+                g_pd3dCommandList->OMSetRenderTargets(6, rtvs, FALSE, &dsv);
 
-            const float clearColor[] = { 0.1f, 0.1f, 0.1f, 1.0f };
-            g_pd3dCommandList->ClearRenderTargetView(rtv, clearColor, 0, nullptr);
-            g_pd3dCommandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+                const float clearColors[6][4] = {
+                    { 0.1f, 0.1f, 0.1f, 1.0f },
+                    { 0.0f, 0.0f, 0.0f, 1.0f },
+                    { 0.0f, 0.0f, 0.0f, 1.0f },
+                    { 0.0f, 0.0f, 0.0f, 1.0f },
+                    { 0.5f, 0.5f, 0.5f, 1.0f },
+                    { 0.5f, 0.5f, 0.5f, 1.0f }
+                };
+                for (int i = 0; i < 6; i++) {
+                    g_pd3dCommandList->ClearRenderTargetView(rtvs[i], clearColors[i], 0, nullptr);
+                }
+                g_pd3dCommandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+            }
+            else {
+                // 通常フォワードパス
+                D3D12_RESOURCE_BARRIER barrier = {};
+                barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+                barrier.Transition.pResource = g_gameRenderTarget.Get();
+                barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+                barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+                g_pd3dCommandList->ResourceBarrier(1, &barrier);
+
+                D3D12_CPU_DESCRIPTOR_HANDLE rtv = GetRtvHandle(3);
+                D3D12_CPU_DESCRIPTOR_HANDLE dsv = GetDsvHandle(2);
+                g_pd3dCommandList->OMSetRenderTargets(1, &rtv, FALSE, &dsv);
+            }
 
             D3D12_VIEWPORT vp = { 0.0f, 0.0f, g_gameWidth, g_gameHeight, 0.0f, 1.0f };
             D3D12_RECT sr = { 0, 0, (LONG)g_gameWidth, (LONG)g_gameHeight };
@@ -603,6 +660,8 @@ namespace RendererDX12 {
     }
 
     void BeginSceneRender() {
+        g_currentRenderContext = CurrentRenderContext::Scene;
+
         g_pd3dCommandList->SetGraphicsRootSignature(g_pd3dRootSignature.Get());
 
         if (g_gameRenderTarget) {
@@ -615,20 +674,58 @@ namespace RendererDX12 {
         }
 
         if (g_sceneRenderTarget) {
-            D3D12_RESOURCE_BARRIER barrier = {};
-            barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-            barrier.Transition.pResource = g_sceneRenderTarget.Get();
-            barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-            barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-            g_pd3dCommandList->ResourceBarrier(1, &barrier);
+            if (g_isGeometryPass) {
+                // MRT ジオメトリパス
+                D3D12_RESOURCE_BARRIER barriers[6] = {};
+                ID3D12Resource* resources[6] = {
+                    g_sceneGBuffer.Color.Resource.Get(),
+                    g_sceneGBuffer.Normal.Resource.Get(),
+                    g_sceneGBuffer.Position.Resource.Get(),
+                    g_sceneGBuffer.Metallic.Resource.Get(),
+                    g_sceneGBuffer.Specular.Resource.Get(),
+                    g_sceneGBuffer.Roughness.Resource.Get()
+                };
+                for (int i = 0; i < 6; i++) {
+                    barriers[i].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+                    barriers[i].Transition.pResource = resources[i];
+                    barriers[i].Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+                    barriers[i].Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+                }
+                g_pd3dCommandList->ResourceBarrier(6, barriers);
 
-            D3D12_CPU_DESCRIPTOR_HANDLE rtv = GetRtvHandle(2);
-            D3D12_CPU_DESCRIPTOR_HANDLE dsv = GetDsvHandle(1);
-            g_pd3dCommandList->OMSetRenderTargets(1, &rtv, FALSE, &dsv);
+                D3D12_CPU_DESCRIPTOR_HANDLE rtvs[6];
+                for (int i = 0; i < 6; i++) {
+                    rtvs[i] = GetRtvHandle(4 + i);
+                }
+                D3D12_CPU_DESCRIPTOR_HANDLE dsv = GetDsvHandle(1);
+                g_pd3dCommandList->OMSetRenderTargets(6, rtvs, FALSE, &dsv);
 
-            const float clearColor[] = { 0.15f, 0.15f, 0.15f, 1.0f };
-            g_pd3dCommandList->ClearRenderTargetView(rtv, clearColor, 0, nullptr);
-            g_pd3dCommandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+                const float clearColors[6][4] = {
+                    { 0.15f, 0.15f, 0.15f, 1.0f },
+                    { 0.0f, 0.0f, 0.0f, 1.0f },
+                    { 0.0f, 0.0f, 0.0f, 1.0f },
+                    { 0.0f, 0.0f, 0.0f, 1.0f },
+                    { 0.5f, 0.5f, 0.5f, 1.0f },
+                    { 0.5f, 0.5f, 0.5f, 1.0f }
+                };
+                for (int i = 0; i < 6; i++) {
+                    g_pd3dCommandList->ClearRenderTargetView(rtvs[i], clearColors[i], 0, nullptr);
+                }
+                g_pd3dCommandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+            }
+            else {
+                // 通常フォワードパス
+                D3D12_RESOURCE_BARRIER barrier = {};
+                barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+                barrier.Transition.pResource = g_sceneRenderTarget.Get();
+                barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+                barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+                g_pd3dCommandList->ResourceBarrier(1, &barrier);
+
+                D3D12_CPU_DESCRIPTOR_HANDLE rtv = GetRtvHandle(2);
+                D3D12_CPU_DESCRIPTOR_HANDLE dsv = GetDsvHandle(1);
+                g_pd3dCommandList->OMSetRenderTargets(1, &rtv, FALSE, &dsv);
+            }
 
             D3D12_VIEWPORT vp = { 0.0f, 0.0f, g_sceneWidth, g_sceneHeight, 0.0f, 1.0f };
             D3D12_RECT sr = { 0, 0, (LONG)g_sceneWidth, (LONG)g_sceneHeight };
@@ -1028,6 +1125,113 @@ namespace RendererDX12 {
         g_pd3dCommandList->IASetVertexBuffers(0, 1, &g_fullScreenQuadVBView);
         g_pd3dCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
         g_pd3dCommandList->DrawInstanced(6, 1, 0, 0);
+    }
+
+    void ApplyDeferredLighting() {
+        if (g_currentRenderContext == CurrentRenderContext::Game) {
+            if (!g_gameRenderTarget) return;
+
+            // 1. G-Bufferリソースを RENDER_TARGET ➔ PIXEL_SHADER_RESOURCE にバリア遷移
+            D3D12_RESOURCE_BARRIER barriers[6] = {};
+            ID3D12Resource* resources[6] = {
+                g_gameGBuffer.Color.Resource.Get(),
+                g_gameGBuffer.Normal.Resource.Get(),
+                g_gameGBuffer.Position.Resource.Get(),
+                g_gameGBuffer.Metallic.Resource.Get(),
+                g_gameGBuffer.Specular.Resource.Get(),
+                g_gameGBuffer.Roughness.Resource.Get()
+            };
+            for (int i = 0; i < 6; i++) {
+                barriers[i].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+                barriers[i].Transition.pResource = resources[i];
+                barriers[i].Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+                barriers[i].Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+            }
+            g_pd3dCommandList->ResourceBarrier(6, barriers);
+
+            // 2. レンダーターゲットを本来の GameRenderTarget へバインド
+            D3D12_CPU_DESCRIPTOR_HANDLE rtv = GetRtvHandle(3);
+            D3D12_CPU_DESCRIPTOR_HANDLE dsv = GetDsvHandle(2);
+            g_pd3dCommandList->OMSetRenderTargets(1, &rtv, FALSE, &dsv);
+
+            // 3. Deferred PSO を取得してバインド
+            ID3D12PipelineState* pso = ShaderManager::Instance().GetPipelineState("Deferred", "Deferred", 1, D3D12_CULL_MODE_NONE, false, false, D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
+            if (pso) {
+                g_pd3dCommandList->SetPipelineState(pso);
+            }
+
+            // 4. 定数バッファやG-Bufferテクスチャ(t0〜t5)のバインド
+            BindShaderConstants();
+
+            GBufferTarget* targets[6] = {
+                &g_gameGBuffer.Color,
+                &g_gameGBuffer.Normal,
+                &g_gameGBuffer.Position,
+                &g_gameGBuffer.Metallic,
+                &g_gameGBuffer.Specular,
+                &g_gameGBuffer.Roughness
+            };
+            for (int i = 0; i < 6; i++) {
+                D3D12_GPU_DESCRIPTOR_HANDLE handle = g_pd3dSrvDescHeap->GetGPUDescriptorHandleForHeapStart();
+                handle.ptr += targets[i]->SrvIndex * g_srvDescriptorSize;
+                g_pd3dCommandList->SetGraphicsRootDescriptorTable((UINT)(6 + i), handle);
+            }
+
+            // 5. 全画面矩形を描画
+            DrawFullScreenQuad();
+        }
+        else if (g_currentRenderContext == CurrentRenderContext::Scene) {
+            if (!g_sceneRenderTarget) return;
+
+            // 1. G-Bufferリソースを RENDER_TARGET ➔ PIXEL_SHADER_RESOURCE にバリア遷移
+            D3D12_RESOURCE_BARRIER barriers[6] = {};
+            ID3D12Resource* resources[6] = {
+                g_sceneGBuffer.Color.Resource.Get(),
+                g_sceneGBuffer.Normal.Resource.Get(),
+                g_sceneGBuffer.Position.Resource.Get(),
+                g_sceneGBuffer.Metallic.Resource.Get(),
+                g_sceneGBuffer.Specular.Resource.Get(),
+                g_sceneGBuffer.Roughness.Resource.Get()
+            };
+            for (int i = 0; i < 6; i++) {
+                barriers[i].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+                barriers[i].Transition.pResource = resources[i];
+                barriers[i].Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+                barriers[i].Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+            }
+            g_pd3dCommandList->ResourceBarrier(6, barriers);
+
+            // 2. レンダーターゲットを本来の SceneRenderTarget へバインド
+            D3D12_CPU_DESCRIPTOR_HANDLE rtv = GetRtvHandle(2);
+            D3D12_CPU_DESCRIPTOR_HANDLE dsv = GetDsvHandle(1);
+            g_pd3dCommandList->OMSetRenderTargets(1, &rtv, FALSE, &dsv);
+
+            // 3. Deferred PSO を取得してバインド
+            ID3D12PipelineState* pso = ShaderManager::Instance().GetPipelineState("Deferred", "Deferred", 1, D3D12_CULL_MODE_NONE, false, false, D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
+            if (pso) {
+                g_pd3dCommandList->SetPipelineState(pso);
+            }
+
+            // 4. 定数バッファやG-Bufferテクスチャ(t0〜t5)のバインド
+            BindShaderConstants();
+
+            GBufferTarget* targets[6] = {
+                &g_sceneGBuffer.Color,
+                &g_sceneGBuffer.Normal,
+                &g_sceneGBuffer.Position,
+                &g_sceneGBuffer.Metallic,
+                &g_sceneGBuffer.Specular,
+                &g_sceneGBuffer.Roughness
+            };
+            for (int i = 0; i < 6; i++) {
+                D3D12_GPU_DESCRIPTOR_HANDLE handle = g_pd3dSrvDescHeap->GetGPUDescriptorHandleForHeapStart();
+                handle.ptr += targets[i]->SrvIndex * g_srvDescriptorSize;
+                g_pd3dCommandList->SetGraphicsRootDescriptorTable((UINT)(6 + i), handle);
+            }
+
+            // 5. 全画面矩形を描画
+            DrawFullScreenQuad();
+        }
     }
 
     void PrintDebugMessages() {
