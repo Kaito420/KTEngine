@@ -920,7 +920,7 @@ namespace RendererDX12 {
         // Scene G-Bufferの作成
         CreateGBufferResource(g_sceneGBuffer.Color, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 4, XMFLOAT4(0.15f, 0.15f, 0.15f, 1.0f));
         CreateGBufferResource(g_sceneGBuffer.Normal, width, height, DXGI_FORMAT_R16G16B16A16_FLOAT, 5, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
-        CreateGBufferResource(g_sceneGBuffer.Position, width, height, DXGI_FORMAT_R32G32B32A32_FLOAT, 6, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
+        CreateGBufferResource(g_sceneGBuffer.Position, width, height, DXGI_FORMAT_R16G16B16A16_FLOAT, 6, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
         CreateGBufferResource(g_sceneGBuffer.Metallic, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 7, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
         CreateGBufferResource(g_sceneGBuffer.Specular, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 8, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
         CreateGBufferResource(g_sceneGBuffer.Roughness, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 9, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
@@ -1019,7 +1019,7 @@ namespace RendererDX12 {
         // Game G-Bufferの作成
         CreateGBufferResource(g_gameGBuffer.Color, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 10, XMFLOAT4(0.1f, 0.1f, 0.1f, 1.0f));
         CreateGBufferResource(g_gameGBuffer.Normal, width, height, DXGI_FORMAT_R16G16B16A16_FLOAT, 11, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
-        CreateGBufferResource(g_gameGBuffer.Position, width, height, DXGI_FORMAT_R32G32B32A32_FLOAT, 12, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
+        CreateGBufferResource(g_gameGBuffer.Position, width, height, DXGI_FORMAT_R16G16B16A16_FLOAT, 12, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
         CreateGBufferResource(g_gameGBuffer.Metallic, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 13, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
         CreateGBufferResource(g_gameGBuffer.Specular, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 14, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
         CreateGBufferResource(g_gameGBuffer.Roughness, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 15, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
