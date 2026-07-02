@@ -1234,6 +1234,22 @@ namespace RendererDX12 {
         }
     }
 
+    void* GetGBufferSRV(int bufferIndex, bool isGame) {
+        const GBufferSet& gbuffer = isGame ? g_gameGBuffer : g_sceneGBuffer;
+        unsigned int srvIndex = 0;
+        switch (bufferIndex) {
+            case 0: srvIndex = gbuffer.Color.SrvIndex; break;
+            case 1: srvIndex = gbuffer.Normal.SrvIndex; break;
+            case 2: srvIndex = gbuffer.Position.SrvIndex; break;
+            case 3: srvIndex = gbuffer.Metallic.SrvIndex; break;
+            case 4: srvIndex = gbuffer.Specular.SrvIndex; break;
+            case 5: srvIndex = gbuffer.Roughness.SrvIndex; break;
+            default: return nullptr;
+        }
+        D3D12_GPU_DESCRIPTOR_HANDLE handle = GetSrvGpuHandle(srvIndex);
+        return (void*)handle.ptr;
+    }
+
     void PrintDebugMessages() {
         ComPtr<ID3D12InfoQueue> infoQueue;
         if (SUCCEEDED(g_pd3dDevice.As(&infoQueue))) {

@@ -203,6 +203,40 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
                 }
                 ImGui::End();
             }
+
+            // G-Buffer Visualizer Window
+            {
+                ImGui::Begin("G-Buffer Visualizer");
+                static int viewGBufferType = 0; // 0: Scene, 1: Game
+                ImGui::RadioButton("Scene View G-Buffer", &viewGBufferType, 0); ImGui::SameLine();
+                ImGui::RadioButton("Game View G-Buffer", &viewGBufferType, 1);
+                
+                bool viewGameGBuffer = (viewGBufferType == 1);
+
+                const char* names[6] = {
+                    "Color (Base Color)", "Normal (World Space)", "Position (World Space)",
+                    "Metallic", "Specular", "Roughness"
+                };
+
+                ImVec2 imgSize(240, 135); // 16:9 ratio
+
+                ImGui::Columns(3, "gbuffer_columns", true);
+                for (int i = 0; i < 6; i++) {
+                    ImGui::Text("%s", names[i]);
+                    void* texture = Renderer::GetGBufferSRV(i, viewGameGBuffer);
+                    if (texture) {
+                        ImGui::Image(texture, imgSize);
+                    } else {
+                        ImGui::Text("No Texture");
+                    }
+                    ImGui::NextColumn();
+                    if (i == 2) {
+                        ImGui::Separator();
+                    }
+                }
+                ImGui::Columns(1);
+                ImGui::End();
+            }
         }
         ImGuiLayer::End();
 

@@ -179,8 +179,16 @@ ID3D12PipelineState* ShaderManager::GetPipelineState(
         rtBlend.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
     }
     psoDesc.BlendState.AlphaToCoverageEnable = FALSE;
-    psoDesc.BlendState.IndependentBlendEnable = FALSE;
-    psoDesc.BlendState.RenderTarget[0] = rtBlend;
+    
+    if (actualVsId == "Geometry" || actualPsId == "Geometry") {
+        psoDesc.BlendState.IndependentBlendEnable = TRUE;
+        for (int i = 0; i < 6; i++) {
+            psoDesc.BlendState.RenderTarget[i] = rtBlend;
+        }
+    } else {
+        psoDesc.BlendState.IndependentBlendEnable = FALSE;
+        psoDesc.BlendState.RenderTarget[0] = rtBlend;
+    }
 
     // ラスタライザステート
     psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
@@ -203,8 +211,20 @@ ID3D12PipelineState* ShaderManager::GetPipelineState(
 
     // プリミティブトポロジとレンダーターゲット設定
     psoDesc.PrimitiveTopologyType = topologyType;
-    psoDesc.NumRenderTargets = 1;
-    psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+    
+    if (actualVsId == "Geometry" || actualPsId == "Geometry") {
+        psoDesc.NumRenderTargets = 6;
+        psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;       // Color
+        psoDesc.RTVFormats[1] = DXGI_FORMAT_R16G16B16A16_FLOAT;  // Normal
+        psoDesc.RTVFormats[2] = DXGI_FORMAT_R32G32B32A32_FLOAT;  // Position
+        psoDesc.RTVFormats[3] = DXGI_FORMAT_R8G8B8A8_UNORM;       // Metallic
+        psoDesc.RTVFormats[4] = DXGI_FORMAT_R8G8B8A8_UNORM;       // Specular
+        psoDesc.RTVFormats[5] = DXGI_FORMAT_R8G8B8A8_UNORM;       // Roughness
+    } else {
+        psoDesc.NumRenderTargets = 1;
+        psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+    }
+    
     psoDesc.DSVFormat = depthEnable ? DXGI_FORMAT_D32_FLOAT : DXGI_FORMAT_UNKNOWN;
     psoDesc.SampleDesc.Count = 1;
     psoDesc.SampleDesc.Quality = 0;

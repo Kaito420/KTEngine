@@ -147,6 +147,7 @@ namespace RendererDX12 {
     bool IsGeometryPass();
     void SetGeometryPass(bool active);
     void ApplyDeferredLighting();
+    void* GetGBufferSRV(int bufferIndex, bool isGame);
     void PrintDebugMessages();
     D3D12_CULL_MODE GetCullMode();
     bool GetDepthEnable();
@@ -248,6 +249,7 @@ namespace Renderer {
     bool IsGeometryPass();
     void SetGeometryPass(bool active);
     void ApplyDeferredLighting();
+    void* GetGBufferSRV(int bufferIndex, bool isGame);
 }
 
 struct ID3D12Device;

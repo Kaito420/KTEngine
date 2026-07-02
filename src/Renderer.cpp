@@ -173,6 +173,10 @@ namespace Renderer {
     void ApplyDeferredLighting() {
         RendererDX12::ApplyDeferredLighting();
     }
+
+    void* GetGBufferSRV(int bufferIndex, bool isGame) {
+        return RendererDX12::GetGBufferSRV(bufferIndex, isGame);
+    }
 }
 
 TEXTURE::~TEXTURE() {
