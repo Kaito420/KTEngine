@@ -10,23 +10,72 @@ namespace RendererDX12 {
     unsigned int CreateShaderResourceView(ID3D12Resource* resource);
 }
 
-const TEXTURE* Texture::Load(const char* FileName) {
+#include <filesystem>
+#include <algorithm>
 
-	if (_texturePool.count(FileName) > 0)
+const TEXTURE* Texture::Load(const char* FileName) {
+	if (!FileName) return nullptr;
+
+	size_t len = 0;
+	while (len < 512 && FileName[len] != '\0') len++;
+	if (len == 0 || len >= 512) return nullptr;
+
+	std::string resolvedPath(FileName, len);
+	std::replace(resolvedPath.begin(), resolvedPath.end(), '\\', '/');
+
+	if (std::filesystem::is_directory(resolvedPath)) {
+		return nullptr;
+	}
+
+	if (_texturePool.count(resolvedPath) > 0)
 	{
-		return _texturePool[FileName].get();
+		return _texturePool[resolvedPath].get();
+	}
+
+	if (!std::filesystem::is_regular_file(resolvedPath)) {
+		std::filesystem::path p(resolvedPath);
+		std::string filename = p.filename().string();
+
+		if (filename.empty() || filename == "." || filename == "..") {
+			return nullptr;
+		}
+
+		std::vector<std::string> searchDirs = { "asset/model", "asset/texture", "asset" };
+		bool found = false;
+		for (const auto& dir : searchDirs) {
+			std::string candidate = dir + "/" + filename;
+			if (std::filesystem::is_regular_file(candidate)) {
+				resolvedPath = candidate;
+				found = true;
+				break;
+			}
+		}
+		if (!found) {
+			return nullptr;
+		}
+	}
+
+	if (_texturePool.count(resolvedPath) > 0)
+	{
+		return _texturePool[resolvedPath].get();
 	}
 
 	wchar_t wFileName[512];
-	mbstowcs(wFileName, FileName, strlen(FileName) + 1);
+	mbstowcs(wFileName, resolvedPath.c_str(), resolvedPath.length() + 1);
 
-	// テクスチャロード
 	TexMetadata metadata;
 	ScratchImage image;
 	HRESULT hr = LoadFromWICFile(wFileName, WIC_FLAGS_NONE, &metadata, image);
 	if (FAILED(hr)) {
-		OutputDebugStringA("Failed to load WIC texture file: ");
-		OutputDebugStringA(FileName);
+		hr = LoadFromTGAFile(wFileName, &metadata, image);
+	}
+	if (FAILED(hr)) {
+		hr = LoadFromDDSFile(wFileName, DDS_FLAGS_NONE, &metadata, image);
+	}
+
+	if (FAILED(hr)) {
+		OutputDebugStringA("Failed to load texture file: ");
+		OutputDebugStringA(resolvedPath.c_str());
 		OutputDebugStringA("\n");
 		return nullptr;
 	}
@@ -162,7 +211,7 @@ const TEXTURE* Texture::Load(const char* FileName) {
 	tex->Resource = res;
 	tex->SRVIndex = srvIndex;
 
-	_texturePool[FileName] = std::move(tex);
-
-	return _texturePool[FileName].get();
+	const TEXTURE* retPtr = tex.get();
+	_texturePool[resolvedPath] = std::move(tex);
+	return retPtr;
 }

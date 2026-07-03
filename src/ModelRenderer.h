@@ -71,6 +71,8 @@ private:
 
 	MODEL* m_Model{};
 
+	std::string m_TextureOverridePath = "";
+
 public:
 
 	static void Preload(const char* FileName);
@@ -78,6 +80,7 @@ public:
 
 	void Awake() override;
 	void Load(const char* FileName);
+	void SetTextureOverride(const char* path);
 	void Render()const override;
 	void ShowUI() override;
 	std::string GetLoadedFileName() const;
@@ -86,7 +89,6 @@ public:
 	template <class Archive>
 	void serialize(Archive& ar) {
 		ar(cereal::base_class<Component>(this));
-		//現在のモデルポインタからファイル名を逆引き
 		std::string filename = "";
 		if (m_Model) {
 			for (const auto& pair : m_ModelPool) {
@@ -96,11 +98,9 @@ public:
 				}
 			}
 		}
-		//シリアライズ実行(書き込み時は filename を保存、読み込み時は filename にデータが入る)
 		ar(cereal::make_nvp("FileName", filename));
+		ar(cereal::make_nvp("TextureOverridePath", m_TextureOverridePath));
 
-		//ロード用ロジック:取得したファイル名でロード
-		//(保存時にも呼ばれてしまうが、Load関数内で重複チェックしているため問題ない)
 		if (!filename.empty()) {
 			Load(filename.c_str());
 		}

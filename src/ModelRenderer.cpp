@@ -93,12 +93,23 @@ void ModelRenderer::Render() const
 		material.NormalWeight = 1.0f;
 		material.ShadingModelID = 0;
 
-		const TEXTURE* tex = m_Model->SubsetArray[i].Material.Texture;
+		const TEXTURE* tex = nullptr;
+		if (!m_TextureOverridePath.empty()) {
+			tex = Texture::Load(m_TextureOverridePath.c_str());
+		} else {
+			tex = m_Model->SubsetArray[i].Material.Texture;
+		}
 		material.TextureEnable = (tex != nullptr);
 
 		auto shaderComp = _owner->GetComponent<Shader>();
 		if (shaderComp) {
-			material.BaseColor = shaderComp->GetBaseColor();
+			XMFLOAT4 scColor = shaderComp->GetBaseColor();
+			if (tex && scColor.x == 0.0f && scColor.y == 0.0f && scColor.z == 0.0f) {
+				scColor.x = 1.0f;
+				scColor.y = 1.0f;
+				scColor.z = 1.0f;
+			}
+			material.BaseColor = scColor;
 			material.EmissionColor = shaderComp->GetEmissionColor();
 			material.Metallic = shaderComp->GetMetallic();
 			material.SpecularPbr = shaderComp->GetSpecular();
@@ -209,6 +220,9 @@ void ModelRenderer::LoadModel(const char* FileName, MODEL* Model)
 	{
 		Model->SubsetArray = new SUBSET[modelObj.SubsetNum];
 		Model->SubsetNum = modelObj.SubsetNum;
+		if (modelObj.SubsetNum > 0) {
+			memset(Model->SubsetArray, 0, sizeof(SUBSET) * modelObj.SubsetNum);
+		}
 
 		for (unsigned int i = 0; i < modelObj.SubsetNum; i++)
 		{
@@ -333,6 +347,9 @@ void ModelRenderer::LoadObj(const char* FileName, MODEL_OBJ* ModelObj)
 
 	ModelObj->SubsetArray = new SUBSET[subsetNum];
 	ModelObj->SubsetNum = subsetNum;
+	if (subsetNum > 0) {
+		memset(ModelObj->SubsetArray, 0, sizeof(SUBSET) * subsetNum);
+	}
 
 
 
@@ -614,6 +631,14 @@ void ModelRenderer::LoadMaterial(const char* FileName, MODEL_MATERIAL** Material
 	*MaterialNum = materialNum;
 }
 
+void ModelRenderer::SetTextureOverride(const char* path) {
+	if (path) {
+		m_TextureOverridePath = path;
+	} else {
+		m_TextureOverridePath = "";
+	}
+}
+
 std::string ModelRenderer::GetLoadedFileName() const {
 	if (!m_Model) return "";
 	for (const auto& pair : m_ModelPool) {
@@ -662,10 +687,43 @@ void ModelRenderer::ShowUI() {
 		ImGui::EndCombo();
 	}
 
+	// テクスチャ選択 Combo (asset/texture および asset/model 内の画像)
+	std::string currentTexName = m_TextureOverridePath.empty() ? "Default / Auto" : std::filesystem::path(m_TextureOverridePath).filename().string();
+	if (ImGui::BeginCombo("Select Texture", currentTexName.c_str())) {
+		if (ImGui::Selectable("Default / Auto", m_TextureOverridePath.empty())) {
+			SetTextureOverride("");
+		}
+		std::vector<std::string> texDirs = { "asset/texture", "asset/model" };
+		for (const auto& dir : texDirs) {
+			if (std::filesystem::exists(dir) && std::filesystem::is_directory(dir)) {
+				for (const auto& entry : std::filesystem::directory_iterator(dir)) {
+					if (entry.is_regular_file()) {
+						std::filesystem::path filePath = entry.path();
+						std::string ext = filePath.extension().string();
+						if (ext == ".png" || ext == ".PNG" || ext == ".jpg" || ext == ".JPG" || ext == ".jpeg" || ext == ".tga" || ext == ".dds") {
+							std::string filename = filePath.filename().string();
+							std::string relativePath = filePath.generic_string();
+
+							bool isSelected = (m_TextureOverridePath == relativePath);
+							if (ImGui::Selectable((filename + " (" + dir + ")").c_str(), isSelected)) {
+								SetTextureOverride(relativePath.c_str());
+							}
+							if (isSelected) {
+								ImGui::SetItemDefaultFocus();
+							}
+						}
+					}
+				}
+			}
+		}
+		ImGui::EndCombo();
+	}
+
 	if (m_Model) {
 		ImGui::Spacing();
 		ImGui::Text("Loaded Model Info:");
 		ImGui::Text(" - Path: %s", currentPath.c_str());
+		ImGui::Text(" - Texture: %s", m_TextureOverridePath.empty() ? "Auto / MTL" : m_TextureOverridePath.c_str());
 		ImGui::Text(" - Subsets: %u", m_Model->SubsetNum);
 		if (m_Model->VertexBuffer) {
 			ImGui::Text(" - Vertices: %u", m_Model->VertexBuffer->Size);
