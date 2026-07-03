@@ -76,8 +76,11 @@ public:
 	static void Preload(const char* FileName);
 	static void UnloadAll();
 
+	void Awake() override;
 	void Load(const char* FileName);
 	void Render()const override;
+	void ShowUI() override;
+	std::string GetLoadedFileName() const;
 	std::string GetComponentName() override { return "ModelRenderer"; }
 
 	template <class Archive>

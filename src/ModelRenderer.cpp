@@ -8,6 +8,8 @@
 #include <stdio.h>
 #include <shlwapi.h>
 #pragma comment(lib, "shlwapi.lib")
+#include <filesystem>
+#include <imgui.h>
 
 
 #include "Renderer.h"
@@ -21,8 +23,17 @@
 std::unordered_map<std::string, MODEL*> ModelRenderer::m_ModelPool;
 
 
+void ModelRenderer::Awake()
+{
+	if (_owner && !_owner->GetComponent<Shader>()) {
+		_owner->AddComponent<Shader>();
+	}
+}
+
 void ModelRenderer::Render() const
 {
+	if (!m_Model || !m_Model->VertexBuffer || !m_Model->IndexBuffer) return;
+
 	int blendMode = 0;
 	if (Renderer::IsGeometryPass() && blendMode != 0) return;
 	if (!Renderer::IsGeometryPass() && blendMode == 0) return;
@@ -30,14 +41,14 @@ void ModelRenderer::Render() const
 	auto cmdList = Renderer::GetCommandListDX12();
 	if (!cmdList) return;
 
-	// _obt@r[ݒ
+	// 頂点バッファビュー設定
 	D3D12_VERTEX_BUFFER_VIEW vbView = {};
 	vbView.BufferLocation = m_Model->VertexBuffer->Resource->GetGPUVirtualAddress();
 	vbView.StrideInBytes = m_Model->VertexBuffer->Stride;
 	vbView.SizeInBytes = m_Model->VertexBuffer->Stride * m_Model->VertexBuffer->Size;
 	cmdList->IASetVertexBuffers(0, 1, &vbView);
 
-	// CfbNXobt@r[ݒ
+	// インデックスバッファビュー設定
 	D3D12_INDEX_BUFFER_VIEW ibView = {};
 	ibView.BufferLocation = m_Model->IndexBuffer->Resource->GetGPUVirtualAddress();
 	ibView.SizeInBytes = sizeof(unsigned int) * m_Model->IndexBuffer->Size;
@@ -45,10 +56,11 @@ void ModelRenderer::Render() const
 	cmdList->IASetIndexBuffer(&ibView);
 
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
 	// PSOバインド
 	{
-		std::string vsId = "VertexDirectionalLightingVS";
-		std::string psId = "VertexDirectionalLightingPS";
+		std::string vsId = "Geometry";
+		std::string psId = "Geometry";
 		auto shaderComp = _owner->GetComponent<Shader>();
 		if (shaderComp) {
 			vsId = shaderComp->GetVertexShaderID();
@@ -59,8 +71,7 @@ void ModelRenderer::Render() const
 		cmdList->SetPipelineState(pso);
 	}
 
-
-	// svZ
+	// Transform 行列計算
 	XMMATRIX translation = XMMatrixTranslation(_owner->_transform._position.x, _owner->_transform._position.y, _owner->_transform._position.z);
 	KTVECTOR3 radians = { XMConvertToRadians(_owner->_transform._rotation.x),
 						  XMConvertToRadians(_owner->_transform._rotation.y),
@@ -82,6 +93,9 @@ void ModelRenderer::Render() const
 		material.NormalWeight = 1.0f;
 		material.ShadingModelID = 0;
 
+		const TEXTURE* tex = m_Model->SubsetArray[i].Material.Texture;
+		material.TextureEnable = (tex != nullptr);
+
 		auto shaderComp = _owner->GetComponent<Shader>();
 		if (shaderComp) {
 			material.BaseColor = shaderComp->GetBaseColor();
@@ -91,12 +105,15 @@ void ModelRenderer::Render() const
 			material.Roughness = shaderComp->GetRoughness();
 			material.NormalWeight = shaderComp->GetNormalWeight();
 			material.ShadingModelID = shaderComp->GetShadingModelID();
+		} else {
+			material.BaseColor = { 1.0f, 1.0f, 1.0f, 1.0f };
 		}
 
 		Renderer::SetConstant(3, &material, sizeof(MATERIAL));
 
-		if (m_Model->SubsetArray[i].Material.Texture)
-			Renderer::SetTexture(6, m_Model->SubsetArray[i].Material.Texture);
+		if (tex) {
+			Renderer::SetTexture(6, tex);
+		}
 
 		cmdList->DrawIndexedInstanced(m_Model->SubsetArray[i].IndexNum, 1, m_Model->SubsetArray[i].StartIndex, 0, 0);
 	}
@@ -253,7 +270,7 @@ void ModelRenderer::LoadObj(const char* FileName, MODEL_OBJ* ModelObj)
 
 	FILE* file;
 	file = fopen(FileName, "rt");
-	assert(file);
+	if (!file) return;
 
 
 
@@ -479,7 +496,21 @@ void ModelRenderer::LoadMaterial(const char* FileName, MODEL_MATERIAL** Material
 
 	FILE* file;
 	file = fopen(FileName, "rt");
-	assert(file);
+	if (!file)
+	{
+		MODEL_MATERIAL* defaultMat = new MODEL_MATERIAL[1];
+		memset(defaultMat, 0, sizeof(MODEL_MATERIAL));
+		defaultMat[0].Material.Diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
+		defaultMat[0].Material.BaseColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+		defaultMat[0].Material.SpecularPbr = 0.5f;
+		defaultMat[0].Material.Roughness = 0.5f;
+		defaultMat[0].Material.Shininess = 1.0f;
+		defaultMat[0].Texture = nullptr;
+		defaultMat[0].TextureName[0] = '\0';
+		*MaterialArray = defaultMat;
+		*MaterialNum = 1;
+		return;
+	}
 
 	MODEL_MATERIAL* materialArray;
 	unsigned int materialNum = 0;
@@ -581,5 +612,67 @@ void ModelRenderer::LoadMaterial(const char* FileName, MODEL_MATERIAL** Material
 
 	*MaterialArray = materialArray;
 	*MaterialNum = materialNum;
+}
+
+std::string ModelRenderer::GetLoadedFileName() const {
+	if (!m_Model) return "";
+	for (const auto& pair : m_ModelPool) {
+		if (pair.second == m_Model) {
+			return pair.first;
+		}
+	}
+	return "";
+}
+
+void ModelRenderer::ShowUI() {
+	ImGui::Text("Model Renderer Component");
+	ImGui::Separator();
+
+	std::string currentPath = GetLoadedFileName();
+	std::string currentFileName = "None";
+	if (!currentPath.empty()) {
+		std::filesystem::path p(currentPath);
+		currentFileName = p.filename().string();
+	}
+
+	if (ImGui::BeginCombo("Select Model", currentFileName.c_str())) {
+		std::string modelDir = "asset/model";
+		if (std::filesystem::exists(modelDir) && std::filesystem::is_directory(modelDir)) {
+			for (const auto& entry : std::filesystem::directory_iterator(modelDir)) {
+				if (entry.is_regular_file()) {
+					std::filesystem::path filePath = entry.path();
+					std::string ext = filePath.extension().string();
+					if (ext == ".obj" || ext == ".OBJ" || ext == ".fbx" || ext == ".FBX" || ext == ".gltf" || ext == ".GLTF") {
+						std::string filename = filePath.filename().string();
+						std::string relativePath = filePath.generic_string();
+
+						bool isSelected = (currentPath == relativePath || currentFileName == filename);
+						if (ImGui::Selectable(filename.c_str(), isSelected)) {
+							Load(relativePath.c_str());
+						}
+						if (isSelected) {
+							ImGui::SetItemDefaultFocus();
+						}
+					}
+				}
+			}
+		} else {
+			ImGui::Selectable("asset/model not found", false, ImGuiSelectableFlags_Disabled);
+		}
+		ImGui::EndCombo();
+	}
+
+	if (m_Model) {
+		ImGui::Spacing();
+		ImGui::Text("Loaded Model Info:");
+		ImGui::Text(" - Path: %s", currentPath.c_str());
+		ImGui::Text(" - Subsets: %u", m_Model->SubsetNum);
+		if (m_Model->VertexBuffer) {
+			ImGui::Text(" - Vertices: %u", m_Model->VertexBuffer->Size);
+		}
+		if (m_Model->IndexBuffer) {
+			ImGui::Text(" - Indices: %u", m_Model->IndexBuffer->Size);
+		}
+	}
 }
 
