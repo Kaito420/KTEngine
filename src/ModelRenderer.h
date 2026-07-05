@@ -71,8 +71,6 @@ private:
 
 	MODEL* m_Model{};
 
-	std::string m_TextureOverridePath = "";
-
 public:
 
 	static void Preload(const char* FileName);
@@ -80,7 +78,6 @@ public:
 
 	void Awake() override;
 	void Load(const char* FileName);
-	void SetTextureOverride(const char* path);
 	void Render()const override;
 	void ShowUI() override;
 	std::string GetLoadedFileName() const;
@@ -99,7 +96,6 @@ public:
 			}
 		}
 		ar(cereal::make_nvp("FileName", filename));
-		ar(cereal::make_nvp("TextureOverridePath", m_TextureOverridePath));
 
 		if (!filename.empty()) {
 			Load(filename.c_str());

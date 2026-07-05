@@ -95,6 +95,9 @@ void Capsule::UpdateBuffers(){
 }
 
 void Capsule::Awake(){
+	if (_owner && !_owner->GetComponent<Shader>()) {
+		_owner->AddComponent<Shader>();
+	}
 	RebuildBuffers();
 	_texture = Texture::Load("asset/texture/default.png");
 }
@@ -145,11 +148,17 @@ void Capsule::Render() const{
 
 	MATERIAL material = {};
 	material.Diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
-	material.TextureEnable = (_texture != nullptr);
 
 	auto shaderComp = _owner->GetComponent<Shader>();
+	const TEXTURE* tex = (shaderComp && shaderComp->GetTexture()) ? shaderComp->GetTexture() : _texture;
+	material.TextureEnable = (tex != nullptr);
+
 	if (shaderComp) {
-		material.BaseColor = shaderComp->GetBaseColor();
+		XMFLOAT4 scColor = shaderComp->GetBaseColor();
+		if (tex && scColor.x == 0.0f && scColor.y == 0.0f && scColor.z == 0.0f) {
+			scColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+		}
+		material.BaseColor = scColor;
 		material.EmissionColor = shaderComp->GetEmissionColor();
 		material.Metallic = shaderComp->GetMetallic();
 		material.SpecularPbr = shaderComp->GetSpecular();
@@ -168,8 +177,8 @@ void Capsule::Render() const{
 
 	Renderer::SetConstant(3, &material, sizeof(material));
 
-	if (_texture) {
-		Renderer::SetTexture(6, _texture);
+	if (tex) {
+		Renderer::SetTexture(6, tex);
 	}
 
 	cmdList->DrawIndexedInstanced(_indexCount, 1, 0, 0, 0);

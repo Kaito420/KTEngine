@@ -7,11 +7,17 @@
 #include "Shader.h"
 #include "Renderer.h"
 #include "ShaderManager.h"
+#include "Texture.h"
+#include <filesystem>
+#include <vector>
 
 void Shader::Awake(){
 	//デフォルトシェーダー設定
 	SetVertexShader("DirectionalLight");
 	SetPixelShader("DirectionalLight");
+	if (!_texturePath.empty()) {
+		_texture = Texture::Load(_texturePath.c_str());
+	}
 }
 
 void Shader::SetVertexShader(std::string id){
@@ -21,6 +27,15 @@ void Shader::SetVertexShader(std::string id){
 
 void Shader::SetPixelShader(std::string id){
 	_pixelShaderID = id;
+}
+
+void Shader::SetTexturePath(const std::string& path) {
+	_texturePath = path;
+	if (!_texturePath.empty()) {
+		_texture = Texture::Load(_texturePath.c_str());
+	} else {
+		_texture = nullptr;
+	}
 }
 
 void Shader::ShowUI(){
@@ -47,4 +62,36 @@ void Shader::ShowUI(){
 	
 	const char* shadingModels[] = { "Smooth", "Toon" };
 	ImGui::Combo("Shading Model", &_shadingModelID, shadingModels, IM_ARRAYSIZE(shadingModels));
+
+	// Texture Selection Combo Box (asset/texture & asset/model)
+	std::string currentTexName = _texturePath.empty() ? "None (White)" : std::filesystem::path(_texturePath).filename().string();
+	if (ImGui::BeginCombo("Select Texture", currentTexName.c_str())) {
+		if (ImGui::Selectable("None (White)", _texturePath.empty())) {
+			SetTexturePath("");
+		}
+		std::vector<std::string> texDirs = { "asset/texture", "asset/model" };
+		for (const auto& dir : texDirs) {
+			if (std::filesystem::exists(dir) && std::filesystem::is_directory(dir)) {
+				for (const auto& entry : std::filesystem::directory_iterator(dir)) {
+					if (entry.is_regular_file()) {
+						std::filesystem::path filePath = entry.path();
+						std::string ext = filePath.extension().string();
+						if (ext == ".png" || ext == ".PNG" || ext == ".jpg" || ext == ".JPG" || ext == ".jpeg" || ext == ".tga" || ext == ".dds") {
+							std::string filename = filePath.filename().string();
+							std::string relativePath = filePath.generic_string();
+
+							bool isSelected = (_texturePath == relativePath);
+							if (ImGui::Selectable((filename + " (" + dir + ")").c_str(), isSelected)) {
+								SetTexturePath(relativePath);
+							}
+							if (isSelected) {
+								ImGui::SetItemDefaultFocus();
+							}
+						}
+					}
+				}
+			}
+		}
+		ImGui::EndCombo();
+	}
 }

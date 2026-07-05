@@ -9,6 +9,7 @@
 
 #include "Component.h"
 #include "Renderer.h"
+#include "Texture.h"
 #include <string>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
@@ -29,6 +30,8 @@ private:
 	float _roughness = 0.5f;
 	float _normalWeight = 1.0f;
 	int _shadingModelID = 0; // 0: Smooth, 1: Toon
+	std::string _texturePath = "";
+	const TEXTURE* _texture = nullptr;
 
 public:
 	void Awake() override;
@@ -54,6 +57,10 @@ public:
 	int GetShadingModelID() const { return _shadingModelID; }
 	void SetShadingModelID(int val) { _shadingModelID = val; }
 
+	const TEXTURE* GetTexture() const { return _texture; }
+	std::string GetTexturePath() const { return _texturePath; }
+	void SetTexturePath(const std::string& path);
+
 	void ShowUI() override;
 	std::string GetComponentName() override { return "Shader"; }
 
@@ -70,6 +77,13 @@ public:
 		ar(cereal::make_nvp("Roughness", _roughness));
 		ar(cereal::make_nvp("NormalWeight", _normalWeight));
 		ar(cereal::make_nvp("ShadingModelID", _shadingModelID));
+		ar(cereal::make_nvp("TexturePath", _texturePath));
+
+		if (!_texturePath.empty()) {
+			_texture = Texture::Load(_texturePath.c_str());
+		} else {
+			_texture = nullptr;
+		}
 	}
 };
 

@@ -4,6 +4,10 @@
 #include "Shader.h"
 
 void Cube::Awake() {
+	if (_owner && !_owner->GetComponent<Shader>()) {
+		_owner->AddComponent<Shader>();
+	}
+
 	_vertexBuffer = Renderer::CreateVertexBuffer(sizeof(Vertex), 24);
 
 	Vertex v[] = {
@@ -118,11 +122,17 @@ void Cube::Render()const {
 
 	MATERIAL material = {};
 	material.Diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
-	material.TextureEnable = false;
 
 	auto shaderComp = _owner->GetComponent<Shader>();
+	const TEXTURE* tex = shaderComp ? shaderComp->GetTexture() : nullptr;
+	material.TextureEnable = (tex != nullptr);
+
 	if (shaderComp) {
-		material.BaseColor = shaderComp->GetBaseColor();
+		XMFLOAT4 scColor = shaderComp->GetBaseColor();
+		if (tex && scColor.x == 0.0f && scColor.y == 0.0f && scColor.z == 0.0f) {
+			scColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+		}
+		material.BaseColor = scColor;
 		material.EmissionColor = shaderComp->GetEmissionColor();
 		material.Metallic = shaderComp->GetMetallic();
 		material.SpecularPbr = shaderComp->GetSpecular();
@@ -140,6 +150,11 @@ void Cube::Render()const {
 	}
 
 	Renderer::SetConstant(3, &material, sizeof(material));
+
+	if (tex) {
+		Renderer::SetTexture(6, tex);
+	}
+
 	cmdList->DrawIndexedInstanced(36, 1, 0, 0, 0);
 }
 
