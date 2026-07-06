@@ -1,5 +1,6 @@
 #include "Renderer.h"
 #include "D3DX12.h"
+#include "PostProcessSystem.h"
 #include <iostream>
 #include <d3d12.h>
 #include <dxgi1_4.h>
@@ -77,6 +78,23 @@ namespace RendererDX12 {
     
     GBufferSet g_sceneGBuffer;
     GBufferSet g_gameGBuffer;
+
+    // ポストプロセス用中間バッファ
+    struct PostProcessBuffers {
+        GBufferTarget BrightTarget;
+        GBufferTarget BloomMips[4];
+        GBufferTarget BloomBlur[4];
+
+        void Release() {
+            BrightTarget.Release();
+            for (int i = 0; i < 4; i++) {
+                BloomMips[i].Release();
+                BloomBlur[i].Release();
+            }
+        }
+    };
+    PostProcessBuffers g_scenePostProcess;
+    PostProcessBuffers g_gamePostProcess;
 
     ComPtr<ID3D12Resource> g_fullScreenQuadVB = nullptr;
     D3D12_VERTEX_BUFFER_VIEW g_fullScreenQuadVBView = {};
@@ -277,7 +295,7 @@ namespace RendererDX12 {
 
         // 記述子ヒープ作成
         D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
-        rtvHeapDesc.NumDescriptors = 16; // BackBuffer*2 + Scene + Game + SceneGBuffer*6 + GameGBuffer*6
+        rtvHeapDesc.NumDescriptors = 64; // BackBuffer*2 + Scene + Game + GBuffers*12 + PostProcess buffers
         rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
         rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
         g_pd3dDevice->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&g_pd3dRtvDescHeap));
@@ -482,6 +500,12 @@ namespace RendererDX12 {
         ShaderManager::Instance().LoadVertexShader("Deferred", "shader/DeferredVS.cso");
         ShaderManager::Instance().LoadPixelShader("Deferred", "shader/DeferredPS.cso");
 
+        // Bloom ポストプロセスシェーダーのプリロード
+        ShaderManager::Instance().LoadPixelShader("BloomBright", "shader/BloomBrightPS.cso");
+        ShaderManager::Instance().LoadPixelShader("BloomBlur", "shader/BloomBlurPS.cso");
+        ShaderManager::Instance().LoadPixelShader("BloomDownsample", "shader/BloomDownsamplePS.cso");
+        ShaderManager::Instance().LoadPixelShader("BloomComposite", "shader/BloomCompositePS.cso");
+
         // 全画面矩形用頂点データの作成
         {
             Vertex vertices[] = {
@@ -531,6 +555,9 @@ namespace RendererDX12 {
 
         g_sceneGBuffer.Release();
         g_gameGBuffer.Release();
+
+        g_scenePostProcess.Release();
+        g_gamePostProcess.Release();
 
         g_sceneRenderTarget.Reset();
         g_sceneDepthBuffer.Reset();
@@ -927,6 +954,27 @@ namespace RendererDX12 {
         CreateGBufferResource(g_sceneGBuffer.Metallic, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 7, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
         CreateGBufferResource(g_sceneGBuffer.Specular, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 8, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
         CreateGBufferResource(g_sceneGBuffer.Roughness, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 9, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
+
+        // Scene ポストプロセスバッファの作成
+        g_scenePostProcess.Release();
+        // BrightTarget (RTV 16)
+        CreateGBufferResource(g_scenePostProcess.BrightTarget, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 16, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
+        // BloomMips[0..3] (RTV 17-20) ダウンサンプル
+        for (int i = 0; i < 4; i++) {
+            float mipW = width / (float)(2 << i);   // 1/2, 1/4, 1/8, 1/16
+            float mipH = height / (float)(2 << i);
+            if (mipW < 1.0f) mipW = 1.0f;
+            if (mipH < 1.0f) mipH = 1.0f;
+            CreateGBufferResource(g_scenePostProcess.BloomMips[i], mipW, mipH, DXGI_FORMAT_R8G8B8A8_UNORM, 17 + i, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
+        }
+        // BloomBlur[0..3] (RTV 21-24) ブラー結果
+        for (int i = 0; i < 4; i++) {
+            float mipW = width / (float)(2 << i);
+            float mipH = height / (float)(2 << i);
+            if (mipW < 1.0f) mipW = 1.0f;
+            if (mipH < 1.0f) mipH = 1.0f;
+            CreateGBufferResource(g_scenePostProcess.BloomBlur[i], mipW, mipH, DXGI_FORMAT_R8G8B8A8_UNORM, 21 + i, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
+        }
     }
 
     bool InitGameRenderTarget(int width, int height) {
@@ -1026,6 +1074,27 @@ namespace RendererDX12 {
         CreateGBufferResource(g_gameGBuffer.Metallic, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 13, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
         CreateGBufferResource(g_gameGBuffer.Specular, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 14, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
         CreateGBufferResource(g_gameGBuffer.Roughness, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 15, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
+
+        // Game ポストプロセスバッファの作成
+        g_gamePostProcess.Release();
+        // BrightTarget (RTV 25)
+        CreateGBufferResource(g_gamePostProcess.BrightTarget, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 25, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
+        // BloomMips[0..3] (RTV 26-29)
+        for (int i = 0; i < 4; i++) {
+            float mipW = width / (float)(2 << i);
+            float mipH = height / (float)(2 << i);
+            if (mipW < 1.0f) mipW = 1.0f;
+            if (mipH < 1.0f) mipH = 1.0f;
+            CreateGBufferResource(g_gamePostProcess.BloomMips[i], mipW, mipH, DXGI_FORMAT_R8G8B8A8_UNORM, 26 + i, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
+        }
+        // BloomBlur[0..3] (RTV 30-33)
+        for (int i = 0; i < 4; i++) {
+            float mipW = width / (float)(2 << i);
+            float mipH = height / (float)(2 << i);
+            if (mipW < 1.0f) mipW = 1.0f;
+            if (mipH < 1.0f) mipH = 1.0f;
+            CreateGBufferResource(g_gamePostProcess.BloomBlur[i], mipW, mipH, DXGI_FORMAT_R8G8B8A8_UNORM, 30 + i, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
+        }
     }
 
     // SRVアロケータヘルパー
@@ -1235,6 +1304,335 @@ namespace RendererDX12 {
             // 5. 全画面矩形を描画
             DrawFullScreenQuad();
         }
+    }
+
+    // ======================================================================
+    // ポストプロセスヘルパー: 全画面パスの実行
+    // ======================================================================
+    void RenderFullScreenPass(
+        GBufferTarget& dst,
+        GBufferTarget* srcTargets[], int srcCount,
+        const char* vsId, const char* psId,
+        float width, float height,
+        const MATERIAL* paramOverride = nullptr)
+    {
+        // ソーステクスチャの状態遷移: RT → SRV
+        for (int i = 0; i < srcCount; i++) {
+            if (srcTargets[i]->Resource) {
+                D3D12_RESOURCE_BARRIER barrier = {};
+                barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+                barrier.Transition.pResource = srcTargets[i]->Resource.Get();
+                barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+                barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+                g_pd3dCommandList->ResourceBarrier(1, &barrier);
+            }
+        }
+
+        // デスティネーションをレンダーターゲットに遷移
+        {
+            D3D12_RESOURCE_BARRIER barrier = {};
+            barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+            barrier.Transition.pResource = dst.Resource.Get();
+            barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+            barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+            g_pd3dCommandList->ResourceBarrier(1, &barrier);
+        }
+
+        // レンダーターゲット設定
+        D3D12_CPU_DESCRIPTOR_HANDLE rtv = GetRtvHandle(dst.RtvIndex);
+        g_pd3dCommandList->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
+
+        const float clearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+        g_pd3dCommandList->ClearRenderTargetView(rtv, clearColor, 0, nullptr);
+
+        D3D12_VIEWPORT vp = { 0.0f, 0.0f, width, height, 0.0f, 1.0f };
+        D3D12_RECT sr = { 0, 0, (LONG)width, (LONG)height };
+        g_pd3dCommandList->RSSetViewports(1, &vp);
+        g_pd3dCommandList->RSSetScissorRects(1, &sr);
+
+        // PSO 取得
+        ID3D12PipelineState* pso = ShaderManager::Instance().GetPipelineState(
+            vsId, psId, 1, D3D12_CULL_MODE_NONE, false, false, D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
+        if (pso) {
+            g_pd3dCommandList->SetPipelineState(pso);
+        }
+
+        // パラメータ定数バッファ (Material スロット b3 を転用)
+        if (paramOverride) {
+            SetConstant(3, paramOverride, sizeof(MATERIAL));
+        }
+
+        // ソーステクスチャのバインド (t0, t1, ...)
+        for (int i = 0; i < srcCount; i++) {
+            D3D12_GPU_DESCRIPTOR_HANDLE handle = g_pd3dSrvDescHeap->GetGPUDescriptorHandleForHeapStart();
+            handle.ptr += srcTargets[i]->SrvIndex * g_srvDescriptorSize;
+            g_pd3dCommandList->SetGraphicsRootDescriptorTable((UINT)(6 + i), handle);
+        }
+
+        DrawFullScreenQuad();
+    }
+
+    // シーン/ゲーム RT を一時的に GBufferTarget として参照するヘルパー
+    GBufferTarget g_tempSceneRT;
+    GBufferTarget g_tempGameRT;
+
+    void UpdateTempRTReference() {
+        // Scene RT: SRV index = 1, RTV index = 2
+        g_tempSceneRT.Resource = g_sceneRenderTarget;
+        g_tempSceneRT.SrvIndex = 1;
+        g_tempSceneRT.RtvIndex = 2;
+
+        // Game RT: SRV index = 2, RTV index = 3
+        g_tempGameRT.Resource = g_gameRenderTarget;
+        g_tempGameRT.SrvIndex = 2;
+        g_tempGameRT.RtvIndex = 3;
+    }
+
+    // ======================================================================
+    // Bloom 内部実装
+    // ======================================================================
+    void ApplyBloomInternal() {
+        PostProcessBuffers& pp = (g_currentRenderContext == CurrentRenderContext::Game)
+            ? g_gamePostProcess : g_scenePostProcess;
+
+        GBufferTarget& sceneRT = (g_currentRenderContext == CurrentRenderContext::Game)
+            ? g_tempGameRT : g_tempSceneRT;
+
+        float baseWidth = (g_currentRenderContext == CurrentRenderContext::Game)
+            ? g_gameWidth : g_sceneWidth;
+        float baseHeight = (g_currentRenderContext == CurrentRenderContext::Game)
+            ? g_gameHeight : g_sceneHeight;
+
+        PostProcessSettings& settings = PostProcessSystem::GetSettings();
+
+        // 1. 高輝度抽出 (Scene/Game RT → BrightTarget)
+        {
+            MATERIAL param = {};
+            param.BaseColor = XMFLOAT4(settings.BloomThreshold, settings.BloomSoftKnee, settings.BloomIntensity, 0.0f);
+            GBufferTarget* src[] = { &sceneRT };
+            RenderFullScreenPass(pp.BrightTarget, src, 1, "Deferred", "BloomBright", baseWidth, baseHeight, &param);
+        }
+
+        // 2. ダウンサンプル (BrightTarget → BloomMips[0] → [1] → [2] → [3])
+        {
+            GBufferTarget* prevTarget = &pp.BrightTarget;
+            float prevW = baseWidth;
+            float prevH = baseHeight;
+
+            for (int i = 0; i < 4; i++) {
+                float mipW = baseWidth / (float)(2 << i);
+                float mipH = baseHeight / (float)(2 << i);
+                if (mipW < 1.0f) mipW = 1.0f;
+                if (mipH < 1.0f) mipH = 1.0f;
+
+                MATERIAL param = {};
+                param.BaseColor = XMFLOAT4(1.0f / prevW, 1.0f / prevH, 0.0f, 0.0f);
+                GBufferTarget* src[] = { prevTarget };
+                RenderFullScreenPass(pp.BloomMips[i], src, 1, "Deferred", "BloomDownsample", mipW, mipH, &param);
+
+                prevTarget = &pp.BloomMips[i];
+                prevW = mipW;
+                prevH = mipH;
+            }
+        }
+
+        // 3. ガウシアンブラー (各段: BloomMips → BloomBlur → BloomMips)
+        //    水平ブラー: BloomMips[i] → BloomBlur[i]
+        //    垂直ブラー: BloomBlur[i] → BloomMips[i] (再利用)
+        for (int i = 3; i >= 0; i--) {
+            float mipW = baseWidth / (float)(2 << i);
+            float mipH = baseHeight / (float)(2 << i);
+            if (mipW < 1.0f) mipW = 1.0f;
+            if (mipH < 1.0f) mipH = 1.0f;
+
+            // 水平ブラー: BloomMips[i] → BloomBlur[i]
+            {
+                MATERIAL param = {};
+                param.BaseColor = XMFLOAT4(1.0f / mipW, 1.0f / mipH, 1.0f, 0.0f); // isHorizontal = 1.0
+                GBufferTarget* src[] = { &pp.BloomMips[i] };
+                RenderFullScreenPass(pp.BloomBlur[i], src, 1, "Deferred", "BloomBlur", mipW, mipH, &param);
+            }
+
+            // 垂直ブラー: BloomBlur[i] → BloomMips[i]
+            {
+                MATERIAL param = {};
+                param.BaseColor = XMFLOAT4(1.0f / mipW, 1.0f / mipH, 0.0f, 0.0f); // isHorizontal = 0.0
+                GBufferTarget* src[] = { &pp.BloomBlur[i] };
+                RenderFullScreenPass(pp.BloomMips[i], src, 1, "Deferred", "BloomBlur", mipW, mipH, &param);
+            }
+
+            // アップサンプル: 下位段のブラー結果を上位段に加算
+            // BloomMips[i] の結果を上位段 (i-1) に加算合成
+            if (i > 0) {
+                float upperW = baseWidth / (float)(2 << (i - 1));
+                float upperH = baseHeight / (float)(2 << (i - 1));
+                if (upperW < 1.0f) upperW = 1.0f;
+                if (upperH < 1.0f) upperH = 1.0f;
+
+                MATERIAL param = {};
+                param.BaseColor = XMFLOAT4(1.0f, 0.0f, 0.0f, 0.0f); // intensity = 1.0 for intermediate upsample
+                GBufferTarget* src[] = { &pp.BloomMips[i - 1], &pp.BloomMips[i] };
+                RenderFullScreenPass(pp.BloomBlur[i - 1], src, 2, "Deferred", "BloomComposite", upperW, upperH, &param);
+
+                // BloomBlur[i-1] → BloomMips[i-1] にコピー（次のブラーパスの入力として）
+                // BloomBlur[i-1] の結果を BloomMips[i-1] として使うために状態遷移
+                {
+                    D3D12_RESOURCE_BARRIER barriers[2] = {};
+                    barriers[0].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+                    barriers[0].Transition.pResource = pp.BloomBlur[i - 1].Resource.Get();
+                    barriers[0].Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+                    barriers[0].Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+                    barriers[1].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+                    barriers[1].Transition.pResource = pp.BloomMips[i - 1].Resource.Get();
+                    barriers[1].Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+                    barriers[1].Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+                    g_pd3dCommandList->ResourceBarrier(2, barriers);
+
+                    // BloomBlur[i-1] → BloomMips[i-1] のコピー（ダウンサンプルシェーダーでコピー描画）
+                    MATERIAL copyParam = {};
+                    copyParam.BaseColor = XMFLOAT4(1.0f / upperW, 1.0f / upperH, 0.0f, 0.0f);
+                    
+                    D3D12_CPU_DESCRIPTOR_HANDLE rtv = GetRtvHandle(pp.BloomMips[i - 1].RtvIndex);
+                    g_pd3dCommandList->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
+                    
+                    D3D12_VIEWPORT vp = { 0.0f, 0.0f, upperW, upperH, 0.0f, 1.0f };
+                    D3D12_RECT sr = { 0, 0, (LONG)upperW, (LONG)upperH };
+                    g_pd3dCommandList->RSSetViewports(1, &vp);
+                    g_pd3dCommandList->RSSetScissorRects(1, &sr);
+
+                    ID3D12PipelineState* copyPso = ShaderManager::Instance().GetPipelineState(
+                        "Deferred", "BloomDownsample", 1, D3D12_CULL_MODE_NONE, false, false, D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
+                    if (copyPso) g_pd3dCommandList->SetPipelineState(copyPso);
+                    
+                    SetConstant(3, &copyParam, sizeof(copyParam));
+                    
+                    D3D12_GPU_DESCRIPTOR_HANDLE srvHandle = g_pd3dSrvDescHeap->GetGPUDescriptorHandleForHeapStart();
+                    srvHandle.ptr += pp.BloomBlur[i - 1].SrvIndex * g_srvDescriptorSize;
+                    g_pd3dCommandList->SetGraphicsRootDescriptorTable(6, srvHandle);
+                    
+                    DrawFullScreenQuad();
+                }
+            }
+        }
+
+        // 4. 最終合成 (Scene/Game RT + BloomMips[0] → Scene/Game RT)
+        {
+            // Scene/Game RT を SRV に遷移
+            {
+                D3D12_RESOURCE_BARRIER barrier = {};
+                barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+                barrier.Transition.pResource = sceneRT.Resource.Get();
+                barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+                barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+                g_pd3dCommandList->ResourceBarrier(1, &barrier);
+            }
+
+            // BloomMips[0] を SRV に遷移
+            {
+                D3D12_RESOURCE_BARRIER barrier = {};
+                barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+                barrier.Transition.pResource = pp.BloomMips[0].Resource.Get();
+                barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+                barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+                g_pd3dCommandList->ResourceBarrier(1, &barrier);
+            }
+
+            // BrightTarget を一時的な合成先として使用
+            {
+                D3D12_RESOURCE_BARRIER barrier = {};
+                barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+                barrier.Transition.pResource = pp.BrightTarget.Resource.Get();
+                barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+                barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+                g_pd3dCommandList->ResourceBarrier(1, &barrier);
+            }
+
+            D3D12_CPU_DESCRIPTOR_HANDLE rtv = GetRtvHandle(pp.BrightTarget.RtvIndex);
+            g_pd3dCommandList->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
+
+            D3D12_VIEWPORT vp = { 0.0f, 0.0f, baseWidth, baseHeight, 0.0f, 1.0f };
+            D3D12_RECT sr = { 0, 0, (LONG)baseWidth, (LONG)baseHeight };
+            g_pd3dCommandList->RSSetViewports(1, &vp);
+            g_pd3dCommandList->RSSetScissorRects(1, &sr);
+
+            ID3D12PipelineState* pso = ShaderManager::Instance().GetPipelineState(
+                "Deferred", "BloomComposite", 1, D3D12_CULL_MODE_NONE, false, false, D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
+            if (pso) g_pd3dCommandList->SetPipelineState(pso);
+
+            MATERIAL param = {};
+            param.BaseColor = XMFLOAT4(settings.BloomIntensity, 0.0f, 0.0f, 0.0f);
+            SetConstant(3, &param, sizeof(param));
+
+            // t0: Scene/Game RT (元画像)
+            D3D12_GPU_DESCRIPTOR_HANDLE sceneHandle = g_pd3dSrvDescHeap->GetGPUDescriptorHandleForHeapStart();
+            sceneHandle.ptr += sceneRT.SrvIndex * g_srvDescriptorSize;
+            g_pd3dCommandList->SetGraphicsRootDescriptorTable(6, sceneHandle);
+
+            // t1: BloomMips[0] (ブラー済みBloom)
+            D3D12_GPU_DESCRIPTOR_HANDLE bloomHandle = g_pd3dSrvDescHeap->GetGPUDescriptorHandleForHeapStart();
+            bloomHandle.ptr += pp.BloomMips[0].SrvIndex * g_srvDescriptorSize;
+            g_pd3dCommandList->SetGraphicsRootDescriptorTable(7, bloomHandle);
+
+            DrawFullScreenQuad();
+
+            // BrightTarget(合成結果)をSRVに → Scene/Game RTにコピー
+            {
+                D3D12_RESOURCE_BARRIER barriers[2] = {};
+                barriers[0].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+                barriers[0].Transition.pResource = pp.BrightTarget.Resource.Get();
+                barriers[0].Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+                barriers[0].Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+                barriers[1].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+                barriers[1].Transition.pResource = sceneRT.Resource.Get();
+                barriers[1].Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+                barriers[1].Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+                g_pd3dCommandList->ResourceBarrier(2, barriers);
+
+                D3D12_CPU_DESCRIPTOR_HANDLE finalRtv = GetRtvHandle(sceneRT.RtvIndex);
+                g_pd3dCommandList->OMSetRenderTargets(1, &finalRtv, FALSE, nullptr);
+                g_pd3dCommandList->RSSetViewports(1, &vp);
+                g_pd3dCommandList->RSSetScissorRects(1, &sr);
+
+                // BrightTargetの内容をScene/Game RTにコピー描画
+                ID3D12PipelineState* copyPso = ShaderManager::Instance().GetPipelineState(
+                    "Deferred", "BloomDownsample", 1, D3D12_CULL_MODE_NONE, false, false, D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
+                if (copyPso) g_pd3dCommandList->SetPipelineState(copyPso);
+
+                MATERIAL copyParam = {};
+                copyParam.BaseColor = XMFLOAT4(1.0f / baseWidth, 1.0f / baseHeight, 0.0f, 0.0f);
+                SetConstant(3, &copyParam, sizeof(copyParam));
+
+                D3D12_GPU_DESCRIPTOR_HANDLE brightHandle = g_pd3dSrvDescHeap->GetGPUDescriptorHandleForHeapStart();
+                brightHandle.ptr += pp.BrightTarget.SrvIndex * g_srvDescriptorSize;
+                g_pd3dCommandList->SetGraphicsRootDescriptorTable(6, brightHandle);
+
+                DrawFullScreenQuad();
+            }
+        }
+    }
+
+    // ======================================================================
+    // ApplyPostProcess: 汎用ポストプロセスエントリーポイント
+    // ======================================================================
+    void ApplyPostProcess() {
+        if (g_currentRenderContext == CurrentRenderContext::None) return;
+
+        bool isGame = (g_currentRenderContext == CurrentRenderContext::Game);
+        ComPtr<ID3D12Resource>& rt = isGame ? g_gameRenderTarget : g_sceneRenderTarget;
+        if (!rt) return;
+
+        UpdateTempRTReference();
+
+        PostProcessSettings& settings = PostProcessSystem::GetSettings();
+
+        // Bloom
+        if (settings.BloomEnabled) {
+            ApplyBloomInternal();
+        }
+
+        // 将来のエフェクト
+        // if (settings.VignetteEnabled) { ApplyVignetteInternal(); }
+        // if (settings.ColorGradingEnabled) { ApplyColorGradingInternal(); }
     }
 
     void* GetGBufferSRV(int bufferIndex, bool isGame) {

@@ -213,6 +213,9 @@
     <ClCompile Include="libs\imgui\ImGuizmo.cpp">
       <Filter>ソース ファイル\Framework\ImGui</Filter>
     </ClCompile>
+    <ClCompile Include="src\PostProcessSystem.cpp">
+      <Filter>ソース ファイル\Framework</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ImGuiLayer.h">
@@ -392,6 +395,9 @@
     <ClInclude Include="libs\imgui\ImGuizmo.h">
       <Filter>ヘッダー ファイル\Framework\ImGui</Filter>
     </ClInclude>
+    <ClInclude Include="src\PostProcessSystem.h">
+      <Filter>ヘッダー ファイル\Framework</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="shader\Common.hlsl">
@@ -419,6 +425,30 @@
       <Filter>ソース ファイル\Shader</Filter>
     </FxCompile>
     <FxCompile Include="shader\ToonVS.hlsl">
+      <Filter>ソース ファイル\Shader</Filter>
+    </FxCompile>
+    <FxCompile Include="shader\BloomBlurPS.hlsl">
+      <Filter>ソース ファイル\Shader</Filter>
+    </FxCompile>
+    <FxCompile Include="shader\BloomBrightPS.hlsl">
+      <Filter>ソース ファイル\Shader</Filter>
+    </FxCompile>
+    <FxCompile Include="shader\BloomCompositePS.hlsl">
+      <Filter>ソース ファイル\Shader</Filter>
+    </FxCompile>
+    <FxCompile Include="shader\BloomDownsamplePS.hlsl">
+      <Filter>ソース ファイル\Shader</Filter>
+    </FxCompile>
+    <FxCompile Include="shader\DeferredPS.hlsl">
+      <Filter>ソース ファイル\Shader</Filter>
+    </FxCompile>
+    <FxCompile Include="shader\DeferredVS.hlsl">
+      <Filter>ソース ファイル\Shader</Filter>
+    </FxCompile>
+    <FxCompile Include="shader\GeometryPS.hlsl">
+      <Filter>ソース ファイル\Shader</Filter>
+    </FxCompile>
+    <FxCompile Include="shader\GeometryVS.hlsl">
       <Filter>ソース ファイル\Shader</Filter>
     </FxCompile>
   </ItemGroup>

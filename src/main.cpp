@@ -13,6 +13,7 @@
 #include "FileBrowser.h"
 #include "Scene.h"
 #include "Input.h"
+#include "PostProcessSystem.h"
 
 // グローバル変数
 HWND hwnd = nullptr;
@@ -96,6 +97,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
             Renderer::SetGeometryPass(false);
             Renderer::ApplyDeferredLighting();
             Manager::Render();
+            Renderer::ApplyPostProcess();
         }
 
         // シーンビューテクスチャにレンダリング
@@ -116,6 +118,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
             Renderer::SetGeometryPass(false);
             Renderer::ApplyDeferredLighting();
             Manager::Render();
+            Renderer::ApplyPostProcess();
         }
 
         //ImGuiとウィンドウ全体のレンダリング
@@ -243,6 +246,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
                 ImGui::Columns(1);
                 ImGui::End();
             }
+
+            // Post Process Settings
+            PostProcessSystem::RenderUI();
         }
         ImGuiLayer::End();
 

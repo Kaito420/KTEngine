@@ -154,6 +154,7 @@ namespace RendererDX12 {
     bool IsGeometryPass();
     void SetGeometryPass(bool active);
     void ApplyDeferredLighting();
+    void ApplyPostProcess();
     void* GetGBufferSRV(int bufferIndex, bool isGame);
     void PrintDebugMessages();
     D3D12_CULL_MODE GetCullMode();
@@ -256,6 +257,7 @@ namespace Renderer {
     bool IsGeometryPass();
     void SetGeometryPass(bool active);
     void ApplyDeferredLighting();
+    void ApplyPostProcess();
     void* GetGBufferSRV(int bufferIndex, bool isGame);
 }
 

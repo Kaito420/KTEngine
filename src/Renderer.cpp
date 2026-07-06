@@ -174,6 +174,10 @@ namespace Renderer {
         RendererDX12::ApplyDeferredLighting();
     }
 
+    void ApplyPostProcess() {
+        RendererDX12::ApplyPostProcess();
+    }
+
     void* GetGBufferSRV(int bufferIndex, bool isGame) {
         return RendererDX12::GetGBufferSRV(bufferIndex, isGame);
     }
