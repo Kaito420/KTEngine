@@ -161,6 +161,8 @@ void Wave::Render() const{
 		material.Roughness = shaderComp->GetRoughness();
 		material.NormalWeight = shaderComp->GetNormalWeight();
 		material.ShadingModelID = shaderComp->GetShadingModelID();
+		material.FlipU = shaderComp->GetFlipU() ? 1 : 0;
+		material.FlipV = shaderComp->GetFlipV() ? 1 : 0;
 	} else {
 		material.BaseColor = { 1.0f, 1.0f, 1.0f, 1.0f };
 		material.EmissionColor = { 0.0f, 0.0f, 0.0f, 0.0f };

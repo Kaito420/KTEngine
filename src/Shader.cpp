@@ -63,6 +63,10 @@ void Shader::ShowUI(){
 	const char* shadingModels[] = { "Smooth", "Toon" };
 	ImGui::Combo("Shading Model", &_shadingModelID, shadingModels, IM_ARRAYSIZE(shadingModels));
 
+	ImGui::Checkbox("Flip UV U", &_flipU);
+	ImGui::SameLine();
+	ImGui::Checkbox("Flip UV V", &_flipV);
+
 	// Texture Selection Combo Box (asset/texture & asset/model)
 	std::string currentTexName = _texturePath.empty() ? "None (White)" : std::filesystem::path(_texturePath).filename().string();
 	if (ImGui::BeginCombo("Select Texture", currentTexName.c_str())) {

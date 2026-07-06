@@ -30,6 +30,8 @@ private:
 	float _roughness = 0.5f;
 	float _normalWeight = 1.0f;
 	int _shadingModelID = 0; // 0: Smooth, 1: Toon
+	bool _flipU = false;
+	bool _flipV = false;
 	std::string _texturePath = "";
 	const TEXTURE* _texture = nullptr;
 
@@ -56,6 +58,10 @@ public:
 	void SetNormalWeight(float val) { _normalWeight = val; }
 	int GetShadingModelID() const { return _shadingModelID; }
 	void SetShadingModelID(int val) { _shadingModelID = val; }
+	bool GetFlipU() const { return _flipU; }
+	void SetFlipU(bool val) { _flipU = val; }
+	bool GetFlipV() const { return _flipV; }
+	void SetFlipV(bool val) { _flipV = val; }
 
 	const TEXTURE* GetTexture() const { return _texture; }
 	std::string GetTexturePath() const { return _texturePath; }
@@ -77,6 +83,8 @@ public:
 		ar(cereal::make_nvp("Roughness", _roughness));
 		ar(cereal::make_nvp("NormalWeight", _normalWeight));
 		ar(cereal::make_nvp("ShadingModelID", _shadingModelID));
+		ar(cereal::make_nvp("FlipU", _flipU));
+		ar(cereal::make_nvp("FlipV", _flipV));
 		ar(cereal::make_nvp("TexturePath", _texturePath));
 
 		if (!_texturePath.empty()) {

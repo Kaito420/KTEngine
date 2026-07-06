@@ -26,7 +26,9 @@ struct MATERIAL
     float Roughness;
     float NormalWeight;
     int ShadingModelID;
-    float3 DummyPbr;
+    int FlipU;
+    int FlipV;
+    float DummyPbr;
     
     // [古いマテリアルメンバ] (既存フォワード用)
     float4 Ambient;

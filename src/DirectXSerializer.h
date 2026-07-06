@@ -44,6 +44,8 @@ void serialize(Archive& ar, MATERIAL& m) {
 		cereal::make_nvp("Roughness", m.Roughness),
 		cereal::make_nvp("NormalWeight", m.NormalWeight),
 		cereal::make_nvp("ShadingModelID", m.ShadingModelID),
+		cereal::make_nvp("FlipU", m.FlipU),
+		cereal::make_nvp("FlipV", m.FlipV),
 		cereal::make_nvp("Ambient", m.Ambient),
 		cereal::make_nvp("Diffuse", m.Diffuse),
 		cereal::make_nvp("Specular", m.Specular),

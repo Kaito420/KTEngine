@@ -58,7 +58,9 @@ struct MATERIAL
     float       Roughness;
     float       NormalWeight;
     int         ShadingModelID;
-    float       DummyPbr[3];
+    int         FlipU;
+    int         FlipV;
+    float       DummyPbr;
 
     // [古いマテリアルメンバ] (既存フォワード用互換)
     XMFLOAT4	Ambient;

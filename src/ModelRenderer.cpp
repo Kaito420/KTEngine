@@ -115,6 +115,8 @@ void ModelRenderer::Render() const
 			material.Roughness = shaderComp->GetRoughness();
 			material.NormalWeight = shaderComp->GetNormalWeight();
 			material.ShadingModelID = shaderComp->GetShadingModelID();
+			material.FlipU = shaderComp->GetFlipU() ? 1 : 0;
+			material.FlipV = shaderComp->GetFlipV() ? 1 : 0;
 		} else {
 			material.BaseColor = { 1.0f, 1.0f, 1.0f, 1.0f };
 		}
@@ -410,7 +412,6 @@ void ModelRenderer::LoadObj(const char* FileName, MODEL_OBJ* ModelObj)
 			//eNX`W
 			fscanf(file, "%f", &texcoord->x);
 			fscanf(file, "%f", &texcoord->y);
-			texcoord->x = 1.0f - texcoord->x;
 			texcoord->y = 1.0f - texcoord->y;
 			texcoord++;
 		}
