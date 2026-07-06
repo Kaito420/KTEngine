@@ -34,19 +34,19 @@ void EditorCamera::Update() {
 	}
 
 	if (Input::IsMouseButtonDown(Input::MouseButton::Middle) && Input::IsSceneViewHovered()) {
-		_position.x += upTemp.x * (float)Input::GetMouseDelta().second * 0.1f;
-		_position.y += upTemp.y * (float)Input::GetMouseDelta().second * 0.1f;
-		_position.z += upTemp.z * (float)Input::GetMouseDelta().second * 0.1f;
+		_position.x += upTemp.x * (float)Input::GetMouseDelta().second * 0.05f;
+		_position.y += upTemp.y * (float)Input::GetMouseDelta().second * 0.05f;
+		_position.z += upTemp.z * (float)Input::GetMouseDelta().second * 0.05f;
 
-		_position.x -= rightTemp.x * (float)Input::GetMouseDelta().first * 0.1f;
-		_position.y -= rightTemp.y * (float)Input::GetMouseDelta().first * 0.1f;
-		_position.z -= rightTemp.z * (float)Input::GetMouseDelta().first * 0.1f;
+		_position.x -= rightTemp.x * (float)Input::GetMouseDelta().first * 0.05f;
+		_position.y -= rightTemp.y * (float)Input::GetMouseDelta().first * 0.05f;
+		_position.z -= rightTemp.z * (float)Input::GetMouseDelta().first * 0.05f;
 	}
 
 	if (Input::GetMouseWheelDelta() != 0 && Input::IsSceneViewHovered()) {
-		_position.x += frontTemp.x * (float)Input::GetMouseWheelDelta() * 0.03f;
-		_position.y += frontTemp.y * (float)Input::GetMouseWheelDelta() * 0.03f;
-		_position.z += frontTemp.z * (float)Input::GetMouseWheelDelta() * 0.03f;
+		_position.x += frontTemp.x * (float)Input::GetMouseWheelDelta() * 0.003f;
+		_position.y += frontTemp.y * (float)Input::GetMouseWheelDelta() * 0.003f;
+		_position.z += frontTemp.z * (float)Input::GetMouseWheelDelta() * 0.003f;
 	}
 
 	XMVECTOR position = XMVectorSet(_position.x, _position.y, _position.z, 1.0f);
