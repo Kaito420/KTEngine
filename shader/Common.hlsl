@@ -61,7 +61,11 @@ struct LIGHT
     float4 RimColor;
     float RimPower;
     int RimLightModel;
-    float2 DummyLight;
+    float Intensity;
+    float AmbientIntensity;
+    
+    float Exposure;
+    float3 DummyLight;
 };
 
 cbuffer LightBuffer : register(b4)

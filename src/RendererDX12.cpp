@@ -136,7 +136,10 @@ namespace RendererDX12 {
         { 1.0f, 1.0f, 1.0f, 1.0f }, // RimColor
         2.0f, // RimPower
         0,    // RimLightModel (Off)
-        { 0.0f, 0.0f } // DummyLight
+        1.5f, // Intensity (光量ブースト)
+        0.4f, // AmbientIntensity (環境光強度)
+        1.0f, // Exposure (露出)
+        { 0.0f, 0.0f, 0.0f } // DummyLight
     };
     XMFLOAT4 g_currentCameraPos = { 0.0f, 0.0f, 0.0f, 0.0f };
     const TEXTURE* g_defaultTexture = nullptr;

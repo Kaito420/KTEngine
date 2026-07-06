@@ -20,7 +20,7 @@ PS_OUTPUT main(PS_IN input)
     float4 materialSpecularParam = TextureMaterialSpecular.Sample(Sampler, input.TexCoord);
     float4 materialRoughnessParam = TextureMaterialRoughness.Sample(Sampler, input.TexCoord);
 
-    float3 lightDir = normalize(Light.Direction.xyz); // 光の方向
+    float3 lightDir = normalize(Light.Direction.xyz); // 光源の方向
     float3 n = normalize(normal.xyz); // 法線ベクトル
     float3 eye = normalize(CameraPosition.xyz - position.xyz); // 視線ベクトル
     float3 h = normalize(lightDir + eye); // ハーフベクトル
@@ -28,7 +28,7 @@ PS_OUTPUT main(PS_IN input)
 
     float3 finalColor = float3(0, 0, 0);
 
-    // 1. Toon Shading (ShadingModel == 1 の場合) または 物理ベースレンダリング (PBR)
+    // 1. Toon Shading (ShadingModel == 1 の場合) または ベース描画 (PBR)
     if (Light.ShadingModel == 1) { // Toon Shading
         // Diffuse
         float ndotl = dot(n, lightDir);
@@ -38,13 +38,13 @@ PS_OUTPUT main(PS_IN input)
             diffuse = max(0.5f * ndotl + 0.5f, 0.0f);
         }
         
-        // トゥーン用階調化
+        // トゥーン段差
         if (diffuse > 0.7f)      diffuse = 1.0f;
         else if (diffuse > 0.4f) diffuse = 0.7f;
         else if (diffuse > 0.2f) diffuse = 0.4f;
         else                     diffuse = 0.2f;
         
-        finalColor = baseColor.rgb * diffuse * Light.Diffuse.rgb;
+        finalColor = baseColor.rgb * diffuse * Light.Diffuse.rgb * Light.Intensity;
 
         // Specular (Toon Specular)
         if (Light.SpecularModel == 1) {
@@ -53,14 +53,14 @@ PS_OUTPUT main(PS_IN input)
             float specular = dot(refEye, lightDir);
             specular = pow(saturate(specular), specularPower);
             specular = step(0.5f, specular); // トゥーンハイライト
-            finalColor += specularColor * specular * Light.Diffuse.rgb;
+            finalColor += specularColor * specular * Light.Diffuse.rgb * Light.Intensity;
         }
     }
-    else { // 物理ベースレンダリング (PBR)
+    else { // ベース描画 (PBR)
         float roughness = materialRoughnessParam.x;
         float metallic = materialMetallicParam.x;
 
-        // Diffuse (Lambert または Half-Lambert 等の選択に対応)
+        // Diffuse (Lambert または Half-Lambert の選択に対応)
         float ndotl_diffuse = dot(n, lightDir);
         float diffuseTerm = max(ndotl_diffuse, 0.0f);
         if (Light.DiffuseModel == 1) { // Half-Lambert
@@ -69,7 +69,7 @@ PS_OUTPUT main(PS_IN input)
             diffuseTerm = max(ndotl_diffuse, 0.0f) / PI;
         }
         
-        float3 diffuseColor = Light.Diffuse.rgb * diffuseTerm * baseColor.rgb;
+        float3 diffuseColor = Light.Diffuse.rgb * Light.Intensity * diffuseTerm * baseColor.rgb;
 
         // Specular (GGX, Cook-Torrance BRDF)
         float3 specularColor = float3(0.0f, 0.0f, 0.0f);
@@ -97,13 +97,13 @@ PS_OUTPUT main(PS_IN input)
             float3 f = F0 + (1.0f - F0) * pow(1.0f - vdoth, 5.0f);
 
             float3 brdfSpecular = (d * g * f) / max(4.0f * ndotl * ndotv, 0.0001f);
-            specularColor = brdfSpecular * Light.Diffuse.rgb * ndotl;
+            specularColor = brdfSpecular * Light.Diffuse.rgb * Light.Intensity * ndotl;
         }
         
         finalColor = diffuseColor + specularColor;
     }
 
-    // 2. Rim Light (共通処理)
+    // 2. Rim Light (リムライト)
     if (Light.RimLightModel == 1) {
         float rim = 1.0f - max(dot(n, eye), 0.0f);
         rim = smoothstep(0.6f, 1.0f, rim);
@@ -113,11 +113,22 @@ PS_OUTPUT main(PS_IN input)
             rim = step(0.5f, rim);
         }
         
-        finalColor += Light.RimColor.rgb * rim;
+        finalColor += Light.RimColor.rgb * rim * Light.Intensity;
     }
 
-    // Ambient の付加
-    finalColor += baseColor.rgb * Light.Ambient.rgb;
+    // 3. Ambient (環境光) の付加
+    finalColor += baseColor.rgb * Light.Ambient.rgb * Light.AmbientIntensity;
+
+    // 4. Exposure (露出調整) の適用
+    finalColor *= Light.Exposure;
+
+    // 5. ACES Tone Mapping
+    float a = 2.51f;
+    float b = 0.03f;
+    float c = 2.43f;
+    float d = 0.59f;
+    float e = 0.14f;
+    finalColor = saturate((finalColor * (a * finalColor + b)) / (finalColor * (c * finalColor + d) + e));
 
     output.Color = float4(finalColor, baseColor.a);
     return output;

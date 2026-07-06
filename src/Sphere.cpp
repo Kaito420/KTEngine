@@ -91,21 +91,26 @@ void Sphere::RebuildBuffers() {
 	std::vector<Vertex> vertices;
 	std::vector<UINT> indices;
 	CreateSphereMesh(_radius, _stackCount, _sliceCount, vertices, indices);
-	_indexCount = indices.size();
+	_indexCount = (int)indices.size();
 
-	_vertexBuffer = Renderer::CreateVertexBuffer(sizeof(Vertex), vertices.size());
-	void* data = nullptr;
-	HRESULT hr = _vertexBuffer->Resource->Map(0, nullptr, &data);
-	if (SUCCEEDED(hr)) {
-		memcpy(data, vertices.data(), sizeof(Vertex) * vertices.size());
-		_vertexBuffer->Resource->Unmap(0, nullptr);
+	_vertexBuffer = Renderer::CreateVertexBuffer(sizeof(Vertex), (UINT)vertices.size());
+	if (_vertexBuffer && _vertexBuffer->Resource) {
+		void* data = nullptr;
+		HRESULT hr = _vertexBuffer->Resource->Map(0, nullptr, &data);
+		if (SUCCEEDED(hr)) {
+			memcpy(data, vertices.data(), sizeof(Vertex) * vertices.size());
+			_vertexBuffer->Resource->Unmap(0, nullptr);
+		}
 	}
 
-	_indexBuffer = Renderer::CreateIndexBuffer(indices.size());
-	hr = _indexBuffer->Resource->Map(0, nullptr, &data);
-	if (SUCCEEDED(hr)) {
-		memcpy(data, indices.data(), sizeof(UINT) * indices.size());
-		_indexBuffer->Resource->Unmap(0, nullptr);
+	_indexBuffer = Renderer::CreateIndexBuffer((UINT)indices.size());
+	if (_indexBuffer && _indexBuffer->Resource) {
+		void* data = nullptr;
+		HRESULT hr = _indexBuffer->Resource->Map(0, nullptr, &data);
+		if (SUCCEEDED(hr)) {
+			memcpy(data, indices.data(), sizeof(UINT) * indices.size());
+			_indexBuffer->Resource->Unmap(0, nullptr);
+		}
 	}
 }
 
@@ -114,11 +119,13 @@ void Sphere::UpdateBuffers() {
 	std::vector<UINT> indices;
 	CreateSphereMesh(_radius, _stackCount, _sliceCount, vertices, indices);
 
-	void* data = nullptr;
-	HRESULT hr = _vertexBuffer->Resource->Map(0, nullptr, &data);
-	if (SUCCEEDED(hr)) {
-		memcpy(data, vertices.data(), sizeof(Vertex) * vertices.size());
-		_vertexBuffer->Resource->Unmap(0, nullptr);
+	if (_vertexBuffer && _vertexBuffer->Resource) {
+		void* data = nullptr;
+		HRESULT hr = _vertexBuffer->Resource->Map(0, nullptr, &data);
+		if (SUCCEEDED(hr)) {
+			memcpy(data, vertices.data(), sizeof(Vertex) * vertices.size());
+			_vertexBuffer->Resource->Unmap(0, nullptr);
+		}
 	}
 }
 

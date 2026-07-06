@@ -8,7 +8,7 @@
 #include "imgui.h"
 
 void Light::Awake(){
-	_executeInEditor = true;	// エディター時に実行
+	_executeInEditor = true;	// エディターで実行
 	_lightData.Enable = true;
 	_lightData.Direction = XMFLOAT4(0.0f, -1.0f, -1.0f, 0.0f);
 	_lightData.Ambient = XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f);
@@ -22,6 +22,10 @@ void Light::Awake(){
 	_lightData.RimLightModel = 0;
 	_lightData.RimPower = 2.0f;
 	_lightData.RimColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+
+	_lightData.Intensity = 1.5f;
+	_lightData.AmbientIntensity = 0.4f;
+	_lightData.Exposure = 1.0f;
 }
 
 void Light::Update(){
@@ -32,6 +36,10 @@ void Light::ShowUI(){
 	// Light settings UI
 	ImGui::Checkbox("Enable Light", (bool*)&_lightData.Enable);
 	
+	ImGui::DragFloat("Light Intensity", &_lightData.Intensity, 0.05f, 0.0f, 10.0f, "%.2f");
+	ImGui::DragFloat("Ambient Intensity", &_lightData.AmbientIntensity, 0.05f, 0.0f, 5.0f, "%.2f");
+	ImGui::DragFloat("Exposure (Tone Mapping)", &_lightData.Exposure, 0.05f, 0.1f, 5.0f, "%.2f");
+
 	float dir[3] = { _lightData.Direction.x, _lightData.Direction.y, _lightData.Direction.z };
 	if (ImGui::DragFloat3("Direction", dir, 0.1f)) {
 		_lightData.Direction = XMFLOAT4(dir[0], dir[1], dir[2], 0.0f);

@@ -72,22 +72,27 @@ struct MATERIAL
     float		DummyOld[2];
 };
 
-struct LIGHT {
-    BOOL Enable;
-    int DiffuseModel;   // 0:Lambert, 1:half-Lambert, 2:normalized-Lambert
-    int ShadingModel;   // 0:Smooth, 1:Toon
-    int SpecularModel;  // 0:off, 1:Phong
-    
-    XMFLOAT4 Direction;
-    XMFLOAT4 Diffuse;
-    XMFLOAT4 Ambient;
-    XMFLOAT4 Position;
-    XMFLOAT4 Parameter;
-    
-    XMFLOAT4 RimColor;
-    float RimPower;
-    int RimLightModel;
-    float DummyLight[2];
+struct LIGHT
+{
+    BOOL        Enable;
+    int         DiffuseModel;   // 0:Lambert, 1:half-Lambert, 2:normalized-Lambert
+    int         ShadingModel;   // 0:Smooth, 1:Toon
+    int         SpecularModel;  // 0:off, 1:Phong
+
+    XMFLOAT4    Direction;
+    XMFLOAT4    Diffuse;
+    XMFLOAT4    Ambient;
+    XMFLOAT4    Position;
+    XMFLOAT4    Parameter;
+
+    XMFLOAT4    RimColor;
+    float       RimPower;
+    int         RimLightModel;
+    float       Intensity;
+    float       AmbientIntensity;
+
+    float       Exposure;
+    float       DummyLight[3];
 };
 
 // D3D12 Resources

@@ -1,0 +1,313 @@
+{
+    "Scene": {
+        "polymorphic_id": 1073741824,
+        "ptr_wrapper": {
+            "id": 2147483649,
+            "data": {
+                "GameObjects": [
+                    {
+                        "polymorphic_id": 2147483649,
+                        "polymorphic_name": "Camera",
+                        "ptr_wrapper": {
+                            "id": 2147483650,
+                            "data": {
+                                "value0": {
+                                    "ID": 0,
+                                    "Name": "Camera",
+                                    "Active": true,
+                                    "ExecuteInEditor": true,
+                                    "Transform": {
+                                        "Position": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": 0.0
+                                        },
+                                        "Scale": {
+                                            "x": 1.0,
+                                            "y": 1.0,
+                                            "z": 1.0
+                                        },
+                                        "Rotation": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": 0.0
+                                        },
+                                        "Quaternion": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": 0.0,
+                                            "w": 1.0
+                                        }
+                                    },
+                                    "Components": []
+                                },
+                                "Distance": 100.0
+                            }
+                        }
+                    },
+                    {
+                        "polymorphic_id": 2147483650,
+                        "polymorphic_name": "Sky",
+                        "ptr_wrapper": {
+                            "id": 2147483651,
+                            "data": {
+                                "value0": {
+                                    "ID": 1,
+                                    "Name": "Sky",
+                                    "Active": true,
+                                    "ExecuteInEditor": true,
+                                    "Transform": {
+                                        "Position": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": 0.0
+                                        },
+                                        "Scale": {
+                                            "x": 500.0,
+                                            "y": 500.0,
+                                            "z": 500.0
+                                        },
+                                        "Rotation": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": 0.0
+                                        },
+                                        "Quaternion": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": 0.0,
+                                            "w": 1.0
+                                        }
+                                    },
+                                    "Components": [
+                                        {
+                                            "polymorphic_id": 2147483651,
+                                            "polymorphic_name": "Shader",
+                                            "ptr_wrapper": {
+                                                "id": 2147483652,
+                                                "data": {
+                                                    "value0": {
+                                                        "Active": true,
+                                                        "ExecuteInEditor": false
+                                                    },
+                                                    "VertexShaderID": "DirectionalLight",
+                                                    "VertexLayoutID": "DirectionalLight",
+                                                    "PixelShaderID": "DirectionalLight",
+                                                    "BaseColor": {
+                                                        "x": 1.0,
+                                                        "y": 1.0,
+                                                        "z": 1.0,
+                                                        "w": 1.0
+                                                    },
+                                                    "EmissionColor": {
+                                                        "x": 0.0,
+                                                        "y": 0.0,
+                                                        "z": 0.0,
+                                                        "w": 0.0
+                                                    },
+                                                    "Metallic": 0.0,
+                                                    "Specular": 0.5,
+                                                    "Roughness": 0.5,
+                                                    "NormalWeight": 1.0,
+                                                    "ShadingModelID": 0,
+                                                    "FlipU": false,
+                                                    "FlipV": false,
+                                                    "TexturePath": "asset/texture/sky2.jpg"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "polymorphic_id": 2147483652,
+                                            "polymorphic_name": "SkyDome",
+                                            "ptr_wrapper": {
+                                                "id": 2147483653,
+                                                "data": {
+                                                    "value0": {
+                                                        "Active": true,
+                                                        "ExecuteInEditor": true
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "polymorphic_id": 2147483653,
+                        "polymorphic_name": "Light",
+                        "ptr_wrapper": {
+                            "id": 2147483654,
+                            "data": {
+                                "value0": {
+                                    "ID": 2,
+                                    "Name": "Light",
+                                    "Active": true,
+                                    "ExecuteInEditor": true,
+                                    "Transform": {
+                                        "Position": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": 0.0
+                                        },
+                                        "Scale": {
+                                            "x": 1.0,
+                                            "y": 1.0,
+                                            "z": 1.0
+                                        },
+                                        "Rotation": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": 0.0
+                                        },
+                                        "Quaternion": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": 0.0,
+                                            "w": 1.0
+                                        }
+                                    },
+                                    "Components": []
+                                },
+                                "LightData": {
+                                    "Enable": 1,
+                                    "DiffuseModel": 2,
+                                    "ShadingModel": 0,
+                                    "SpecularModel": 1,
+                                    "Direction": {
+                                        "x": 0.0,
+                                        "y": -1.0,
+                                        "z": -1.0,
+                                        "w": 0.0
+                                    },
+                                    "Diffuse": {
+                                        "x": 0.800000011920929,
+                                        "y": 0.800000011920929,
+                                        "z": 0.800000011920929,
+                                        "w": 1.0
+                                    },
+                                    "Ambient": {
+                                        "x": 0.20000000298023225,
+                                        "y": 0.20000000298023225,
+                                        "z": 0.20000000298023225,
+                                        "w": 1.0
+                                    },
+                                    "Position": {
+                                        "x": -5.0,
+                                        "y": 10.0,
+                                        "z": 5.0,
+                                        "w": 0.0
+                                    },
+                                    "Parameter": {
+                                        "x": 100.0,
+                                        "y": 1.5,
+                                        "z": 0.0,
+                                        "w": 0.0
+                                    },
+                                    "RimColor": {
+                                        "x": 1.0,
+                                        "y": 1.0,
+                                        "z": 1.0,
+                                        "w": 1.0
+                                    },
+                                    "RimPower": 2.0,
+                                    "RimLightModel": 0,
+                                    "Intensity": 3.450000047683716,
+                                    "AmbientIntensity": 2.0,
+                                    "Exposure": 1.7000000476837159
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "polymorphic_id": 1073741824,
+                        "ptr_wrapper": {
+                            "id": 2147483655,
+                            "data": {
+                                "ID": 3,
+                                "Name": "GameObject",
+                                "Active": true,
+                                "ExecuteInEditor": false,
+                                "Transform": {
+                                    "Position": {
+                                        "x": 0.0,
+                                        "y": 0.0,
+                                        "z": 0.0
+                                    },
+                                    "Scale": {
+                                        "x": 1.0,
+                                        "y": 1.0,
+                                        "z": 1.0
+                                    },
+                                    "Rotation": {
+                                        "x": 0.0,
+                                        "y": 0.0,
+                                        "z": 0.0
+                                    },
+                                    "Quaternion": {
+                                        "x": 0.0,
+                                        "y": 0.0,
+                                        "z": 0.0,
+                                        "w": 1.0
+                                    }
+                                },
+                                "Components": [
+                                    {
+                                        "polymorphic_id": 3,
+                                        "ptr_wrapper": {
+                                            "id": 2147483656,
+                                            "data": {
+                                                "value0": {
+                                                    "Active": true,
+                                                    "ExecuteInEditor": false
+                                                },
+                                                "VertexShaderID": "DirectionalLight",
+                                                "VertexLayoutID": "DirectionalLight",
+                                                "PixelShaderID": "DirectionalLight",
+                                                "BaseColor": {
+                                                    "x": 1.0,
+                                                    "y": 1.0,
+                                                    "z": 1.0,
+                                                    "w": 1.0
+                                                },
+                                                "EmissionColor": {
+                                                    "x": 0.0,
+                                                    "y": 0.0,
+                                                    "z": 0.0,
+                                                    "w": 0.0
+                                                },
+                                                "Metallic": 0.3050000071525574,
+                                                "Specular": 0.49300000071525576,
+                                                "Roughness": 0.13300000131130219,
+                                                "NormalWeight": 1.0,
+                                                "ShadingModelID": 0,
+                                                "FlipU": false,
+                                                "FlipV": false,
+                                                "TexturePath": "asset/model/Drill_01_diff_4k.dds"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 2147483654,
+                                        "polymorphic_name": "ModelRenderer",
+                                        "ptr_wrapper": {
+                                            "id": 2147483657,
+                                            "data": {
+                                                "value0": {
+                                                    "Active": true,
+                                                    "ExecuteInEditor": false
+                                                },
+                                                "FileName": "asset/model/Drill_01_4k.obj"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    }
+}

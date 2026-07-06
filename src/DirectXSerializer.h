@@ -68,7 +68,10 @@ void serialize(Archive& ar, LIGHT& l) {
 		cereal::make_nvp("Parameter", l.Parameter),
 		cereal::make_nvp("RimColor", l.RimColor),
 		cereal::make_nvp("RimPower", l.RimPower),
-		cereal::make_nvp("RimLightModel", l.RimLightModel));
+		cereal::make_nvp("RimLightModel", l.RimLightModel),
+		cereal::make_nvp("Intensity", l.Intensity),
+		cereal::make_nvp("AmbientIntensity", l.AmbientIntensity),
+		cereal::make_nvp("Exposure", l.Exposure));
 }
 
 #endif // !_DIRECTXSERIALIZER_H_

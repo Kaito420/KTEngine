@@ -4,19 +4,36 @@
 #include "Scene.h"
 #include "Camera.h"
 #include "Texture.h"
+#include "Shader.h"
 
 void SkyDome::Awake(){
-	_executeInEditor = true;	//ƒGƒfƒBƒ^ƒ‚[ƒh‚Å‚àŽÀs‚·‚é
-	_sphere = new Sphere();
+	_executeInEditor = true;	// ã‚¨ãƒ‡ã‚£ã‚¿ãƒ¼ã§å®Ÿè¡Œ
+	
+	if (!_sphere) {
+		_sphere = new Sphere();
+	}
+
+	if (_owner) {
+		_sphere->SetOwner(_owner);
+		_owner->_transform._scale = { 500.0f, 500.0f, 500.0f };
+
+		auto shaderComp = _owner->GetComponent<Shader>();
+		if (!shaderComp) {
+			shaderComp = _owner->AddComponent<Shader>();
+		}
+		if (shaderComp && shaderComp->GetTexturePath().empty()) {
+			shaderComp->SetTexturePath("asset/texture/Space.jpg");
+		}
+	}
+
 	_sphere->Awake();
-	_sphere->SetOwner(GetOwner());
-	_sphere->_texture = Texture::Load("asset\\texture\\Space.jpg");
-	_owner->_transform._scale = { 500.0f,500.0f,500.0f };
 }
 
 void SkyDome::Update()
 {
-	_owner->_transform._position = Manager::GetCurrentScene()->FindGameObjectByName<Camera>("Camera")->_transform._position;
+	if (Manager::GetCurrentScene() && Manager::GetCurrentScene()->FindGameObjectByName<Camera>("Camera")) {
+		_owner->_transform._position = Manager::GetCurrentScene()->FindGameObjectByName<Camera>("Camera")->_transform._position;
+	}
 }
 
 void SkyDome::Render() const
