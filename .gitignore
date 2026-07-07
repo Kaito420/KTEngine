@@ -364,3 +364,6 @@ FodyWeavers.xsd
 
 # Engine logs
 d3d12_log.txt
+
+# Shader binaries
+*.cso
