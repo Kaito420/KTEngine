@@ -15,7 +15,21 @@ PS_OUTPUT_GEOMETRY main(PS_IN input)
     if (Material.HasNormalMap) {
         float3 normalMap = TextureNormal.Sample(Sampler, input.TexCoord).rgb;
         normalMap = normalMap * 2.0f - 1.0f; // [0,1] → [-1,1]
-        output.Normal = float4(normalize(normalMap), 1.0f);
+        
+        // ワールド空間法線からTBN行列を構築
+        float3 N = normalize(input.Normal.xyz);
+        // 法線に平行でない任意のベクトルを選択
+        float3 up = abs(N.y) < 0.999f ? float3(0.0f, 1.0f, 0.0f) : float3(1.0f, 0.0f, 0.0f);
+        float3 T = normalize(cross(up, N));
+        float3 B = cross(N, T);
+        
+        // タンジェント空間 → ワールド空間
+        float3 worldNormal = normalize(T * normalMap.x + B * normalMap.y + N * normalMap.z);
+        
+        // NormalWeight でブレンド
+        worldNormal = normalize(lerp(N, worldNormal, Material.NormalWeight));
+        
+        output.Normal = float4(worldNormal, 1.0f);
     } else {
         output.Normal = input.Normal;
         output.Normal.a = 1.0f;

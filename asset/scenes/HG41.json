@@ -180,8 +180,8 @@
                                     "SpecularModel": 1,
                                     "Direction": {
                                         "x": 0.0,
-                                        "y": -1.0,
-                                        "z": -1.0,
+                                        "y": -6.5,
+                                        "z": 1.0,
                                         "w": 0.0
                                     },
                                     "Diffuse": {
@@ -280,15 +280,15 @@
                                                     "z": 0.0,
                                                     "w": 0.0
                                                 },
-                                                "Metallic": 0.453000009059906,
+                                                "Metallic": 0.5720000267028809,
                                                 "Specular": 0.5,
-                                                "Roughness": 0.5,
+                                                "Roughness": 0.800000011920929,
                                                 "NormalWeight": 1.0,
                                                 "ShadingModelID": 0,
                                                 "FlipU": false,
                                                 "FlipV": false,
                                                 "TexturePath": "asset/model/Drill_01_diff_4k.dds",
-                                                "NormalMapPath": "",
+                                                "NormalMapPath": "asset/texture/Drill_01_nor_dx_4k.dds",
                                                 "MetallicMapPath": "",
                                                 "RoughnessMapPath": "asset/texture/Drill_01_arm_4k.dds"
                                             }

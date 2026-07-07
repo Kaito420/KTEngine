@@ -24,7 +24,7 @@ void Light::Awake(){
 	_lightData.RimColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 
 	_lightData.Intensity = 1.5f;
-	_lightData.AmbientIntensity = 0.4f;
+	_lightData.AmbientIntensity = 1.0f;
 	_lightData.Exposure = 1.0f;
 }
 
