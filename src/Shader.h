@@ -32,8 +32,19 @@ private:
 	int _shadingModelID = 0; // 0: Smooth, 1: Toon
 	bool _flipU = false;
 	bool _flipV = false;
+
+	// Texture Maps
 	std::string _texturePath = "";
 	const TEXTURE* _texture = nullptr;
+
+	std::string _normalMapPath = "";
+	const TEXTURE* _normalMap = nullptr;
+
+	std::string _metallicMapPath = "";
+	const TEXTURE* _metallicMap = nullptr;
+
+	std::string _roughnessMapPath = "";
+	const TEXTURE* _roughnessMap = nullptr;
 
 public:
 	void Awake() override;
@@ -63,9 +74,25 @@ public:
 	bool GetFlipV() const { return _flipV; }
 	void SetFlipV(bool val) { _flipV = val; }
 
+	// BaseColor Texture
 	const TEXTURE* GetTexture() const { return _texture; }
 	std::string GetTexturePath() const { return _texturePath; }
 	void SetTexturePath(const std::string& path);
+
+	// Normal Map
+	const TEXTURE* GetNormalMap() const { return _normalMap; }
+	std::string GetNormalMapPath() const { return _normalMapPath; }
+	void SetNormalMapPath(const std::string& path);
+
+	// Metallic Map
+	const TEXTURE* GetMetallicMap() const { return _metallicMap; }
+	std::string GetMetallicMapPath() const { return _metallicMapPath; }
+	void SetMetallicMapPath(const std::string& path);
+
+	// Roughness Map
+	const TEXTURE* GetRoughnessMap() const { return _roughnessMap; }
+	std::string GetRoughnessMapPath() const { return _roughnessMapPath; }
+	void SetRoughnessMapPath(const std::string& path);
 
 	void ShowUI() override;
 	std::string GetComponentName() override { return "Shader"; }
@@ -86,11 +113,29 @@ public:
 		ar(cereal::make_nvp("FlipU", _flipU));
 		ar(cereal::make_nvp("FlipV", _flipV));
 		ar(cereal::make_nvp("TexturePath", _texturePath));
+		ar(cereal::make_nvp("NormalMapPath", _normalMapPath));
+		ar(cereal::make_nvp("MetallicMapPath", _metallicMapPath));
+		ar(cereal::make_nvp("RoughnessMapPath", _roughnessMapPath));
 
 		if (!_texturePath.empty()) {
 			_texture = Texture::Load(_texturePath.c_str());
 		} else {
 			_texture = nullptr;
+		}
+		if (!_normalMapPath.empty()) {
+			_normalMap = Texture::Load(_normalMapPath.c_str());
+		} else {
+			_normalMap = nullptr;
+		}
+		if (!_metallicMapPath.empty()) {
+			_metallicMap = Texture::Load(_metallicMapPath.c_str());
+		} else {
+			_metallicMap = nullptr;
+		}
+		if (!_roughnessMapPath.empty()) {
+			_roughnessMap = Texture::Load(_roughnessMapPath.c_str());
+		} else {
+			_roughnessMap = nullptr;
 		}
 	}
 };

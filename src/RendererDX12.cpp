@@ -48,6 +48,7 @@ namespace RendererDX12 {
         ComPtr<ID3D12Resource> Resource = nullptr;
         unsigned int RtvIndex = 0;
         unsigned int SrvIndex = 0;
+        D3D12_RESOURCE_STATES State = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
         
         void Release() {
             Resource.Reset();
@@ -55,6 +56,7 @@ namespace RendererDX12 {
                 FreeSrvIndex(SrvIndex);
                 SrvIndex = 0;
             }
+            State = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
         }
     };
     
@@ -112,6 +114,47 @@ namespace RendererDX12 {
     float g_gameHeight = 720.0f;
 
     void PrintDebugMessages();
+
+    D3D12_RESOURCE_STATES g_sceneRTState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+    D3D12_RESOURCE_STATES g_gameRTState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+
+    void TransitionTarget(GBufferTarget& target, D3D12_RESOURCE_STATES targetState) {
+        if (!target.Resource) return;
+        if (target.State == targetState) return;
+
+        D3D12_RESOURCE_BARRIER barrier = {};
+        barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+        barrier.Transition.pResource = target.Resource.Get();
+        barrier.Transition.StateBefore = target.State;
+        barrier.Transition.StateAfter = targetState;
+        g_pd3dCommandList->ResourceBarrier(1, &barrier);
+
+        target.State = targetState;
+
+        if (target.Resource == g_sceneRenderTarget) {
+            g_sceneRTState = targetState;
+        } else if (target.Resource == g_gameRenderTarget) {
+            g_gameRTState = targetState;
+        }
+    }
+
+    // シーン/ゲーム RT を一時的に GBufferTarget として参照するヘルパー
+    GBufferTarget g_tempSceneRT;
+    GBufferTarget g_tempGameRT;
+
+    void UpdateTempRTReference() {
+        // Scene RT: SRV index = 1, RTV index = 2
+        g_tempSceneRT.Resource = g_sceneRenderTarget;
+        g_tempSceneRT.SrvIndex = 1;
+        g_tempSceneRT.RtvIndex = 2;
+        g_tempSceneRT.State = g_sceneRTState;
+
+        // Game RT: SRV index = 2, RTV index = 3
+        g_tempGameRT.Resource = g_gameRenderTarget;
+        g_tempGameRT.SrvIndex = 2;
+        g_tempGameRT.RtvIndex = 3;
+        g_tempGameRT.State = g_gameRTState;
+    }
 
     // 遅延リサイズ用変数
     float g_scenePendingWidth = 0.0f;
@@ -631,22 +674,17 @@ namespace RendererDX12 {
         if (g_gameRenderTarget) {
             if (g_isGeometryPass) {
                 // MRT ジオメトリパス
-                D3D12_RESOURCE_BARRIER barriers[6] = {};
-                ID3D12Resource* resources[6] = {
-                    g_gameGBuffer.Color.Resource.Get(),
-                    g_gameGBuffer.Normal.Resource.Get(),
-                    g_gameGBuffer.Position.Resource.Get(),
-                    g_gameGBuffer.Metallic.Resource.Get(),
-                    g_gameGBuffer.Specular.Resource.Get(),
-                    g_gameGBuffer.Roughness.Resource.Get()
+                GBufferTarget* targets[6] = {
+                    &g_gameGBuffer.Color,
+                    &g_gameGBuffer.Normal,
+                    &g_gameGBuffer.Position,
+                    &g_gameGBuffer.Metallic,
+                    &g_gameGBuffer.Specular,
+                    &g_gameGBuffer.Roughness
                 };
                 for (int i = 0; i < 6; i++) {
-                    barriers[i].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-                    barriers[i].Transition.pResource = resources[i];
-                    barriers[i].Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-                    barriers[i].Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+                    TransitionTarget(*targets[i], D3D12_RESOURCE_STATE_RENDER_TARGET);
                 }
-                g_pd3dCommandList->ResourceBarrier(6, barriers);
 
                 D3D12_CPU_DESCRIPTOR_HANDLE rtvs[6];
                 for (int i = 0; i < 6; i++) {
@@ -670,12 +708,11 @@ namespace RendererDX12 {
             }
             else {
                 // 通常フォワードパス
-                D3D12_RESOURCE_BARRIER barrier = {};
-                barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-                barrier.Transition.pResource = g_gameRenderTarget.Get();
-                barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-                barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-                g_pd3dCommandList->ResourceBarrier(1, &barrier);
+                GBufferTarget tempRT;
+                tempRT.Resource = g_gameRenderTarget;
+                tempRT.RtvIndex = 3;
+                tempRT.State = g_gameRTState;
+                TransitionTarget(tempRT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
                 D3D12_CPU_DESCRIPTOR_HANDLE rtv = GetRtvHandle(3);
                 D3D12_CPU_DESCRIPTOR_HANDLE dsv = GetDsvHandle(2);
@@ -695,33 +732,27 @@ namespace RendererDX12 {
         g_pd3dCommandList->SetGraphicsRootSignature(g_pd3dRootSignature.Get());
 
         if (g_gameRenderTarget) {
-            D3D12_RESOURCE_BARRIER barrier = {};
-            barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-            barrier.Transition.pResource = g_gameRenderTarget.Get();
-            barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-            barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-            g_pd3dCommandList->ResourceBarrier(1, &barrier);
+            GBufferTarget tempRT;
+            tempRT.Resource = g_gameRenderTarget;
+            tempRT.RtvIndex = 3;
+            tempRT.State = g_gameRTState;
+            TransitionTarget(tempRT, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
         }
 
         if (g_sceneRenderTarget) {
             if (g_isGeometryPass) {
                 // MRT ジオメトリパス
-                D3D12_RESOURCE_BARRIER barriers[6] = {};
-                ID3D12Resource* resources[6] = {
-                    g_sceneGBuffer.Color.Resource.Get(),
-                    g_sceneGBuffer.Normal.Resource.Get(),
-                    g_sceneGBuffer.Position.Resource.Get(),
-                    g_sceneGBuffer.Metallic.Resource.Get(),
-                    g_sceneGBuffer.Specular.Resource.Get(),
-                    g_sceneGBuffer.Roughness.Resource.Get()
+                GBufferTarget* targets[6] = {
+                    &g_sceneGBuffer.Color,
+                    &g_sceneGBuffer.Normal,
+                    &g_sceneGBuffer.Position,
+                    &g_sceneGBuffer.Metallic,
+                    &g_sceneGBuffer.Specular,
+                    &g_sceneGBuffer.Roughness
                 };
                 for (int i = 0; i < 6; i++) {
-                    barriers[i].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-                    barriers[i].Transition.pResource = resources[i];
-                    barriers[i].Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-                    barriers[i].Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+                    TransitionTarget(*targets[i], D3D12_RESOURCE_STATE_RENDER_TARGET);
                 }
-                g_pd3dCommandList->ResourceBarrier(6, barriers);
 
                 D3D12_CPU_DESCRIPTOR_HANDLE rtvs[6];
                 for (int i = 0; i < 6; i++) {
@@ -745,12 +776,11 @@ namespace RendererDX12 {
             }
             else {
                 // 通常フォワードパス
-                D3D12_RESOURCE_BARRIER barrier = {};
-                barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-                barrier.Transition.pResource = g_sceneRenderTarget.Get();
-                barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-                barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-                g_pd3dCommandList->ResourceBarrier(1, &barrier);
+                GBufferTarget tempRT;
+                tempRT.Resource = g_sceneRenderTarget;
+                tempRT.RtvIndex = 2;
+                tempRT.State = g_sceneRTState;
+                TransitionTarget(tempRT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
                 D3D12_CPU_DESCRIPTOR_HANDLE rtv = GetRtvHandle(2);
                 D3D12_CPU_DESCRIPTOR_HANDLE dsv = GetDsvHandle(1);
@@ -768,12 +798,11 @@ namespace RendererDX12 {
         g_pd3dCommandList->SetGraphicsRootSignature(g_pd3dRootSignature.Get());
 
         if (g_sceneRenderTarget) {
-            D3D12_RESOURCE_BARRIER barrier = {};
-            barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-            barrier.Transition.pResource = g_sceneRenderTarget.Get();
-            barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-            barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-            g_pd3dCommandList->ResourceBarrier(1, &barrier);
+            GBufferTarget tempRT;
+            tempRT.Resource = g_sceneRenderTarget;
+            tempRT.RtvIndex = 2;
+            tempRT.State = g_sceneRTState;
+            TransitionTarget(tempRT, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
         }
 
         D3D12_RESOURCE_BARRIER barrier = {};
@@ -952,8 +981,8 @@ namespace RendererDX12 {
         CreateGBufferResource(g_sceneGBuffer.Normal, width, height, DXGI_FORMAT_R16G16B16A16_FLOAT, 5, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
         CreateGBufferResource(g_sceneGBuffer.Position, width, height, DXGI_FORMAT_R16G16B16A16_FLOAT, 6, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
         CreateGBufferResource(g_sceneGBuffer.Metallic, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 7, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
-        CreateGBufferResource(g_sceneGBuffer.Specular, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 8, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
-        CreateGBufferResource(g_sceneGBuffer.Roughness, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 9, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
+        CreateGBufferResource(g_sceneGBuffer.Specular, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 8, XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f));
+        CreateGBufferResource(g_sceneGBuffer.Roughness, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 9, XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f));
 
         // Scene ポストプロセスバッファの作成
         g_scenePostProcess.Release();
@@ -1072,8 +1101,8 @@ namespace RendererDX12 {
         CreateGBufferResource(g_gameGBuffer.Normal, width, height, DXGI_FORMAT_R16G16B16A16_FLOAT, 11, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
         CreateGBufferResource(g_gameGBuffer.Position, width, height, DXGI_FORMAT_R16G16B16A16_FLOAT, 12, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
         CreateGBufferResource(g_gameGBuffer.Metallic, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 13, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
-        CreateGBufferResource(g_gameGBuffer.Specular, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 14, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
-        CreateGBufferResource(g_gameGBuffer.Roughness, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 15, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
+        CreateGBufferResource(g_gameGBuffer.Specular, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 14, XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f));
+        CreateGBufferResource(g_gameGBuffer.Roughness, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 15, XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f));
 
         // Game ポストプロセスバッファの作成
         g_gamePostProcess.Release();
@@ -1203,23 +1232,21 @@ namespace RendererDX12 {
         if (g_currentRenderContext == CurrentRenderContext::Game) {
             if (!g_gameRenderTarget) return;
 
+            UpdateTempRTReference();
+            TransitionTarget(g_tempGameRT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+
             // 1. G-Bufferリソースを RENDER_TARGET ➔ PIXEL_SHADER_RESOURCE にバリア遷移
-            D3D12_RESOURCE_BARRIER barriers[6] = {};
-            ID3D12Resource* resources[6] = {
-                g_gameGBuffer.Color.Resource.Get(),
-                g_gameGBuffer.Normal.Resource.Get(),
-                g_gameGBuffer.Position.Resource.Get(),
-                g_gameGBuffer.Metallic.Resource.Get(),
-                g_gameGBuffer.Specular.Resource.Get(),
-                g_gameGBuffer.Roughness.Resource.Get()
+            GBufferTarget* targets[6] = {
+                &g_gameGBuffer.Color,
+                &g_gameGBuffer.Normal,
+                &g_gameGBuffer.Position,
+                &g_gameGBuffer.Metallic,
+                &g_gameGBuffer.Specular,
+                &g_gameGBuffer.Roughness
             };
             for (int i = 0; i < 6; i++) {
-                barriers[i].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-                barriers[i].Transition.pResource = resources[i];
-                barriers[i].Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-                barriers[i].Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+                TransitionTarget(*targets[i], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
             }
-            g_pd3dCommandList->ResourceBarrier(6, barriers);
 
             // 2. レンダーターゲットを本来の GameRenderTarget へバインド
             D3D12_CPU_DESCRIPTOR_HANDLE rtv = GetRtvHandle(3);
@@ -1235,14 +1262,6 @@ namespace RendererDX12 {
             // 4. 定数バッファやG-Bufferテクスチャ(t0〜t5)のバインド
             BindShaderConstants();
 
-            GBufferTarget* targets[6] = {
-                &g_gameGBuffer.Color,
-                &g_gameGBuffer.Normal,
-                &g_gameGBuffer.Position,
-                &g_gameGBuffer.Metallic,
-                &g_gameGBuffer.Specular,
-                &g_gameGBuffer.Roughness
-            };
             for (int i = 0; i < 6; i++) {
                 D3D12_GPU_DESCRIPTOR_HANDLE handle = g_pd3dSrvDescHeap->GetGPUDescriptorHandleForHeapStart();
                 handle.ptr += targets[i]->SrvIndex * g_srvDescriptorSize;
@@ -1255,25 +1274,23 @@ namespace RendererDX12 {
         else if (g_currentRenderContext == CurrentRenderContext::Scene) {
             if (!g_sceneRenderTarget) return;
 
+            UpdateTempRTReference();
+            TransitionTarget(g_tempSceneRT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+
             // 1. G-Bufferリソースを RENDER_TARGET ➔ PIXEL_SHADER_RESOURCE にバリア遷移
-            D3D12_RESOURCE_BARRIER barriers[6] = {};
-            ID3D12Resource* resources[6] = {
-                g_sceneGBuffer.Color.Resource.Get(),
-                g_sceneGBuffer.Normal.Resource.Get(),
-                g_sceneGBuffer.Position.Resource.Get(),
-                g_sceneGBuffer.Metallic.Resource.Get(),
-                g_sceneGBuffer.Specular.Resource.Get(),
-                g_sceneGBuffer.Roughness.Resource.Get()
+            GBufferTarget* targets[6] = {
+                &g_sceneGBuffer.Color,
+                &g_sceneGBuffer.Normal,
+                &g_sceneGBuffer.Position,
+                &g_sceneGBuffer.Metallic,
+                &g_sceneGBuffer.Specular,
+                &g_sceneGBuffer.Roughness
             };
             for (int i = 0; i < 6; i++) {
-                barriers[i].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-                barriers[i].Transition.pResource = resources[i];
-                barriers[i].Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-                barriers[i].Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+                TransitionTarget(*targets[i], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
             }
-            g_pd3dCommandList->ResourceBarrier(6, barriers);
 
-            // 2. レンダーターゲットを本来の SceneRenderTarget へバインド
+            // 2. レンダーターゲットを本来의 SceneRenderTarget へバインド
             D3D12_CPU_DESCRIPTOR_HANDLE rtv = GetRtvHandle(2);
             D3D12_CPU_DESCRIPTOR_HANDLE dsv = GetDsvHandle(1);
             g_pd3dCommandList->OMSetRenderTargets(1, &rtv, FALSE, &dsv);
@@ -1287,14 +1304,6 @@ namespace RendererDX12 {
             // 4. 定数バッファやG-Bufferテクスチャ(t0〜t5)のバインド
             BindShaderConstants();
 
-            GBufferTarget* targets[6] = {
-                &g_sceneGBuffer.Color,
-                &g_sceneGBuffer.Normal,
-                &g_sceneGBuffer.Position,
-                &g_sceneGBuffer.Metallic,
-                &g_sceneGBuffer.Specular,
-                &g_sceneGBuffer.Roughness
-            };
             for (int i = 0; i < 6; i++) {
                 D3D12_GPU_DESCRIPTOR_HANDLE handle = g_pd3dSrvDescHeap->GetGPUDescriptorHandleForHeapStart();
                 handle.ptr += targets[i]->SrvIndex * g_srvDescriptorSize;
@@ -1316,34 +1325,17 @@ namespace RendererDX12 {
         float width, float height,
         const MATERIAL* paramOverride = nullptr)
     {
-        // ソーステクスチャの状態遷移: RT → SRV
+        // ソーステクスチャの状態遷移: PIXEL_SHADER_RESOURCE
         for (int i = 0; i < srcCount; i++) {
-            if (srcTargets[i]->Resource) {
-                D3D12_RESOURCE_BARRIER barrier = {};
-                barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-                barrier.Transition.pResource = srcTargets[i]->Resource.Get();
-                barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-                barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-                g_pd3dCommandList->ResourceBarrier(1, &barrier);
-            }
+            TransitionTarget(*srcTargets[i], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
         }
 
         // デスティネーションをレンダーターゲットに遷移
-        {
-            D3D12_RESOURCE_BARRIER barrier = {};
-            barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-            barrier.Transition.pResource = dst.Resource.Get();
-            barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-            barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-            g_pd3dCommandList->ResourceBarrier(1, &barrier);
-        }
+        TransitionTarget(dst, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
         // レンダーターゲット設定
         D3D12_CPU_DESCRIPTOR_HANDLE rtv = GetRtvHandle(dst.RtvIndex);
         g_pd3dCommandList->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
-
-        const float clearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
-        g_pd3dCommandList->ClearRenderTargetView(rtv, clearColor, 0, nullptr);
 
         D3D12_VIEWPORT vp = { 0.0f, 0.0f, width, height, 0.0f, 1.0f };
         D3D12_RECT sr = { 0, 0, (LONG)width, (LONG)height };
@@ -1370,22 +1362,6 @@ namespace RendererDX12 {
         }
 
         DrawFullScreenQuad();
-    }
-
-    // シーン/ゲーム RT を一時的に GBufferTarget として参照するヘルパー
-    GBufferTarget g_tempSceneRT;
-    GBufferTarget g_tempGameRT;
-
-    void UpdateTempRTReference() {
-        // Scene RT: SRV index = 1, RTV index = 2
-        g_tempSceneRT.Resource = g_sceneRenderTarget;
-        g_tempSceneRT.SrvIndex = 1;
-        g_tempSceneRT.RtvIndex = 2;
-
-        // Game RT: SRV index = 2, RTV index = 3
-        g_tempGameRT.Resource = g_gameRenderTarget;
-        g_tempGameRT.SrvIndex = 2;
-        g_tempGameRT.RtvIndex = 3;
     }
 
     // ======================================================================
@@ -1477,16 +1453,8 @@ namespace RendererDX12 {
                 // BloomBlur[i-1] → BloomMips[i-1] にコピー（次のブラーパスの入力として）
                 // BloomBlur[i-1] の結果を BloomMips[i-1] として使うために状態遷移
                 {
-                    D3D12_RESOURCE_BARRIER barriers[2] = {};
-                    barriers[0].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-                    barriers[0].Transition.pResource = pp.BloomBlur[i - 1].Resource.Get();
-                    barriers[0].Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-                    barriers[0].Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-                    barriers[1].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-                    barriers[1].Transition.pResource = pp.BloomMips[i - 1].Resource.Get();
-                    barriers[1].Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-                    barriers[1].Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-                    g_pd3dCommandList->ResourceBarrier(2, barriers);
+                    TransitionTarget(pp.BloomBlur[i - 1], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+                    TransitionTarget(pp.BloomMips[i - 1], D3D12_RESOURCE_STATE_RENDER_TARGET);
 
                     // BloomBlur[i-1] → BloomMips[i-1] のコピー（ダウンサンプルシェーダーでコピー描画）
                     MATERIAL copyParam = {};
@@ -1518,34 +1486,13 @@ namespace RendererDX12 {
         // 4. 最終合成 (Scene/Game RT + BloomMips[0] → Scene/Game RT)
         {
             // Scene/Game RT を SRV に遷移
-            {
-                D3D12_RESOURCE_BARRIER barrier = {};
-                barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-                barrier.Transition.pResource = sceneRT.Resource.Get();
-                barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-                barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-                g_pd3dCommandList->ResourceBarrier(1, &barrier);
-            }
+            TransitionTarget(sceneRT, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
             // BloomMips[0] を SRV に遷移
-            {
-                D3D12_RESOURCE_BARRIER barrier = {};
-                barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-                barrier.Transition.pResource = pp.BloomMips[0].Resource.Get();
-                barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-                barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-                g_pd3dCommandList->ResourceBarrier(1, &barrier);
-            }
+            TransitionTarget(pp.BloomMips[0], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
             // BrightTarget を一時的な合成先として使用
-            {
-                D3D12_RESOURCE_BARRIER barrier = {};
-                barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-                barrier.Transition.pResource = pp.BrightTarget.Resource.Get();
-                barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-                barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-                g_pd3dCommandList->ResourceBarrier(1, &barrier);
-            }
+            TransitionTarget(pp.BrightTarget, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
             D3D12_CPU_DESCRIPTOR_HANDLE rtv = GetRtvHandle(pp.BrightTarget.RtvIndex);
             g_pd3dCommandList->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
@@ -1577,16 +1524,8 @@ namespace RendererDX12 {
 
             // BrightTarget(合成結果)をSRVに → Scene/Game RTにコピー
             {
-                D3D12_RESOURCE_BARRIER barriers[2] = {};
-                barriers[0].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-                barriers[0].Transition.pResource = pp.BrightTarget.Resource.Get();
-                barriers[0].Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-                barriers[0].Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-                barriers[1].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-                barriers[1].Transition.pResource = sceneRT.Resource.Get();
-                barriers[1].Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-                barriers[1].Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-                g_pd3dCommandList->ResourceBarrier(2, barriers);
+                TransitionTarget(pp.BrightTarget, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+                TransitionTarget(sceneRT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
                 D3D12_CPU_DESCRIPTOR_HANDLE finalRtv = GetRtvHandle(sceneRT.RtvIndex);
                 g_pd3dCommandList->OMSetRenderTargets(1, &finalRtv, FALSE, nullptr);

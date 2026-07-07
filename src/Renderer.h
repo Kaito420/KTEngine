@@ -60,7 +60,7 @@ struct MATERIAL
     int         ShadingModelID;
     int         FlipU;
     int         FlipV;
-    float       DummyPbr;
+    int         HasNormalMap;
 
     // [古いマテリアルメンバ] (既存フォワード用互換)
     XMFLOAT4	Ambient;
@@ -69,7 +69,8 @@ struct MATERIAL
     XMFLOAT4	Emission;
     float		Shininess;
     BOOL        TextureEnable;
-    float		DummyOld[2];
+    int         HasMetallicMap;
+    int         HasRoughnessMap;
 };
 
 struct LIGHT

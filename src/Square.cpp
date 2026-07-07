@@ -95,6 +95,9 @@ void Square::Render()const{
 		material.ShadingModelID = shaderComp->GetShadingModelID();
 		material.FlipU = shaderComp->GetFlipU() ? 1 : 0;
 		material.FlipV = shaderComp->GetFlipV() ? 1 : 0;
+		material.HasNormalMap = shaderComp->GetNormalMap() ? 1 : 0;
+		material.HasMetallicMap = shaderComp->GetMetallicMap() ? 1 : 0;
+		material.HasRoughnessMap = shaderComp->GetRoughnessMap() ? 1 : 0;
 	} else {
 		material.BaseColor = { 1.0f, 1.0f, 1.0f, 1.0f };
 		material.EmissionColor = { 0.0f, 0.0f, 0.0f, 0.0f };
@@ -103,6 +106,9 @@ void Square::Render()const{
 		material.Roughness = 0.5f;
 		material.NormalWeight = 1.0f;
 		material.ShadingModelID = 0;
+		material.HasNormalMap = 0;
+		material.HasMetallicMap = 0;
+		material.HasRoughnessMap = 0;
 	}
 
 	Renderer::SetConstant(3, &material, sizeof(material));
@@ -110,6 +116,15 @@ void Square::Render()const{
 	// eNX`oCh
 	if (tex) {
 		Renderer::SetTexture(6, tex);
+	}
+	if (shaderComp && shaderComp->GetNormalMap()) {
+		Renderer::SetTexture(7, shaderComp->GetNormalMap());
+	}
+	if (shaderComp && shaderComp->GetMetallicMap()) {
+		Renderer::SetTexture(8, shaderComp->GetMetallicMap());
+	}
+	if (shaderComp && shaderComp->GetRoughnessMap()) {
+		Renderer::SetTexture(9, shaderComp->GetRoughnessMap());
 	}
 
 	// `

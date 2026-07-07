@@ -12,15 +12,15 @@
                             "id": 2147483650,
                             "data": {
                                 "value0": {
-                                    "ID": 0,
+                                    "ID": 3,
                                     "Name": "Camera",
                                     "Active": true,
                                     "ExecuteInEditor": true,
                                     "Transform": {
                                         "Position": {
                                             "x": 0.0,
-                                            "y": 0.04381512105464935,
-                                            "z": -0.3721834421157837
+                                            "y": 0.0,
+                                            "z": -0.4107339382171631
                                         },
                                         "Scale": {
                                             "x": 1.0,
@@ -52,15 +52,15 @@
                             "id": 2147483651,
                             "data": {
                                 "value0": {
-                                    "ID": 1,
+                                    "ID": 4,
                                     "Name": "Sky",
                                     "Active": true,
                                     "ExecuteInEditor": true,
                                     "Transform": {
                                         "Position": {
                                             "x": 0.0,
-                                            "y": 0.04381512105464935,
-                                            "z": -0.3721834421157837
+                                            "y": 0.0,
+                                            "z": -0.4107339382171631
                                         },
                                         "Scale": {
                                             "x": 500.0,
@@ -112,7 +112,10 @@
                                                     "ShadingModelID": 0,
                                                     "FlipU": false,
                                                     "FlipV": false,
-                                                    "TexturePath": "asset/texture/sky2.jpg"
+                                                    "TexturePath": "asset/texture/sky2.jpg",
+                                                    "NormalMapPath": "",
+                                                    "MetallicMapPath": "",
+                                                    "RoughnessMapPath": ""
                                                 }
                                             }
                                         },
@@ -141,7 +144,7 @@
                             "id": 2147483654,
                             "data": {
                                 "value0": {
-                                    "ID": 2,
+                                    "ID": 5,
                                     "Name": "Light",
                                     "Active": true,
                                     "ExecuteInEditor": true,
@@ -172,7 +175,7 @@
                                 },
                                 "LightData": {
                                     "Enable": 1,
-                                    "DiffuseModel": 2,
+                                    "DiffuseModel": 0,
                                     "ShadingModel": 0,
                                     "SpecularModel": 1,
                                     "Direction": {
@@ -188,9 +191,9 @@
                                         "w": 1.0
                                     },
                                     "Ambient": {
-                                        "x": 0.20000000298023225,
-                                        "y": 0.20000000298023225,
-                                        "z": 0.20000000298023225,
+                                        "x": 0.501960813999176,
+                                        "y": 0.501960813999176,
+                                        "z": 0.501960813999176,
                                         "w": 1.0
                                     },
                                     "Position": {
@@ -213,9 +216,9 @@
                                     },
                                     "RimPower": 2.0,
                                     "RimLightModel": 0,
-                                    "Intensity": 3.450000047683716,
-                                    "AmbientIntensity": 2.0,
-                                    "Exposure": 1.7000000476837159
+                                    "Intensity": 1.100000023841858,
+                                    "AmbientIntensity": 1.0,
+                                    "Exposure": 1.0
                                 }
                             }
                         }
@@ -225,7 +228,7 @@
                         "ptr_wrapper": {
                             "id": 2147483655,
                             "data": {
-                                "ID": 3,
+                                "ID": 6,
                                 "Name": "GameObject",
                                 "Active": true,
                                 "ExecuteInEditor": false,
@@ -233,7 +236,7 @@
                                     "Position": {
                                         "x": 0.0,
                                         "y": 0.0,
-                                        "z": 0.0
+                                        "z": 0.042044274508953097
                                     },
                                     "Scale": {
                                         "x": 1.0,
@@ -242,12 +245,12 @@
                                     },
                                     "Rotation": {
                                         "x": 0.0,
-                                        "y": 0.0,
+                                        "y": -0.0,
                                         "z": 0.0
                                     },
                                     "Quaternion": {
                                         "x": 0.0,
-                                        "y": 0.0,
+                                        "y": -0.0,
                                         "z": 0.0,
                                         "w": 1.0
                                     }
@@ -277,14 +280,17 @@
                                                     "z": 0.0,
                                                     "w": 0.0
                                                 },
-                                                "Metallic": 0.3050000071525574,
-                                                "Specular": 0.49300000071525576,
-                                                "Roughness": 0.13300000131130219,
+                                                "Metallic": 0.453000009059906,
+                                                "Specular": 0.5,
+                                                "Roughness": 0.5,
                                                 "NormalWeight": 1.0,
                                                 "ShadingModelID": 0,
                                                 "FlipU": false,
                                                 "FlipV": false,
-                                                "TexturePath": "asset/model/Drill_01_diff_4k.dds"
+                                                "TexturePath": "asset/model/Drill_01_diff_4k.dds",
+                                                "NormalMapPath": "",
+                                                "MetallicMapPath": "",
+                                                "RoughnessMapPath": "asset/texture/Drill_01_arm_4k.dds"
                                             }
                                         }
                                     },

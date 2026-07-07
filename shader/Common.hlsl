@@ -28,7 +28,7 @@ struct MATERIAL
     int ShadingModelID;
     int FlipU;
     int FlipV;
-    float DummyPbr;
+    int HasNormalMap;
     
     // [古いマテリアルメンバ] (既存フォワード用)
     float4 Ambient;
@@ -37,7 +37,8 @@ struct MATERIAL
     float4 Emission;
     float Shininess;
     bool TextureEnable;
-    float2 DummyOld;
+    int HasMetallicMap;
+    int HasRoughnessMap;
 };
 
 cbuffer MaterialBuffer : register(b3)
