@@ -412,6 +412,7 @@ void ModelRenderer::LoadObj(const char* FileName, MODEL_OBJ* ModelObj)
 			fscanf(file, "%f", &position->x);
 			fscanf(file, "%f", &position->y);
 			fscanf(file, "%f", &position->z);
+			position->z = -position->z; // Flip Z to convert RH to LH
 			position++;
 		}
 		else if (strcmp(str, "vn") == 0)
@@ -420,6 +421,7 @@ void ModelRenderer::LoadObj(const char* FileName, MODEL_OBJ* ModelObj)
 			fscanf(file, "%f", &normal->x);
 			fscanf(file, "%f", &normal->y);
 			fscanf(file, "%f", &normal->z);
+			normal->z = -normal->z; // Flip Z to convert RH to LH
 			normal++;
 		}
 		else if (strcmp(str, "vt") == 0)
@@ -503,6 +505,12 @@ void ModelRenderer::LoadObj(const char* FileName, MODEL_OBJ* ModelObj)
 
 
 	fclose(file);
+
+	// Reverse winding order to match LH coordinate system culling
+	for (unsigned int i = 0; i < ModelObj->IndexNum; i += 3)
+	{
+		std::swap(ModelObj->IndexArray[i + 1], ModelObj->IndexArray[i + 2]);
+	}
 
 
 	delete[] positionArray;
