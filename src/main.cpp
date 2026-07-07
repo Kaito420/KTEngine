@@ -14,6 +14,7 @@
 #include "Scene.h"
 #include "Input.h"
 #include "PostProcessSystem.h"
+#include "../resource/resource.h"
 
 // グローバル変数
 HWND hwnd = nullptr;
@@ -42,10 +43,10 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
     srand((unsigned)time(NULL));
     // ウィンドウクラス登録
     WNDCLASSEX wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L,
-                      hInstance, NULL, NULL, NULL, NULL,
-                      "DX11WindowClass", NULL };
+                      hInstance, LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1)), LoadCursor(NULL, IDC_ARROW), NULL, NULL,
+                      "KTEngineClass", LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1)) };
     RegisterClassEx(&wc);
-    hwnd = CreateWindow(wc.lpszClassName, "Engine",
+    hwnd = CreateWindow(wc.lpszClassName, "KTEngine",
         WS_OVERLAPPEDWINDOW, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT,
         NULL, NULL, wc.hInstance, NULL);
 
