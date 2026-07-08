@@ -27,6 +27,18 @@ void PostProcessSystem::RenderUI() {
         }
     }
 
+    // Color Grading セクション
+    if (ImGui::CollapsingHeader("Color Grading", ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::Checkbox("Enabled##ColorGrading", &s_settings.ColorGradingEnabled);
+
+        if (s_settings.ColorGradingEnabled) {
+            ImGui::SliderFloat("Contrast", &s_settings.Contrast, 0.0f, 2.0f, "%.2f");
+            ImGui::SliderFloat("Saturation", &s_settings.Saturation, 0.0f, 2.0f, "%.2f");
+            ImGui::SliderFloat("Brightness", &s_settings.Brightness, -1.0f, 1.0f, "%.2f");
+            ImGui::ColorEdit3("Color Filter", s_settings.ColorFilter);
+        }
+    }
+
     // 将来のエフェクトセクション
     // if (ImGui::CollapsingHeader("Vignette")) { ... }
     // if (ImGui::CollapsingHeader("Color Grading")) { ... }

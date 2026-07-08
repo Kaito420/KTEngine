@@ -549,6 +549,9 @@ namespace RendererDX12 {
         ShaderManager::Instance().LoadPixelShader("BloomDownsample", "shader/BloomDownsamplePS.cso");
         ShaderManager::Instance().LoadPixelShader("BloomComposite", "shader/BloomCompositePS.cso");
 
+        // Color Grading　ポストプロセスシェーダーのプリロード
+        ShaderManager::Instance().LoadPixelShader("ColorGrading", "shader/ColorGradingPS.cso");
+
         // 全画面矩形用頂点データの作成
         {
             Vertex vertices[] = {
@@ -1551,6 +1554,53 @@ namespace RendererDX12 {
     }
 
     // ======================================================================
+    // Color Grading 内部実装
+    // ======================================================================
+    void ApplyColorGradingInternal(){
+        PostProcessBuffers& pp = (g_currentRenderContext == CurrentRenderContext::Game)
+            ? g_gamePostProcess : g_scenePostProcess;
+        GBufferTarget& sceneRT = (g_currentRenderContext == CurrentRenderContext::Game)
+            ? g_tempGameRT : g_tempSceneRT;
+        
+    float baseWidth = (g_currentRenderContext == CurrentRenderContext::Game)
+            ? g_gameWidth : g_sceneWidth;
+    float baseHeight = (g_currentRenderContext == CurrentRenderContext::Game)
+            ? g_gameHeight : g_sceneHeight;
+    PostProcessSettings& settings = PostProcessSystem::GetSettings();
+    // 1. カラーグレーディングパラメータの転送用マテリアル定義
+    MATERIAL param = {};
+    // BaseColor.x = Contrast, y = Saturation, z = Brightness
+    param.BaseColor = XMFLOAT4(settings.Contrast, settings.Saturation, settings.Brightness, 0.0f);
+    // EmissionColor = ColorFilter (RGB)
+    param.EmissionColor = XMFLOAT4(settings.ColorFilter[0], settings.ColorFilter[1], settings.ColorFilter[2], 1.0f);
+    // 2. sceneRT をソーステクスチャとしてカラーグレーディングを実行し、pp.BrightTarget へ描画
+    GBufferTarget* src[] = { &sceneRT };
+    RenderFullScreenPass(pp.BrightTarget, src, 1, "Deferred", "ColorGrading", baseWidth, baseHeight, &param);
+    // 3. 処理結果 (pp.BrightTarget) を元の sceneRT へコピーして上書き
+    TransitionTarget(pp.BrightTarget, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+    TransitionTarget(sceneRT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+    D3D12_CPU_DESCRIPTOR_HANDLE finalRtv = GetRtvHandle(sceneRT.RtvIndex);
+    g_pd3dCommandList->OMSetRenderTargets(1, &finalRtv, FALSE, nullptr);
+    
+    D3D12_VIEWPORT vp = { 0.0f, 0.0f, baseWidth, baseHeight, 0.0f, 1.0f };
+    D3D12_RECT sr = { 0, 0, (LONG)baseWidth, (LONG)baseHeight };
+    g_pd3dCommandList->RSSetViewports(1, &vp);
+    g_pd3dCommandList->RSSetScissorRects(1, &sr);
+    ID3D12PipelineState* copyPso = ShaderManager::Instance().GetPipelineState(
+        "Deferred", "BloomDownsample", 1, D3D12_CULL_MODE_NONE, false, false, D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
+    if (copyPso) g_pd3dCommandList->SetPipelineState(copyPso);
+    MATERIAL copyParam = {};
+    copyParam.BaseColor = XMFLOAT4(1.0f / baseWidth, 1.0f / baseHeight, 0.0f, 0.0f);
+    SetConstant(3, &copyParam, sizeof(copyParam));
+    D3D12_GPU_DESCRIPTOR_HANDLE brightHandle = g_pd3dSrvDescHeap->GetGPUDescriptorHandleForHeapStart();
+    brightHandle.ptr += pp.BrightTarget.SrvIndex * g_srvDescriptorSize;
+    g_pd3dCommandList->SetGraphicsRootDescriptorTable(6, brightHandle);
+    DrawFullScreenQuad();
+        
+        
+    }
+
+    // ======================================================================
     // ApplyPostProcess: 汎用ポストプロセスエントリーポイント
     // ======================================================================
     void ApplyPostProcess() {
@@ -1567,6 +1617,11 @@ namespace RendererDX12 {
         // Bloom
         if (settings.BloomEnabled) {
             ApplyBloomInternal();
+        }
+
+        // Color Grading
+        if(settings.ColorGradingEnabled){
+            ApplyColorGradingInternal();
         }
 
         // 将来のエフェクト

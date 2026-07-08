@@ -13,6 +13,7 @@
 #include <unordered_map>
 #include "PhysicsSystem.h"
 #include "GameObject.h"
+#include "PostProcessSystem.h"
 #include <cereal/types/list.hpp>
 #include <cereal/types/memory.hpp>
 
@@ -25,7 +26,7 @@ protected:
 	int _selectedObjId = -1;
 	int _dragSrcIndex = -1;
 
-	bool _openPopup = false;		//ƒ|ƒbƒvƒAƒbƒv‚ğŠJ‚­‡}
+	bool _openPopup = false;		//ï¿½|ï¿½bï¿½vï¿½Aï¿½bï¿½vï¿½ï¿½ï¿½Jï¿½ï¿½ï¿½ï¿½ï¿½}
 	int _renameTargetId = -1;		
 	char _renameBuffer[256] = "";
 
@@ -48,7 +49,7 @@ public:
 	void OnLoaded();
 
 	/// <summary>
-	/// ƒQ[ƒ€ƒIƒuƒWƒFƒNƒg‚ğ’Ç‰Á‚·‚é
+	/// ï¿½Qï¿½[ï¿½ï¿½ï¿½Iï¿½uï¿½Wï¿½Fï¿½Nï¿½gï¿½ï¿½Ç‰ï¿½ï¿½ï¿½ï¿½ï¿½
 	/// </summary>
 	template <typename T, typename... Args>
 	T* AddGameObject(Args&&... args) {
@@ -64,7 +65,7 @@ public:
 	}
 	
 	/// <summary>
-	/// ƒQ[ƒ€ƒIƒuƒWƒFƒNƒg‚Ì–¼‘OŒŸõ
+	/// ï¿½Qï¿½[ï¿½ï¿½ï¿½Iï¿½uï¿½Wï¿½Fï¿½Nï¿½gï¿½Ì–ï¿½ï¿½Oï¿½ï¿½ï¿½ï¿½
 	/// </summary>
 	template <typename T>
 	T* FindGameObjectByName(const std::string& name) {
@@ -80,6 +81,7 @@ public:
 	template <class Archive>
 	void serialize(Archive& ar) {
 		ar(cereal::make_nvp("GameObjects", _gameObjects));
+		ar(cereal::make_nvp("PostProcessSettings", PostProcessSystem::GetSettings()));
 	}
 
 };

@@ -22,7 +22,7 @@
                                             "Position": {
                                                 "x": -2.098524808883667,
                                                 "y": 6.291932106018066,
-                                                "z": -19.787389755249025
+                                                "z": -19.787389755249023
                                             },
                                             "Scale": {
                                                 "x": 1.0,
@@ -31,7 +31,7 @@
                                             },
                                             "Rotation": {
                                                 "x": 12.399995803833008,
-                                                "y": 1.1000019311904908,
+                                                "y": 1.1000019311904907,
                                                 "z": 0.0
                                             },
                                             "Quaternion": {
@@ -282,7 +282,20 @@
                                 }
                             }
                         }
-                    ]
+                    ],
+                    "PostProcessSettings": {
+                        "BloomEnabled": false,
+                        "BloomThreshold": 0.8,
+                        "BloomSoftKnee": 0.5,
+                        "BloomIntensity": 1.0,
+                        "ColorGradingEnabled": false,
+                        "Contrast": 1.0,
+                        "Saturation": 1.0,
+                        "Brightness": 0.0,
+                        "ColorFilterR": 1.0,
+                        "ColorFilterG": 1.0,
+                        "ColorFilterB": 1.0
+                    }
                 }
             }
         }

@@ -236,7 +236,7 @@
                                     "Position": {
                                         "x": 0.0,
                                         "y": 0.0,
-                                        "z": 0.042044274508953097
+                                        "z": 0.042044274508953094
                                     },
                                     "Scale": {
                                         "x": 1.0,
@@ -312,7 +312,20 @@
                             }
                         }
                     }
-                ]
+                ],
+                "PostProcessSettings": {
+                    "BloomEnabled": false,
+                    "BloomThreshold": 0.8,
+                    "BloomSoftKnee": 0.5,
+                    "BloomIntensity": 1.0,
+                    "ColorGradingEnabled": false,
+                    "Contrast": 1.0,
+                    "Saturation": 1.0,
+                    "Brightness": 0.0,
+                    "ColorFilterR": 1.0,
+                    "ColorFilterG": 1.0,
+                    "ColorFilterB": 1.0
+                }
             }
         }
     }
