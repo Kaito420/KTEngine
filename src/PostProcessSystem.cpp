@@ -39,9 +39,16 @@ void PostProcessSystem::RenderUI() {
         }
     }
 
-    // 将来のエフェクトセクション
-    // if (ImGui::CollapsingHeader("Vignette")) { ... }
-    // if (ImGui::CollapsingHeader("Color Grading")) { ... }
+    // DoF セクション
+    if(ImGui::CollapsingHeader("Depth of Field", ImGuiTreeNodeFlags_DefaultOpen)){
+        ImGui::Checkbox("Enabled##DoF", &s_settings.DofEnabled);
+
+        if(s_settings.DofEnabled){
+            ImGui::SliderFloat("Focus Distance", &s_settings.DofFocusDistance, 0.1f, 100.0f, "%.1f");
+            ImGui::SliderFloat("Focus Range", &s_settings.DofFocusRange, 0.1f, 20.0f, "%.1f");
+            ImGui::SliderFloat("Blur Intensity", &s_settings.DofBlurIntensity, 0.0f, 2.0f, "%.2f");
+        }
+    }
 
     ImGui::End();
 }

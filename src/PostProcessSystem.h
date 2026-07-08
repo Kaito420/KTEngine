@@ -16,17 +16,18 @@ struct PostProcessSettings {
     float BloomSoftKnee  = 0.5f;
     float BloomIntensity = 1.0f;
 
-    // 将来のエフェクト用
-    // bool  VignetteEnabled = false;
-    // float VignetteIntensity = 0.5f;
-    // float VignetteRadius = 0.8f;
-
     // Color Grading
     bool ColorGradingEnabled = false;
     float Contrast = 1.0f;      // コントラスト(0.5~2.0)
     float Saturation = 1.0f;    // 彩度(0.0~2.0)
     float Brightness = 0.0f;    // 輝度(-1.0~1.0)
     float ColorFilter[3] = {1.0f, 1.0f, 1.0f}; // カラーフィルター (RGB)
+
+    // Depth of Field
+    bool DofEnabled = false;
+    float DofFocusDistance = 5.0f;
+    float DofFocusRange = 3.0f;
+    float DofBlurIntensity = 1.0f;
 
     template <class Archive>
     void serialize(Archive& ar){
@@ -41,7 +42,11 @@ struct PostProcessSettings {
             cereal::make_nvp("Brightness", Brightness),
             cereal::make_nvp("ColorFilterR", ColorFilter[0]),
             cereal::make_nvp("ColorFilterG", ColorFilter[1]),
-            cereal::make_nvp("ColorFilterB", ColorFilter[2])
+            cereal::make_nvp("ColorFilterB", ColorFilter[2]),
+            cereal::make_nvp("DofEnabled", DofEnabled),
+            cereal::make_nvp("DofFocusDistance", DofFocusDistance),
+            cereal::make_nvp("DofFocusRange", DofFocusRange),
+            cereal::make_nvp("DofBlurIntensity", DofBlurIntensity)
         );
     }
 };

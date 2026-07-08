@@ -324,7 +324,11 @@
                     "Brightness": 0.0,
                     "ColorFilterR": 1.0,
                     "ColorFilterG": 1.0,
-                    "ColorFilterB": 1.0
+                    "ColorFilterB": 1.0,
+                    "DofEnabled": false,
+                    "DofFocusDistance": 5.0,
+                    "DofFocusRange": 3.0,
+                    "DofBlurIntensity": 1.0
                 }
             }
         }

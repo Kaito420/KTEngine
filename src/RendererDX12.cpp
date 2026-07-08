@@ -552,6 +552,9 @@ namespace RendererDX12 {
         // Color Grading　ポストプロセスシェーダーのプリロード
         ShaderManager::Instance().LoadPixelShader("ColorGrading", "shader/ColorGradingPS.cso");
 
+        // Depth of Field ポストプロセスシェーダーのプリロード
+        ShaderManager::Instance().LoadPixelShader("DepthOfField", "shader/DepthOfFieldPS.cso");
+
         // 全画面矩形用頂点データの作成
         {
             Vertex vertices[] = {
@@ -1601,6 +1604,57 @@ namespace RendererDX12 {
     }
 
     // ======================================================================
+    // Depth of Field 内部実装
+    // ======================================================================
+    void ApplyDepthOfFieldInternal() {
+    PostProcessBuffers& pp = (g_currentRenderContext == CurrentRenderContext::Game)
+        ? g_gamePostProcess : g_scenePostProcess;
+    GBufferTarget& sceneRT = (g_currentRenderContext == CurrentRenderContext::Game)
+        ? g_tempGameRT : g_tempSceneRT;
+    GBufferSet& gbuffer = (g_currentRenderContext == CurrentRenderContext::Game)
+        ? g_gameGBuffer : g_sceneGBuffer;
+    float baseWidth = (g_currentRenderContext == CurrentRenderContext::Game) ? g_gameWidth : g_sceneWidth;
+    float baseHeight = (g_currentRenderContext == CurrentRenderContext::Game) ? g_gameHeight : g_sceneHeight;
+    PostProcessSettings& settings = PostProcessSystem::GetSettings();
+    // --- 1. 元画像を 1/2 サイズバッファに縮小しながら水平ブラー ---
+    MATERIAL blurHParam = {};
+    blurHParam.BaseColor = XMFLOAT4(1.0f / baseWidth, 1.0f / baseHeight, 1.0f, 0.0f); // Z=1.0: 水平
+    GBufferTarget* srcH[] = { &sceneRT };
+    RenderFullScreenPass(pp.BloomMips[0], srcH, 1, "Deferred", "BloomBlur", baseWidth / 2.0f, baseHeight / 2.0f, &blurHParam);
+    // --- 2. 1/2 サイズバッファを垂直ブラー (pp.BloomBlur[0] に格納) ---
+    MATERIAL blurVParam = {};
+    blurVParam.BaseColor = XMFLOAT4(2.0f / baseWidth, 2.0f / baseHeight, 0.0f, 0.0f); // Z=0.0: 垂直
+    GBufferTarget* srcV[] = { &pp.BloomMips[0] };
+    RenderFullScreenPass(pp.BloomBlur[0], srcV, 1, "Deferred", "BloomBlur", baseWidth / 2.0f, baseHeight / 2.0f, &blurVParam);
+    // --- 3. DoF 合成 (元画像 + ブラー画像 + ワールド座標) を実行し pp.BrightTarget (等倍) へ描画 ---
+    MATERIAL dofParam = {};
+    dofParam.BaseColor = XMFLOAT4(settings.DofFocusDistance, settings.DofFocusRange, settings.DofBlurIntensity, 0.0f);
+    // ソース: [0]元画像 (t0), [1]ブラー画像 (t1), [2]座標バッファ (t2)
+    GBufferTarget* dofSrc[] = { &sceneRT, &pp.BloomBlur[0], &gbuffer.Position };
+    RenderFullScreenPass(pp.BrightTarget, dofSrc, 3, "Deferred", "DepthOfField", baseWidth, baseHeight, &dofParam);
+    // --- 4. 合成完了した pp.BrightTarget の内容を最終出力である sceneRT に書き戻す ---
+    TransitionTarget(pp.BrightTarget, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+    TransitionTarget(sceneRT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+    D3D12_CPU_DESCRIPTOR_HANDLE finalRtv = GetRtvHandle(sceneRT.RtvIndex);
+    g_pd3dCommandList->OMSetRenderTargets(1, &finalRtv, FALSE, nullptr);
+    
+    D3D12_VIEWPORT vp = { 0.0f, 0.0f, baseWidth, baseHeight, 0.0f, 1.0f };
+    D3D12_RECT sr = { 0, 0, (LONG)baseWidth, (LONG)baseHeight };
+    g_pd3dCommandList->RSSetViewports(1, &vp);
+    g_pd3dCommandList->RSSetScissorRects(1, &sr);
+    ID3D12PipelineState* copyPso = ShaderManager::Instance().GetPipelineState(
+        "Deferred", "BloomDownsample", 1, D3D12_CULL_MODE_NONE, false, false, D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
+    if (copyPso) g_pd3dCommandList->SetPipelineState(copyPso);
+    MATERIAL copyParam = {};
+    copyParam.BaseColor = XMFLOAT4(1.0f / baseWidth, 1.0f / baseHeight, 0.0f, 0.0f);
+    SetConstant(3, &copyParam, sizeof(copyParam));
+    D3D12_GPU_DESCRIPTOR_HANDLE brightHandle = g_pd3dSrvDescHeap->GetGPUDescriptorHandleForHeapStart();
+    brightHandle.ptr += pp.BrightTarget.SrvIndex * g_srvDescriptorSize;
+    g_pd3dCommandList->SetGraphicsRootDescriptorTable(6, brightHandle);
+    DrawFullScreenQuad();
+}
+
+    // ======================================================================
     // ApplyPostProcess: 汎用ポストプロセスエントリーポイント
     // ======================================================================
     void ApplyPostProcess() {
@@ -1624,9 +1678,11 @@ namespace RendererDX12 {
             ApplyColorGradingInternal();
         }
 
-        // 将来のエフェクト
-        // if (settings.VignetteEnabled) { ApplyVignetteInternal(); }
-        // if (settings.ColorGradingEnabled) { ApplyColorGradingInternal(); }
+        // Depth of Field
+        if(settings.DofEnabled){
+            ApplyDepthOfFieldInternal();
+        }
+
     }
 
     void* GetGBufferSRV(int bufferIndex, bool isGame) {
