@@ -262,3 +262,13 @@ ID3D12PipelineState* ShaderManager::GetPipelineState(
     _lastPSO = pso.Get();
     return _lastPSO;
 }
+
+const std::vector<unsigned char>& ShaderManager::GetVertexShaderBinary(const std::string& id) const {
+    auto it = _vertexShaderBinaries.find(id);
+    if (it != _vertexShaderBinaries.end()) {
+        return it->second;
+    }
+    static const std::vector<unsigned char> empty;
+    return empty;
+}
+

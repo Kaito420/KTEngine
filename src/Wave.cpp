@@ -104,6 +104,8 @@ void Wave::Update()
 }
 
 void Wave::Render() const{
+	if (Renderer::IsShadowPass()) return;
+
 	int blendMode = 1;
 	if (Renderer::IsGeometryPass() && blendMode != 0) return;
 	if (!Renderer::IsGeometryPass() && blendMode == 0) return;

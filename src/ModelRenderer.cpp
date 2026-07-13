@@ -34,12 +34,45 @@ void ModelRenderer::Render() const
 {
 	if (!m_Model || !m_Model->VertexBuffer || !m_Model->IndexBuffer) return;
 
-	int blendMode = 0;
-	if (Renderer::IsGeometryPass() && blendMode != 0) return;
-	if (!Renderer::IsGeometryPass() && blendMode == 0) return;
+	// Transform 行列計算
+	XMMATRIX translation = XMMatrixTranslation(_owner->_transform._position.x, _owner->_transform._position.y, _owner->_transform._position.z);
+	KTVECTOR3 radians = { XMConvertToRadians(_owner->_transform._rotation.x),
+						  XMConvertToRadians(_owner->_transform._rotation.y),
+						  XMConvertToRadians(_owner->_transform._rotation.z) };
+	XMMATRIX rotation = XMMatrixRotationRollPitchYaw(radians.x, radians.y, radians.z);
+	XMMATRIX scaling = XMMatrixScaling(_owner->_transform._scale.x, _owner->_transform._scale.y, _owner->_transform._scale.z);
+	XMMATRIX worldMatrix = scaling * rotation * translation;
 
 	auto cmdList = Renderer::GetCommandListDX12();
 	if (!cmdList) return;
+
+	if (Renderer::IsShadowPass()) {
+		// 頂点バッファビュー設定
+		D3D12_VERTEX_BUFFER_VIEW vbView = {};
+		vbView.BufferLocation = m_Model->VertexBuffer->Resource->GetGPUVirtualAddress();
+		vbView.StrideInBytes = m_Model->VertexBuffer->Stride;
+		vbView.SizeInBytes = m_Model->VertexBuffer->Stride * m_Model->VertexBuffer->Size;
+		cmdList->IASetVertexBuffers(0, 1, &vbView);
+
+		// インデックスバッファビュー設定
+		D3D12_INDEX_BUFFER_VIEW ibView = {};
+		ibView.BufferLocation = m_Model->IndexBuffer->Resource->GetGPUVirtualAddress();
+		ibView.SizeInBytes = sizeof(unsigned int) * m_Model->IndexBuffer->Size;
+		ibView.Format = DXGI_FORMAT_R32_UINT;
+		cmdList->IASetIndexBuffer(&ibView);
+
+		cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		cmdList->SetPipelineState(Renderer::GetShadowPipelineState());
+		Renderer::SetWorldMatrix(worldMatrix);
+		for (unsigned int i = 0; i < m_Model->SubsetNum; i++) {
+			cmdList->DrawIndexedInstanced(m_Model->SubsetArray[i].IndexNum, 1, m_Model->SubsetArray[i].StartIndex, 0, 0);
+		}
+		return;
+	}
+
+	int blendMode = 0;
+	if (Renderer::IsGeometryPass() && blendMode != 0) return;
+	if (!Renderer::IsGeometryPass() && blendMode == 0) return;
 
 	// 頂点バッファビュー設定
 	D3D12_VERTEX_BUFFER_VIEW vbView = {};
@@ -70,15 +103,6 @@ void ModelRenderer::Render() const
 		if (pso == nullptr) return;
 		cmdList->SetPipelineState(pso);
 	}
-
-	// Transform 行列計算
-	XMMATRIX translation = XMMatrixTranslation(_owner->_transform._position.x, _owner->_transform._position.y, _owner->_transform._position.z);
-	KTVECTOR3 radians = { XMConvertToRadians(_owner->_transform._rotation.x),
-						  XMConvertToRadians(_owner->_transform._rotation.y),
-						  XMConvertToRadians(_owner->_transform._rotation.z) };
-	XMMATRIX rotation = XMMatrixRotationRollPitchYaw(radians.x, radians.y, radians.z);
-	XMMATRIX scaling = XMMatrixScaling(_owner->_transform._scale.x, _owner->_transform._scale.y, _owner->_transform._scale.z);
-	XMMATRIX worldMatrix = scaling * rotation * translation;
 
 	Renderer::SetWorldMatrix(worldMatrix);
 

@@ -81,6 +81,15 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
 
         // ゲームビューテクスチャにレンダリング
         if (Manager::IsShowGameView()) {
+            // --- 0. シャドウマップ描画パス ---
+            Renderer::SetShadowPass(true);
+            Renderer::BeginShadowRender();
+            Renderer::BindShaderConstantsDX12();
+            Manager::Render();
+            Renderer::EndShadowRender();
+            Renderer::SetShadowPass(false);
+
+            // --- 1. ジオメトリパス (G-Buffer生成) ---
             Renderer::SetGeometryPass(true);
             Renderer::BeginGameRender();
             Camera* mainCamera = nullptr;
@@ -103,6 +112,15 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
 
         // シーンビューテクスチャにレンダリング
         if (Manager::IsShowSceneView()) {
+            // --- 0. シャドウマップ描画パス ---
+            Renderer::SetShadowPass(true);
+            Renderer::BeginShadowRender();
+            Renderer::BindShaderConstantsDX12();
+            Manager::Render();
+            Renderer::EndShadowRender();
+            Renderer::SetShadowPass(false);
+
+            // --- 1. ジオメトリパス (G-Buffer生成) ---
             Renderer::SetGeometryPass(true);
             Renderer::BeginSceneRender();
             Renderer::SetViewMatrix(Manager::GetEditorCamera()->GetViewMatrix());
@@ -244,6 +262,17 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
                         ImGui::Separator();
                     }
                 }
+                
+                // Shadow Map
+                ImGui::Text("Shadow Map");
+                void* shadowMap = Renderer::GetShadowMapSRV();
+                if (shadowMap) {
+                    ImGui::Image(shadowMap, ImVec2(135, 135)); // 1:1 ratio square
+                } else {
+                    ImGui::Text("No Texture");
+                }
+                ImGui::NextColumn();
+
                 ImGui::Columns(1);
                 ImGui::End();
             }

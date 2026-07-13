@@ -105,6 +105,26 @@ namespace Renderer {
         RendererDX12::ResizeGameBuffer(width, height);
     }
 
+	// Shadow map methods
+    void* GetShadowMapSRV() {
+        return RendererDX12::GetShadowMapSRV();
+    }
+    bool IsShadowPass() {
+        return RendererDX12::IsShadowPass();
+    }
+    void SetShadowPass(bool enable) {
+        RendererDX12::SetShadowPass(enable);
+    }
+    ID3D12PipelineState* GetShadowPipelineState() {
+        return RendererDX12::GetShadowPipelineState();
+    }
+    void BeginShadowRender() {
+        RendererDX12::BeginShadowRender();
+    }
+    void EndShadowRender() {
+        RendererDX12::EndShadowRender();
+    }
+
     // Abstracted DX11 context methods (Dummies)
     void IASetVertexBuffers(UINT StartSlot, UINT NumBuffers, ID3D11Buffer* const* ppVertexBuffers, const UINT* pStrides, const UINT* pOffsets) {}
     void IASetIndexBuffer(ID3D11Buffer* pIndexBuffer, DXGI_FORMAT Format, UINT Offset) {}

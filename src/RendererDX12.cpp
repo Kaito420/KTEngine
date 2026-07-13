@@ -113,6 +113,12 @@ namespace RendererDX12 {
     float g_gameWidth = 1280.0f;
     float g_gameHeight = 720.0f;
 
+    // シャドウマップ関連のグローバル変数
+    ComPtr<ID3D12Resource> g_shadowMapArray;
+    unsigned int g_shadowMapDsvIndexStart = 3; //MainDepth(0), SceneDepth(1), GameDepth(2)の次から割り当てる
+    unsigned int g_shadowMapSrvIndex = 0; // プールから取得したSRVインデックスを保持
+    ComPtr<ID3D12PipelineState> g_shadowPipelineState;
+
     void PrintDebugMessages();
 
     D3D12_RESOURCE_STATES g_sceneRTState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
@@ -344,7 +350,7 @@ namespace RendererDX12 {
         g_pd3dDevice->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&g_pd3dRtvDescHeap));
 
         D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
-        dsvHeapDesc.NumDescriptors = 3; // MainDepth + SceneDepth + GameDepth
+        dsvHeapDesc.NumDescriptors = 4; // MainDepth + SceneDepth + GameDepth + ShadowMap(1) (ライトを増やす場合はここのサイズも増やす)
         dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
         dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
         g_pd3dDevice->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&g_pd3dDsvDescHeap));
@@ -448,7 +454,7 @@ namespace RendererDX12 {
             }
 
             // サンプラー (Static Samplers)
-            D3D12_STATIC_SAMPLER_DESC samplerDesc[2] = {};
+            D3D12_STATIC_SAMPLER_DESC samplerDesc[3] = {};
             samplerDesc[0].Filter = D3D12_FILTER_ANISOTROPIC;
             samplerDesc[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
             samplerDesc[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
@@ -477,11 +483,26 @@ namespace RendererDX12 {
             samplerDesc[1].RegisterSpace = 0;
             samplerDesc[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
+            // シャドウサンプラー（register s2）の定義
+            samplerDesc[2].Filter = D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
+            samplerDesc[2].AddressU = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+            samplerDesc[2].AddressV = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+            samplerDesc[2].AddressW = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+            samplerDesc[2].MipLODBias = 0.0f;
+            samplerDesc[2].MaxAnisotropy = 1;
+            samplerDesc[2].ComparisonFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL; // 深度比較
+            samplerDesc[2].BorderColor = D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE; // 影響範囲外は光が当たっている扱い
+            samplerDesc[2].MinLOD = 0.0f;
+            samplerDesc[2].MaxLOD = D3D12_FLOAT32_MAX;
+            samplerDesc[2].ShaderRegister = 2; // s2 に割り当て
+            samplerDesc[2].RegisterSpace = 0;
+            samplerDesc[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
             D3D12_ROOT_SIGNATURE_DESC rootSignatureDesc = {};
             rootSignatureDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
             rootSignatureDesc.NumParameters = _countof(rootParameters);
             rootSignatureDesc.pParameters = rootParameters;
-            rootSignatureDesc.NumStaticSamplers = 2;
+            rootSignatureDesc.NumStaticSamplers = _countof(samplerDesc);
             rootSignatureDesc.pStaticSamplers = samplerDesc;
 
             HRESULT hr;
@@ -591,8 +612,108 @@ namespace RendererDX12 {
             g_fullScreenQuadVBView.StrideInBytes = sizeof(Vertex);
         }
 
+        // シャドウマップ（Texture2DArray）リソースと各種ビューの生成
+        {
+            D3D12_RESOURCE_DESC shadowDesc = {};
+            shadowDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+            shadowDesc.Width = 2048;
+            shadowDesc.Height = 2048;
+            shadowDesc.DepthOrArraySize = 1; // ライトが増える場合はここを増やす
+            shadowDesc.MipLevels = 1;
+            shadowDesc.Format = DXGI_FORMAT_R32_TYPELESS; // DSV(D32)とSRV(R32)で解釈を変えるためTYPELESSを使用
+            shadowDesc.SampleDesc.Count = 1;
+            shadowDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+            shadowDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+
+            D3D12_CLEAR_VALUE depthClear = {};
+            depthClear.Format = DXGI_FORMAT_D32_FLOAT;
+            depthClear.DepthStencil.Depth = 1.0f;
+
+            auto heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+            HRESULT hr = g_pd3dDevice->CreateCommittedResource(
+                &heapProperties,
+                D3D12_HEAP_FLAG_NONE,
+                &shadowDesc,
+                D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, // 初期状態はシェーダー読み込み用にしておく
+                &depthClear,
+                IID_PPV_ARGS(&g_shadowMapArray)
+            );
+            assert(SUCCEEDED(hr));
+
+            // DSVの作成
+            D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
+            dsvDesc.Format = DXGI_FORMAT_D32_FLOAT;
+            dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
+            dsvDesc.Texture2DArray.MipSlice = 0;
+            dsvDesc.Texture2DArray.FirstArraySlice = 0; // ライト0用（スライス0番）
+            dsvDesc.Texture2DArray.ArraySize = 1; // 1回で書き込むスライス枚数
+
+            // DSV記述子ヒープの4番目（インデックス3）に書き込む
+            g_pd3dDevice->CreateDepthStencilView(g_shadowMapArray.Get(), 
+                &dsvDesc, GetDsvHandle(g_shadowMapDsvIndexStart));
+
+            // SRVの生成
+            D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+            srvDesc.Format = DXGI_FORMAT_R32_FLOAT;
+            srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+            srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+            srvDesc.Texture2DArray.MipLevels = 1;
+            srvDesc.Texture2DArray.MostDetailedMip = 0;
+            srvDesc.Texture2DArray.FirstArraySlice = 0;
+            srvDesc.Texture2DArray.ArraySize = 1; // 将来的に複数ライトにする時はここを最大数にする
+            
+            // SRVプールから空きインデックスを一つ取得し、ビューを登録する
+            g_shadowMapSrvIndex = g_srvDescriptorPool.front();
+            g_srvDescriptorPool.pop_front();
+            g_pd3dDevice->CreateShaderResourceView(g_shadowMapArray.Get(), 
+                &srvDesc, GetSrvCpuHandle(g_shadowMapSrvIndex));
+
+        }
+
+        // シャドウマップ用パイプラインステートの作成
+        {
+            // 頂点シェーダーのロードとバイナリ取得
+            ShaderManager::Instance().LoadVertexShader("ShadowVS", "shader/ShadowVS.cso");
+            const auto& vsBin = ShaderManager::Instance().GetVertexShaderBinary("ShadowVS");
+            D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
+            psoDesc.pRootSignature = g_pd3dRootSignature.Get();
+            psoDesc.VS.pShaderBytecode = vsBin.data();
+            psoDesc.VS.BytecodeLength = vsBin.size();
+            psoDesc.PS.pShaderBytecode = nullptr; // ピクセルシェーダーなし
+            psoDesc.PS.BytecodeLength = 0;
+            // 入力レイアウト
+            static const D3D12_INPUT_ELEMENT_DESC inputElementDescs[] = {
+                { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+                { "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+                { "COLOR",    0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+                { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0, 40, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+            };
+            psoDesc.InputLayout.pInputElementDescs = inputElementDescs;
+            psoDesc.InputLayout.NumElements = _countof(inputElementDescs);
+            psoDesc.BlendState.RenderTarget[0].RenderTargetWriteMask = 0; // カラー出力なし
+            psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
+            psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
+            psoDesc.RasterizerState.FrontCounterClockwise = FALSE;
+            // シャドウアクネ（ジャギー・ノイズ）対策のバイアス値
+            psoDesc.RasterizerState.DepthBias = 10000;
+            psoDesc.RasterizerState.DepthBiasClamp = 0.0f;
+            psoDesc.RasterizerState.SlopeScaledDepthBias = 1.0f;
+            psoDesc.RasterizerState.DepthClipEnable = TRUE;
+            psoDesc.DepthStencilState.DepthEnable = TRUE;
+            psoDesc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+            psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+            psoDesc.DepthStencilState.StencilEnable = FALSE;
+            psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+            psoDesc.NumRenderTargets = 0; // カラーバッファなし
+            psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
+            psoDesc.SampleDesc.Count = 1;
+            psoDesc.SampleMask = UINT_MAX;
+            HRESULT hr = g_pd3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&g_shadowPipelineState));
+            assert(SUCCEEDED(hr));
+        }
+
         // デフォルトテクスチャのロード
-        g_defaultTexture = Texture::Load("asset\\texture\\Space.jpg");
+        g_defaultTexture = Texture::Load("asset\\texture\\default.png");
 
         return true;
     }
@@ -1132,6 +1253,70 @@ namespace RendererDX12 {
         }
     }
 
+    void* GetShadowMapSRV(){
+        if(!g_shadowMapArray) return nullptr;
+        D3D12_GPU_DESCRIPTOR_HANDLE handle = GetSrvGpuHandle(g_shadowMapSrvIndex);
+        return (void*)handle.ptr;
+    }
+
+    static bool g_isShadowPass = false;
+    bool IsShadowPass() { return g_isShadowPass; }
+    void SetShadowPass(bool enable) { g_isShadowPass = enable; }
+    ID3D12PipelineState* GetShadowPipelineState() { return g_shadowPipelineState.Get(); }
+    void BeginShadowRender() {
+        // 1. ライトのView-Projection行列を計算
+        XMVECTOR lightDir = XMLoadFloat4(&g_currentLightData.Direction);
+        // 方向ベクトルを正規化（ドラッグ操作などで大きさが増加してもカメラ距離が一定（30ユニット）になるようにする）
+        float lenSq = XMVector3LengthSq(lightDir).m128_f32[0];
+        if (lenSq > 0.0001f) {
+            lightDir = XMVector3Normalize(lightDir);
+        } else {
+            lightDir = XMVectorSet(0.0f, -1.0f, -1.0f, 0.0f);
+        }
+
+        XMVECTOR target = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f); // シーン中心
+        XMVECTOR lightPos = target - lightDir * 30.0f;        // 30ユニット離す
+        XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+        if (fabs(XMVectorGetY(lightDir)) > 0.99f) {
+            up = XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f);
+        }
+    
+        XMMATRIX lightView = XMMatrixLookAtLH(lightPos, target, up);
+        XMMATRIX lightProj = XMMatrixOrthographicLH(40.0f, 40.0f, 0.1f, 100.0f); // 平行光源用 orthographic
+        XMMATRIX lightVP = lightView * lightProj;
+    
+        // HLSL用に転置して定数バッファの変数にセット
+        XMStoreFloat4x4(&g_currentLightData.LightVP, XMMatrixTranspose(lightVP));
+        // 2. シャドウリソースを DEPTH_WRITE へバリア遷移
+        D3D12_RESOURCE_BARRIER barrier = {};
+        barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+        barrier.Transition.pResource = g_shadowMapArray.Get();
+        barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+        barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_DEPTH_WRITE;
+        barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+        g_pd3dCommandList->ResourceBarrier(1, &barrier);
+        // 3. レンダーターゲットのセット (カラーはNULL、DSVのみバインド)
+        D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = GetDsvHandle(g_shadowMapDsvIndexStart);
+        g_pd3dCommandList->OMSetRenderTargets(0, nullptr, FALSE, &dsvHandle);
+        // 4. クリア
+        g_pd3dCommandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+        // 5. ビューポートをシャドウマップサイズ（2048x2048）に設定
+        D3D12_VIEWPORT viewport = { 0.0f, 0.0f, 2048.0f, 2048.0f, 0.0f, 1.0f };
+        D3D12_RECT scissorRect = { 0, 0, 2048, 2048 };
+        g_pd3dCommandList->RSSetViewports(1, &viewport);
+        g_pd3dCommandList->RSSetScissorRects(1, &scissorRect);
+    }
+    void EndShadowRender() {
+        // シャドウリソースを PIXEL_SHADER_RESOURCE へ戻す
+        D3D12_RESOURCE_BARRIER barrier = {};
+        barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+        barrier.Transition.pResource = g_shadowMapArray.Get();
+        barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_DEPTH_WRITE;
+        barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+        barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+        g_pd3dCommandList->ResourceBarrier(1, &barrier);
+    }
+
     // SRVアロケータヘルパー
     unsigned int AllocateSrvIndex() {
         assert(!g_srvDescriptorPool.empty() && "SRV Descriptor pool is empty!");
@@ -1274,6 +1459,10 @@ namespace RendererDX12 {
                 g_pd3dCommandList->SetGraphicsRootDescriptorTable((UINT)(6 + i), handle);
             }
 
+            // shadow
+            D3D12_GPU_DESCRIPTOR_HANDLE shadowHandle = GetSrvGpuHandle(g_shadowMapSrvIndex);
+            g_pd3dCommandList->SetGraphicsRootDescriptorTable(13, shadowHandle); // スロット13 = t7
+
             // 5. 全画面矩形を描画
             DrawFullScreenQuad();
         }
@@ -1296,7 +1485,7 @@ namespace RendererDX12 {
                 TransitionTarget(*targets[i], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
             }
 
-            // 2. レンダーターゲットを本来의 SceneRenderTarget へバインド
+            // 2. レンダーターゲットを本来の SceneRenderTarget へバインド
             D3D12_CPU_DESCRIPTOR_HANDLE rtv = GetRtvHandle(2);
             D3D12_CPU_DESCRIPTOR_HANDLE dsv = GetDsvHandle(1);
             g_pd3dCommandList->OMSetRenderTargets(1, &rtv, FALSE, &dsv);
@@ -1315,6 +1504,10 @@ namespace RendererDX12 {
                 handle.ptr += targets[i]->SrvIndex * g_srvDescriptorSize;
                 g_pd3dCommandList->SetGraphicsRootDescriptorTable((UINT)(6 + i), handle);
             }
+
+            // shadow
+            D3D12_GPU_DESCRIPTOR_HANDLE shadowHandle = GetSrvGpuHandle(g_shadowMapSrvIndex);
+            g_pd3dCommandList->SetGraphicsRootDescriptorTable(13, shadowHandle); // スロット13 = t7
 
             // 5. 全画面矩形を描画
             DrawFullScreenQuad();

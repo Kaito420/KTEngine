@@ -54,6 +54,7 @@ public:
 
     void LoadVertexShader(const std::string& id, const char* fileName);
     void LoadPixelShader(const std::string& id, const char* fileName);
+    const std::vector<unsigned char>& GetVertexShaderBinary(const std::string& id) const;
 
     ID3D12PipelineState* GetPipelineState(
         const std::string& vsId,

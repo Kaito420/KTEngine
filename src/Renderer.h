@@ -94,6 +94,8 @@ struct LIGHT
 
     float       Exposure;
     float       DummyLight[3];
+
+    XMFLOAT4X4 LightVP;
 };
 
 // D3D12 Resources
@@ -157,6 +159,12 @@ namespace RendererDX12 {
     void ApplyDeferredLighting();
     void ApplyPostProcess();
     void* GetGBufferSRV(int bufferIndex, bool isGame);
+    void* GetShadowMapSRV();
+    bool IsShadowPass();
+    void SetShadowPass(bool enable);
+    ID3D12PipelineState* GetShadowPipelineState();
+    void BeginShadowRender();
+    void EndShadowRender();
     void PrintDebugMessages();
     D3D12_CULL_MODE GetCullMode();
     bool GetDepthEnable();
@@ -247,6 +255,14 @@ namespace Renderer {
     float GetGameHeight();
 
     void ResizeGameBuffer(float width, float height);
+
+    // shadowMap Methods
+    void* GetShadowMapSRV();
+    bool IsShadowPass();
+    void SetShadowPass(bool enable);
+    ID3D12PipelineState* GetShadowPipelineState();
+    void BeginShadowRender();
+    void EndShadowRender();
 
     // D3D12 Resource Helpers
     std::unique_ptr<VERTEX_BUFFER> CreateVertexBuffer(unsigned int stride, unsigned int size);

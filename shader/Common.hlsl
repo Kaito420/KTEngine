@@ -67,6 +67,7 @@ struct LIGHT
     
     float Exposure;
     float3 DummyLight;
+    matrix LightVP;
 };
 
 cbuffer LightBuffer : register(b4)

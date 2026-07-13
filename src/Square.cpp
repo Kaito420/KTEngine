@@ -33,12 +33,33 @@ void Square::Update(){
 }
 
 void Square::Render()const{
-	int blendMode = 0;
-	if (Renderer::IsGeometryPass() && blendMode != 0) return;
-	if (!Renderer::IsGeometryPass() && blendMode == 0) return;
+	XMMATRIX translation = XMMatrixTranslation(_owner->_transform._position.x, _owner->_transform._position.y, _owner->_transform._position.z);
+	XMFLOAT4 q = XMFLOAT4(_owner->_transform._quaternion.x, _owner->_transform._quaternion.y, _owner->_transform._quaternion.z, _owner->_transform._quaternion.w);
+	XMMATRIX rotation = XMMatrixRotationQuaternion(XMLoadFloat4(&q));
+	XMMATRIX scale = XMMatrixScaling(_owner->_transform._scale.x, _owner->_transform._scale.y, _owner->_transform._scale.z);
+	XMMATRIX worldMatrix = scale * rotation * translation;
 
 	auto cmdList = Renderer::GetCommandListDX12();
 	if (!cmdList) return;
+
+	if (Renderer::IsShadowPass()) {
+		// _obt@r[ݒ
+		D3D12_VERTEX_BUFFER_VIEW vbView = {};
+		vbView.BufferLocation = _vertexBuffer->Resource->GetGPUVirtualAddress();
+		vbView.StrideInBytes = _vertexBuffer->Stride;
+		vbView.SizeInBytes = _vertexBuffer->Stride * _vertexBuffer->Size;
+		cmdList->IASetVertexBuffers(0, 1, &vbView);
+
+		cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+		cmdList->SetPipelineState(Renderer::GetShadowPipelineState());
+		Renderer::SetWorldMatrix(worldMatrix);
+		cmdList->DrawInstanced(4, 1, 0, 0);
+		return;
+	}
+
+	int blendMode = 0;
+	if (Renderer::IsGeometryPass() && blendMode != 0) return;
+	if (!Renderer::IsGeometryPass() && blendMode == 0) return;
 
 	// _obt@r[ݒ
 	D3D12_VERTEX_BUFFER_VIEW vbView = {};
@@ -63,15 +84,6 @@ void Square::Render()const{
 		cmdList->SetPipelineState(pso);
 	}
 
-
-	// svZ
-	XMMATRIX translation = XMMatrixTranslation(_owner->_transform._position.x, _owner->_transform._position.y, _owner->_transform._position.z);
-	XMFLOAT4 q = XMFLOAT4(_owner->_transform._quaternion.x, _owner->_transform._quaternion.y, _owner->_transform._quaternion.z, _owner->_transform._quaternion.w);
-	XMMATRIX rotation = XMMatrixRotationQuaternion(XMLoadFloat4(&q));
-	XMMATRIX scale = XMMatrixScaling(_owner->_transform._scale.x, _owner->_transform._scale.y, _owner->_transform._scale.z);
-	XMMATRIX worldMatrix = scale * rotation * translation;
-
-	// 萔obt@oCh
 	Renderer::SetWorldMatrix(worldMatrix);
 
 	MATERIAL material = {};

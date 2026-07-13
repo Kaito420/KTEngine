@@ -365,5 +365,8 @@ FodyWeavers.xsd
 # Engine logs
 d3d12_log.txt
 
+# Engine gui.ini
+imgui.ini
+
 # Shader binaries
 *.cso

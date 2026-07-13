@@ -151,7 +151,7 @@
                                     "Transform": {
                                         "Position": {
                                             "x": 0.0,
-                                            "y": 0.0,
+                                            "y": -0.06969956308603287,
                                             "z": 0.0
                                         },
                                         "Scale": {
@@ -161,12 +161,12 @@
                                         },
                                         "Rotation": {
                                             "x": 0.0,
-                                            "y": 0.0,
+                                            "y": -0.0,
                                             "z": 0.0
                                         },
                                         "Quaternion": {
                                             "x": 0.0,
-                                            "y": 0.0,
+                                            "y": -0.0,
                                             "z": 0.0,
                                             "w": 1.0
                                         }
@@ -179,8 +179,8 @@
                                     "ShadingModel": 0,
                                     "SpecularModel": 1,
                                     "Direction": {
-                                        "x": 0.0,
-                                        "y": -6.5,
+                                        "x": 1.100000023841858,
+                                        "y": 4.0,
                                         "z": 1.0,
                                         "w": 0.0
                                     },
@@ -236,7 +236,7 @@
                                     "Position": {
                                         "x": 0.0,
                                         "y": 0.0,
-                                        "z": 0.042044274508953094
+                                        "z": 0.042044274508953097
                                     },
                                     "Scale": {
                                         "x": 1.0,
@@ -311,11 +311,100 @@
                                 ]
                             }
                         }
+                    },
+                    {
+                        "polymorphic_id": 2147483655,
+                        "polymorphic_name": "CubeObject",
+                        "ptr_wrapper": {
+                            "id": 2147483658,
+                            "data": {
+                                "ID": 7,
+                                "Name": "Cube",
+                                "Active": true,
+                                "ExecuteInEditor": false,
+                                "Transform": {
+                                    "Position": {
+                                        "x": 0.0,
+                                        "y": -0.10225371271371842,
+                                        "z": 0.0
+                                    },
+                                    "Scale": {
+                                        "x": 4.5337700843811039,
+                                        "y": 0.10128536820411682,
+                                        "z": 3.789393663406372
+                                    },
+                                    "Rotation": {
+                                        "x": 0.0,
+                                        "y": -0.0,
+                                        "z": 0.0
+                                    },
+                                    "Quaternion": {
+                                        "x": 0.0,
+                                        "y": -0.0,
+                                        "z": 0.0,
+                                        "w": 1.0
+                                    }
+                                },
+                                "Components": [
+                                    {
+                                        "polymorphic_id": 3,
+                                        "ptr_wrapper": {
+                                            "id": 2147483659,
+                                            "data": {
+                                                "value0": {
+                                                    "Active": true,
+                                                    "ExecuteInEditor": false
+                                                },
+                                                "VertexShaderID": "DirectionalLight",
+                                                "VertexLayoutID": "DirectionalLight",
+                                                "PixelShaderID": "DirectionalLight",
+                                                "BaseColor": {
+                                                    "x": 1.0,
+                                                    "y": 1.0,
+                                                    "z": 1.0,
+                                                    "w": 1.0
+                                                },
+                                                "EmissionColor": {
+                                                    "x": 0.0,
+                                                    "y": 0.0,
+                                                    "z": 0.0,
+                                                    "w": 0.0
+                                                },
+                                                "Metallic": 0.0,
+                                                "Specular": 0.5,
+                                                "Roughness": 0.5,
+                                                "NormalWeight": 1.0,
+                                                "ShadingModelID": 0,
+                                                "FlipU": false,
+                                                "FlipV": false,
+                                                "TexturePath": "asset/model/field004.dds",
+                                                "NormalMapPath": "",
+                                                "MetallicMapPath": "",
+                                                "RoughnessMapPath": ""
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 2147483656,
+                                        "polymorphic_name": "Cube",
+                                        "ptr_wrapper": {
+                                            "id": 2147483660,
+                                            "data": {
+                                                "value0": {
+                                                    "Active": true,
+                                                    "ExecuteInEditor": false
+                                                }
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
                     }
                 ],
                 "PostProcessSettings": {
                     "BloomEnabled": false,
-                    "BloomThreshold": 0.8,
+                    "BloomThreshold": 0.800000011920929,
                     "BloomSoftKnee": 0.5,
                     "BloomIntensity": 1.0,
                     "ColorGradingEnabled": false,

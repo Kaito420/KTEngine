@@ -74,12 +74,40 @@ void Cube::Awake() {
 }
 
 void Cube::Render()const {
-	int blendMode = 0;
-	if (Renderer::IsGeometryPass() && blendMode != 0) return;
-	if (!Renderer::IsGeometryPass() && blendMode == 0) return;
+	XMMATRIX translation = XMMatrixTranslation(_owner->_transform._position.x, _owner->_transform._position.y, _owner->_transform._position.z);
+	XMFLOAT4 q = XMFLOAT4(_owner->_transform._quaternion.x, _owner->_transform._quaternion.y, _owner->_transform._quaternion.z, _owner->_transform._quaternion.w);
+	XMMATRIX rotation = XMMatrixRotationQuaternion(XMLoadFloat4(&q));
+	XMMATRIX scaling = XMMatrixScaling(_owner->_transform._scale.x, _owner->_transform._scale.y, _owner->_transform._scale.z);
+	XMMATRIX worldMatrix =  scaling * rotation * translation;
 
 	auto cmdList = Renderer::GetCommandListDX12();
 	if (!cmdList) return;
+
+	if (Renderer::IsShadowPass()) {
+		// _obt@r[ݒ
+		D3D12_VERTEX_BUFFER_VIEW vbView = {};
+		vbView.BufferLocation = _vertexBuffer->Resource->GetGPUVirtualAddress();
+		vbView.StrideInBytes = _vertexBuffer->Stride;
+		vbView.SizeInBytes = _vertexBuffer->Stride * _vertexBuffer->Size;
+		cmdList->IASetVertexBuffers(0, 1, &vbView);
+
+		// CfbNXobt@r[ݒ
+		D3D12_INDEX_BUFFER_VIEW ibView = {};
+		ibView.BufferLocation = _indexBuffer->Resource->GetGPUVirtualAddress();
+		ibView.SizeInBytes = sizeof(unsigned int) * _indexBuffer->Size;
+		ibView.Format = DXGI_FORMAT_R32_UINT;
+		cmdList->IASetIndexBuffer(&ibView);
+
+		cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		cmdList->SetPipelineState(Renderer::GetShadowPipelineState());
+		Renderer::SetWorldMatrix(worldMatrix);
+		cmdList->DrawIndexedInstanced(36, 1, 0, 0, 0);
+		return;
+	}
+
+	int blendMode = 0;
+	if (Renderer::IsGeometryPass() && blendMode != 0) return;
+	if (!Renderer::IsGeometryPass() && blendMode == 0) return;
 
 	// _obt@r[ݒ
 	D3D12_VERTEX_BUFFER_VIEW vbView = {};
@@ -109,14 +137,6 @@ void Cube::Render()const {
 		if (pso == nullptr) return;
 		cmdList->SetPipelineState(pso);
 	}
-
-
-	// svZ
-	XMMATRIX translation = XMMatrixTranslation(_owner->_transform._position.x, _owner->_transform._position.y, _owner->_transform._position.z);
-	XMFLOAT4 q = XMFLOAT4(_owner->_transform._quaternion.x, _owner->_transform._quaternion.y, _owner->_transform._quaternion.z, _owner->_transform._quaternion.w);
-	XMMATRIX rotation = XMMatrixRotationQuaternion(XMLoadFloat4(&q));
-	XMMATRIX scaling = XMMatrixScaling(_owner->_transform._scale.x, _owner->_transform._scale.y, _owner->_transform._scale.z);
-	XMMATRIX worldMatrix =  scaling * rotation * translation;
 
 	Renderer::SetWorldMatrix(worldMatrix);
 

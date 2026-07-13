@@ -22,7 +22,7 @@
                                             "Position": {
                                                 "x": -2.098524808883667,
                                                 "y": 6.291932106018066,
-                                                "z": -19.787389755249023
+                                                "z": -19.787389755249025
                                             },
                                             "Scale": {
                                                 "x": 1.0,
@@ -31,7 +31,7 @@
                                             },
                                             "Rotation": {
                                                 "x": 12.399995803833008,
-                                                "y": 1.1000019311904907,
+                                                "y": 1.1000019311904908,
                                                 "z": 0.0
                                             },
                                             "Quaternion": {
@@ -58,9 +58,9 @@
                                     "ExecuteInEditor": false,
                                     "Transform": {
                                         "Position": {
-                                            "x": 0.0,
-                                            "y": 0.0,
-                                            "z": 0.0
+                                            "x": -2.098524808883667,
+                                            "y": 6.291932106018066,
+                                            "z": -19.787389755249025
                                         },
                                         "Scale": {
                                             "x": 500.0,
@@ -88,8 +88,47 @@
                                                 "data": {
                                                     "value0": {
                                                         "Active": true,
-                                                        "ExecuteInEditor": false
+                                                        "ExecuteInEditor": true
                                                     }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "polymorphic_id": 2147483652,
+                                            "polymorphic_name": "Shader",
+                                            "ptr_wrapper": {
+                                                "id": 2147483653,
+                                                "data": {
+                                                    "value0": {
+                                                        "Active": true,
+                                                        "ExecuteInEditor": false
+                                                    },
+                                                    "VertexShaderID": "DirectionalLight",
+                                                    "VertexLayoutID": "DirectionalLight",
+                                                    "PixelShaderID": "DirectionalLight",
+                                                    "BaseColor": {
+                                                        "x": 1.0,
+                                                        "y": 1.0,
+                                                        "z": 1.0,
+                                                        "w": 1.0
+                                                    },
+                                                    "EmissionColor": {
+                                                        "x": 0.0,
+                                                        "y": 0.0,
+                                                        "z": 0.0,
+                                                        "w": 0.0
+                                                    },
+                                                    "Metallic": 0.0,
+                                                    "Specular": 0.5,
+                                                    "Roughness": 0.5,
+                                                    "NormalWeight": 1.0,
+                                                    "ShadingModelID": 0,
+                                                    "FlipU": false,
+                                                    "FlipV": false,
+                                                    "TexturePath": "asset/texture/Space.jpg",
+                                                    "NormalMapPath": "",
+                                                    "MetallicMapPath": "",
+                                                    "RoughnessMapPath": ""
                                                 }
                                             }
                                         }
@@ -100,7 +139,7 @@
                         {
                             "polymorphic_id": 1073741824,
                             "ptr_wrapper": {
-                                "id": 2147483653,
+                                "id": 2147483654,
                                 "data": {
                                     "ID": 2,
                                     "Name": "BlockSpawner",
@@ -131,10 +170,10 @@
                                     },
                                     "Components": [
                                         {
-                                            "polymorphic_id": 2147483652,
+                                            "polymorphic_id": 2147483653,
                                             "polymorphic_name": "BlockSpawner",
                                             "ptr_wrapper": {
-                                                "id": 2147483654,
+                                                "id": 2147483655,
                                                 "data": {
                                                     "value0": {
                                                         "Active": true,
@@ -145,10 +184,10 @@
                                             }
                                         },
                                         {
-                                            "polymorphic_id": 2147483653,
+                                            "polymorphic_id": 2147483654,
                                             "polymorphic_name": "ModelRenderer",
                                             "ptr_wrapper": {
-                                                "id": 2147483655,
+                                                "id": 2147483656,
                                                 "data": {
                                                     "value0": {
                                                         "Active": true,
@@ -159,15 +198,53 @@
                                             }
                                         },
                                         {
-                                            "polymorphic_id": 2147483654,
+                                            "polymorphic_id": 2147483655,
                                             "polymorphic_name": "Particle",
                                             "ptr_wrapper": {
-                                                "id": 2147483656,
+                                                "id": 2147483657,
                                                 "data": {
                                                     "value0": {
                                                         "Active": true,
                                                         "ExecuteInEditor": false
                                                     }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "polymorphic_id": 4,
+                                            "ptr_wrapper": {
+                                                "id": 2147483658,
+                                                "data": {
+                                                    "value0": {
+                                                        "Active": true,
+                                                        "ExecuteInEditor": false
+                                                    },
+                                                    "VertexShaderID": "DirectionalLight",
+                                                    "VertexLayoutID": "DirectionalLight",
+                                                    "PixelShaderID": "DirectionalLight",
+                                                    "BaseColor": {
+                                                        "x": 1.0,
+                                                        "y": 1.0,
+                                                        "z": 1.0,
+                                                        "w": 1.0
+                                                    },
+                                                    "EmissionColor": {
+                                                        "x": 0.0,
+                                                        "y": 0.0,
+                                                        "z": 0.0,
+                                                        "w": 0.0
+                                                    },
+                                                    "Metallic": 0.0,
+                                                    "Specular": 0.5,
+                                                    "Roughness": 0.5,
+                                                    "NormalWeight": 1.0,
+                                                    "ShadingModelID": 0,
+                                                    "FlipU": false,
+                                                    "FlipV": false,
+                                                    "TexturePath": "asset/texture/Brick.jpg",
+                                                    "NormalMapPath": "",
+                                                    "MetallicMapPath": "",
+                                                    "RoughnessMapPath": ""
                                                 }
                                             }
                                         }
@@ -178,7 +255,7 @@
                         {
                             "polymorphic_id": 1073741824,
                             "ptr_wrapper": {
-                                "id": 2147483657,
+                                "id": 2147483659,
                                 "data": {
                                     "ID": 3,
                                     "Name": "Floor1",
@@ -209,10 +286,10 @@
                                     },
                                     "Components": [
                                         {
-                                            "polymorphic_id": 2147483655,
+                                            "polymorphic_id": 2147483656,
                                             "polymorphic_name": "Cube",
                                             "ptr_wrapper": {
-                                                "id": 2147483658,
+                                                "id": 2147483660,
                                                 "data": {
                                                     "value0": {
                                                         "Active": true,
@@ -222,15 +299,15 @@
                                             }
                                         },
                                         {
-                                            "polymorphic_id": 2147483656,
+                                            "polymorphic_id": 2147483657,
                                             "polymorphic_name": "ColliderBox",
                                             "ptr_wrapper": {
-                                                "id": 2147483659,
+                                                "id": 2147483661,
                                                 "data": {
                                                     "value0": {
                                                         "value0": {
                                                             "Active": true,
-                                                            "ExecuteInEditor": false
+                                                            "ExecuteInEditor": true
                                                         },
                                                         "Center": {
                                                             "x": 0.0,
@@ -247,10 +324,10 @@
                                             }
                                         },
                                         {
-                                            "polymorphic_id": 2147483657,
+                                            "polymorphic_id": 2147483658,
                                             "polymorphic_name": "RigidBody",
                                             "ptr_wrapper": {
-                                                "id": 2147483660,
+                                                "id": 2147483662,
                                                 "data": {
                                                     "value0": {
                                                         "Active": true,
@@ -258,8 +335,8 @@
                                                     },
                                                     "Mass": 10000.0,
                                                     "UseGravity": false,
-                                                    "IsKinematic": true,
                                                     "GravityScale": 1.0,
+                                                    "IsKinematic": true,
                                                     "Restitution": 0.0,
                                                     "StaticFriction": 0.6000000238418579,
                                                     "DynamicFriction": 0.4000000059604645,
@@ -277,6 +354,44 @@
                                                     }
                                                 }
                                             }
+                                        },
+                                        {
+                                            "polymorphic_id": 4,
+                                            "ptr_wrapper": {
+                                                "id": 2147483663,
+                                                "data": {
+                                                    "value0": {
+                                                        "Active": true,
+                                                        "ExecuteInEditor": false
+                                                    },
+                                                    "VertexShaderID": "DirectionalLight",
+                                                    "VertexLayoutID": "DirectionalLight",
+                                                    "PixelShaderID": "DirectionalLight",
+                                                    "BaseColor": {
+                                                        "x": 1.0,
+                                                        "y": 1.0,
+                                                        "z": 1.0,
+                                                        "w": 1.0
+                                                    },
+                                                    "EmissionColor": {
+                                                        "x": 0.0,
+                                                        "y": 0.0,
+                                                        "z": 0.0,
+                                                        "w": 0.0
+                                                    },
+                                                    "Metallic": 0.0,
+                                                    "Specular": 0.5,
+                                                    "Roughness": 0.5,
+                                                    "NormalWeight": 1.0,
+                                                    "ShadingModelID": 0,
+                                                    "FlipU": false,
+                                                    "FlipV": false,
+                                                    "TexturePath": "asset/model/field004.dds",
+                                                    "NormalMapPath": "",
+                                                    "MetallicMapPath": "",
+                                                    "RoughnessMapPath": ""
+                                                }
+                                            }
                                         }
                                     ]
                                 }
@@ -285,7 +400,7 @@
                     ],
                     "PostProcessSettings": {
                         "BloomEnabled": false,
-                        "BloomThreshold": 0.8,
+                        "BloomThreshold": 0.800000011920929,
                         "BloomSoftKnee": 0.5,
                         "BloomIntensity": 1.0,
                         "ColorGradingEnabled": false,
