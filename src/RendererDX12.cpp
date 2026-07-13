@@ -1274,8 +1274,9 @@ namespace RendererDX12 {
             lightDir = XMVectorSet(0.0f, -1.0f, -1.0f, 0.0f);
         }
 
-        XMVECTOR target = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f); // シーン中心
-        XMVECTOR lightPos = target - lightDir * 30.0f;        // 30ユニット離す
+        // ライトのPositionを参照し、そこからDirection方向を見たビュー投影行列を計算する
+        XMVECTOR lightPos = XMLoadFloat4(&g_currentLightData.Position);
+        XMVECTOR target = lightPos + lightDir;
         XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
         if (fabs(XMVectorGetY(lightDir)) > 0.99f) {
             up = XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f);

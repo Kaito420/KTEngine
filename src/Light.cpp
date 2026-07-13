@@ -29,6 +29,9 @@ void Light::Awake(){
 }
 
 void Light::Update(){
+	_lightData.Position.x = _transform._position.x;
+	_lightData.Position.y = _transform._position.y;
+	_lightData.Position.z = _transform._position.z;
 	Renderer::SetLight(_lightData);
 }
 
@@ -53,11 +56,6 @@ void Light::ShowUI(){
 	float amb[4] = { _lightData.Ambient.x, _lightData.Ambient.y, _lightData.Ambient.z, _lightData.Ambient.w };
 	if (ImGui::ColorEdit4("Ambient Color", amb)) {
 		_lightData.Ambient = XMFLOAT4(amb[0], amb[1], amb[2], amb[3]);
-	}
-	
-	float pos[3] = { _lightData.Position.x, _lightData.Position.y, _lightData.Position.z };
-	if (ImGui::DragFloat3("Position", pos, 0.1f)) {
-		_lightData.Position = XMFLOAT4(pos[0], pos[1], pos[2], 0.0f);
 	}
 
 	const char* diffuseModels[] = { "Lambert", "Half-Lambert", "Normalized-Lambert" };
