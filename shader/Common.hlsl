@@ -117,4 +117,7 @@ Texture2D<float4> TextureMaterialMetallic : register(t3);
 Texture2D<float4> TextureMaterialSpecular : register(t4);
 Texture2D<float4> TextureMaterialRoughness : register(t5);
 
+Texture2DArray<float> TextureShadowMap : register(t7);
+
 SamplerState Sampler : register(s0);
+SamplerComparisonState ShadowSampler : register(s2);

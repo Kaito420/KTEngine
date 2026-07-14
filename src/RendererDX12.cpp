@@ -1264,9 +1264,12 @@ namespace RendererDX12 {
     void SetShadowPass(bool enable) { g_isShadowPass = enable; }
     ID3D12PipelineState* GetShadowPipelineState() { return g_shadowPipelineState.Get(); }
     void BeginShadowRender() {
+        // ルートシグネチャをバインド（描画時の定数バッファバインドが正しく機能するようにする）
+        g_pd3dCommandList->SetGraphicsRootSignature(g_pd3dRootSignature.Get());
+
         // 1. ライトのView-Projection行列を計算
         XMVECTOR lightDir = XMLoadFloat4(&g_currentLightData.Direction);
-        // 方向ベクトルを正規化（ドラッグ操作などで大きさが増加してもカメラ距離が一定（30ユニット）になるようにする）
+        // 方向ベクトルを正規化（ドラッグ操作などで大きさが増加してもカメラ距離が一定になるようにする）
         float lenSq = XMVector3LengthSq(lightDir).m128_f32[0];
         if (lenSq > 0.0001f) {
             lightDir = XMVector3Normalize(lightDir);
@@ -1274,8 +1277,8 @@ namespace RendererDX12 {
             lightDir = XMVectorSet(0.0f, -1.0f, -1.0f, 0.0f);
         }
 
-        // ライトのPositionを参照し、そこからDirection方向を見たビュー投影行列を計算する
-        XMVECTOR lightPos = XMLoadFloat4(&g_currentLightData.Position);
+        // ライトのPositionを参照し、さらにライト後方のオブジェクトがクリップされるのを防ぐため、光線と逆方向に30ユニット押し戻した位置を起点とする
+        XMVECTOR lightPos = XMLoadFloat4(&g_currentLightData.Position) - lightDir * 30.0f;
         XMVECTOR target = lightPos + lightDir;
         XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
         if (fabs(XMVectorGetY(lightDir)) > 0.99f) {

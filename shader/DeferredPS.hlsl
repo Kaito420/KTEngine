@@ -20,11 +20,30 @@ PS_OUTPUT main(PS_IN input)
     float4 materialSpecularParam = TextureMaterialSpecular.Sample(Sampler, input.TexCoord);
     float4 materialRoughnessParam = TextureMaterialRoughness.Sample(Sampler, input.TexCoord);
 
-    float3 lightDir = normalize(Light.Direction.xyz); // 光源の方向
+    float3 lightDir = -normalize(Light.Direction.xyz); // 光源の方向
     float3 n = normalize(normal.xyz); // 法線ベクトル
     float3 eye = normalize(CameraPosition.xyz - position.xyz); // 視線ベクトル
     float3 h = normalize(lightDir + eye); // ハーフベクトル
     float3 refEye = reflect(-eye, n); // 反射ベクトル
+
+    // --- シャドウ判定 ---
+    float shadowFactor = 1.0f;
+    
+    // 1. ワールド座標をライト投影空間へ変換
+    float4 lightSpacePos = mul(float4(position.xyz, 1.0f), Light.LightVP);
+    float3 projCoords = lightSpacePos.xyz / lightSpacePos.w;
+    
+    // 2. 射影空間 [-1, 1] から テクスチャUV空間 [0, 1] へ変換 (DirectX用にY反転)
+    float2 shadowUV;
+    shadowUV.x = projCoords.x * 0.5f + 0.5f;
+    shadowUV.y = -projCoords.y * 0.5f + 0.5f;
+    
+    // 3. 影テクスチャの範囲内のみでサンプリング比較
+    if (shadowUV.x >= 0.0f && shadowUV.x <= 1.0f && shadowUV.y >= 0.0f && shadowUV.y <= 1.0f) {
+        // デプス比較バイアス（シャドウアクネ防止）
+        float bias = 0.002f;
+        shadowFactor = TextureShadowMap.SampleCmpLevelZero(ShadowSampler, float3(shadowUV, 0.0f), projCoords.z - bias);
+    }
 
     float3 finalColor = float3(0, 0, 0);
 
@@ -44,6 +63,9 @@ PS_OUTPUT main(PS_IN input)
         else if (diffuse > 0.2f) diffuse = 0.4f;
         else                     diffuse = 0.2f;
         
+        // 影の影響を乗算
+        diffuse *= shadowFactor;
+        
         finalColor = baseColor.rgb * diffuse * Light.Diffuse.rgb * Light.Intensity;
 
         // Specular (Toon Specular)
@@ -53,6 +75,8 @@ PS_OUTPUT main(PS_IN input)
             float specular = dot(refEye, lightDir);
             specular = pow(saturate(specular), specularPower);
             specular = step(0.5f, specular); // トゥーンハイライト
+            // 影の影響を乗算
+            specular *= shadowFactor;
             finalColor += specularColor * specular * Light.Diffuse.rgb * Light.Intensity;
         }
     }
@@ -100,7 +124,8 @@ PS_OUTPUT main(PS_IN input)
             specularColor = brdfSpecular * Light.Diffuse.rgb * Light.Intensity * ndotl;
         }
         
-        finalColor = diffuseColor + specularColor;
+        // 影の影響を乗算
+        finalColor = (diffuseColor + specularColor) * shadowFactor;
     }
 
     // 2. Rim Light (リムライト)

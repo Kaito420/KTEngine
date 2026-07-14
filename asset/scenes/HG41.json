@@ -69,12 +69,12 @@
                                         },
                                         "Rotation": {
                                             "x": 0.0,
-                                            "y": 0.0,
+                                            "y": -0.0,
                                             "z": 0.0
                                         },
                                         "Quaternion": {
                                             "x": 0.0,
-                                            "y": 0.0,
+                                            "y": -0.0,
                                             "z": 0.0,
                                             "w": 1.0
                                         }
@@ -151,7 +151,7 @@
                                     "Transform": {
                                         "Position": {
                                             "x": 0.0,
-                                            "y": -0.06969956308603287,
+                                            "y": 1.0,
                                             "z": 0.0
                                         },
                                         "Scale": {
@@ -175,13 +175,13 @@
                                 },
                                 "LightData": {
                                     "Enable": 1,
-                                    "DiffuseModel": 0,
+                                    "DiffuseModel": 2,
                                     "ShadingModel": 0,
                                     "SpecularModel": 1,
                                     "Direction": {
-                                        "x": 1.100000023841858,
-                                        "y": 4.0,
-                                        "z": 1.0,
+                                        "x": 0.0,
+                                        "y": -1.0,
+                                        "z": 0.0,
                                         "w": 0.0
                                     },
                                     "Diffuse": {
@@ -197,9 +197,9 @@
                                         "w": 1.0
                                     },
                                     "Position": {
-                                        "x": -5.0,
-                                        "y": 10.0,
-                                        "z": 5.0,
+                                        "x": 0.0,
+                                        "y": 1.0,
+                                        "z": 0.0,
                                         "w": 0.0
                                     },
                                     "Parameter": {
@@ -234,8 +234,8 @@
                                 "ExecuteInEditor": false,
                                 "Transform": {
                                     "Position": {
-                                        "x": 0.0,
-                                        "y": 0.0,
+                                        "x": 0.10850746929645539,
+                                        "y": 0.4749796688556671,
                                         "z": 0.042044274508953097
                                     },
                                     "Scale": {
@@ -280,9 +280,9 @@
                                                     "z": 0.0,
                                                     "w": 0.0
                                                 },
-                                                "Metallic": 0.5720000267028809,
+                                                "Metallic": 0.9380000233650208,
                                                 "Specular": 0.5,
-                                                "Roughness": 0.800000011920929,
+                                                "Roughness": 0.39500001072883608,
                                                 "NormalWeight": 1.0,
                                                 "ShadingModelID": 0,
                                                 "FlipU": false,
@@ -290,7 +290,7 @@
                                                 "TexturePath": "asset/model/Drill_01_diff_4k.dds",
                                                 "NormalMapPath": "asset/texture/Drill_01_nor_dx_4k.dds",
                                                 "MetallicMapPath": "",
-                                                "RoughnessMapPath": "asset/texture/Drill_01_arm_4k.dds"
+                                                "RoughnessMapPath": ""
                                             }
                                         }
                                     },
@@ -394,6 +394,98 @@
                                                     "Active": true,
                                                     "ExecuteInEditor": false
                                                 }
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        "polymorphic_id": 2147483657,
+                        "polymorphic_name": "SphereObject",
+                        "ptr_wrapper": {
+                            "id": 2147483661,
+                            "data": {
+                                "ID": 8,
+                                "Name": "Sphere",
+                                "Active": true,
+                                "ExecuteInEditor": false,
+                                "Transform": {
+                                    "Position": {
+                                        "x": -0.4076167941093445,
+                                        "y": 0.5223199129104614,
+                                        "z": 0.0
+                                    },
+                                    "Scale": {
+                                        "x": 0.5600000023841858,
+                                        "y": 0.5600000023841858,
+                                        "z": 0.5600000023841858
+                                    },
+                                    "Rotation": {
+                                        "x": 0.0,
+                                        "y": -0.0,
+                                        "z": 0.0
+                                    },
+                                    "Quaternion": {
+                                        "x": 0.0,
+                                        "y": -0.0,
+                                        "z": 0.0,
+                                        "w": 1.0
+                                    }
+                                },
+                                "Components": [
+                                    {
+                                        "polymorphic_id": 3,
+                                        "ptr_wrapper": {
+                                            "id": 2147483662,
+                                            "data": {
+                                                "value0": {
+                                                    "Active": true,
+                                                    "ExecuteInEditor": false
+                                                },
+                                                "VertexShaderID": "DirectionalLight",
+                                                "VertexLayoutID": "DirectionalLight",
+                                                "PixelShaderID": "DirectionalLight",
+                                                "BaseColor": {
+                                                    "x": 1.0,
+                                                    "y": 1.0,
+                                                    "z": 1.0,
+                                                    "w": 1.0
+                                                },
+                                                "EmissionColor": {
+                                                    "x": 0.0,
+                                                    "y": 0.0,
+                                                    "z": 0.0,
+                                                    "w": 0.0
+                                                },
+                                                "Metallic": 0.0,
+                                                "Specular": 0.5,
+                                                "Roughness": 0.5,
+                                                "NormalWeight": 1.0,
+                                                "ShadingModelID": 0,
+                                                "FlipU": false,
+                                                "FlipV": false,
+                                                "TexturePath": "",
+                                                "NormalMapPath": "",
+                                                "MetallicMapPath": "",
+                                                "RoughnessMapPath": ""
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 2147483658,
+                                        "polymorphic_name": "Sphere",
+                                        "ptr_wrapper": {
+                                            "id": 2147483663,
+                                            "data": {
+                                                "value0": {
+                                                    "Active": true,
+                                                    "ExecuteInEditor": false
+                                                },
+                                                "Radius": 0.5,
+                                                "StackCount": 16,
+                                                "SliceCount": 16
                                             }
                                         }
                                     }
