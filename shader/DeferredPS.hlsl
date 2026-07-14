@@ -16,9 +16,11 @@ PS_OUTPUT main(PS_IN input)
     }
 
     float4 position = TexturePosition.Sample(Sampler, input.TexCoord);
-    float4 materialMetallicParam = TextureMaterialMetallic.Sample(Sampler, input.TexCoord);
-    float4 materialSpecularParam = TextureMaterialSpecular.Sample(Sampler, input.TexCoord);
-    float4 materialRoughnessParam = TextureMaterialRoughness.Sample(Sampler, input.TexCoord);
+    float4 materialARM = TextureMaterialARM.Sample(Sampler, input.TexCoord);
+    float ao = materialARM.r;
+    float roughness = materialARM.g;
+    float metallic = materialARM.b;
+    int shadingModel = (int)(materialARM.a * 255.0f + 0.5f);
 
     float3 lightDir = -normalize(Light.Direction.xyz); // 光源の方向
     float3 n = normalize(normal.xyz); // 法線ベクトル
@@ -47,8 +49,8 @@ PS_OUTPUT main(PS_IN input)
 
     float3 finalColor = float3(0, 0, 0);
 
-    // 1. Toon Shading (ShadingModel == 1 の場合) または ベース描画 (PBR)
-    if (Light.ShadingModel == 1) { // Toon Shading
+    // 1. Toon Shading (shadingModel == 1 の場合) または ベース描画 (PBR)
+    if (shadingModel == 1) { // Toon Shading
         // Diffuse
         float ndotl = dot(n, lightDir);
         float diffuse = max(ndotl, 0.0f);
@@ -81,9 +83,6 @@ PS_OUTPUT main(PS_IN input)
         }
     }
     else { // ベース描画 (PBR)
-        float roughness = materialRoughnessParam.x;
-        float metallic = materialMetallicParam.x;
-
         // Diffuse (Lambert または Half-Lambert の選択に対応)
         float ndotl_diffuse = dot(n, lightDir);
         float diffuseTerm = max(ndotl_diffuse, 0.0f);
@@ -134,7 +133,7 @@ PS_OUTPUT main(PS_IN input)
         rim = smoothstep(0.6f, 1.0f, rim);
         rim = pow(rim, Light.RimPower);
         
-        if (Light.ShadingModel == 1) { // Toon Rim
+        if (shadingModel == 1) { // Toon Rim
             rim = step(0.5f, rim);
         }
         
@@ -142,7 +141,7 @@ PS_OUTPUT main(PS_IN input)
     }
 
     // 3. Ambient (環境光) の付加
-    finalColor += baseColor.rgb * Light.Ambient.rgb * Light.AmbientIntensity;
+    finalColor += baseColor.rgb * Light.Ambient.rgb * Light.AmbientIntensity * ao;
 
     // 4. Exposure (露出調整) の適用
     finalColor *= Light.Exposure;

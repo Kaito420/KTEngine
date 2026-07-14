@@ -105,17 +105,13 @@ struct PS_OUTPUT_GEOMETRY
     float4 Color : SV_TARGET0;
     float4 Normal : SV_TARGET1;
     float4 Position : SV_TARGET2;
-    float4 MaterialMetallic : SV_TARGET3;
-    float4 MaterialSpecular : SV_TARGET4;
-    float4 MaterialRoughness : SV_TARGET5;
+    float4 MaterialARM : SV_TARGET3;
 };
 
 Texture2D<float4> TextureBaseColor : register(t0);
 Texture2D<float4> TextureNormal : register(t1);
 Texture2D<float4> TexturePosition : register(t2);
-Texture2D<float4> TextureMaterialMetallic : register(t3);
-Texture2D<float4> TextureMaterialSpecular : register(t4);
-Texture2D<float4> TextureMaterialRoughness : register(t5);
+Texture2D<float4> TextureMaterialARM : register(t3);
 
 Texture2DArray<float> TextureShadowMap : register(t7);
 

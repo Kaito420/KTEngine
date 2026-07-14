@@ -46,6 +46,9 @@ private:
 	std::string _roughnessMapPath = "";
 	const TEXTURE* _roughnessMap = nullptr;
 
+	std::string _armMapPath = "";
+	const TEXTURE* _armMap = nullptr;
+
 public:
 	void Awake() override;
     void SetVertexShader(std::string id);
@@ -94,6 +97,11 @@ public:
 	std::string GetRoughnessMapPath() const { return _roughnessMapPath; }
 	void SetRoughnessMapPath(const std::string& path);
 
+	// ARM Map
+	const TEXTURE* GetARMMap() const { return _armMap; }
+	std::string GetARMMapPath() const { return _armMapPath; }
+	void SetARMMapPath(const std::string& path);
+
 	void ShowUI() override;
 	std::string GetComponentName() override { return "Shader"; }
 
@@ -116,6 +124,11 @@ public:
 		ar(cereal::make_nvp("NormalMapPath", _normalMapPath));
 		ar(cereal::make_nvp("MetallicMapPath", _metallicMapPath));
 		ar(cereal::make_nvp("RoughnessMapPath", _roughnessMapPath));
+		try {
+			ar(cereal::make_nvp("ARMMapPath", _armMapPath));
+		} catch (...) {
+			_armMapPath = "";
+		}
 
 		if (!_texturePath.empty()) {
 			_texture = Texture::Load(_texturePath.c_str());
@@ -136,6 +149,11 @@ public:
 			_roughnessMap = Texture::Load(_roughnessMapPath.c_str());
 		} else {
 			_roughnessMap = nullptr;
+		}
+		if (!_armMapPath.empty()) {
+			_armMap = Texture::Load(_armMapPath.c_str());
+		} else {
+			_armMap = nullptr;
 		}
 	}
 };

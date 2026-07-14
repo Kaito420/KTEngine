@@ -241,15 +241,15 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
                 
                 bool viewGameGBuffer = (viewGBufferType == 1);
 
-                const char* names[6] = {
+                const char* names[4] = {
                     "Color (Base Color)", "Normal (World Space)", "Position (World Space)",
-                    "Metallic", "Specular", "Roughness"
+                    "Material (ARM)"
                 };
 
                 ImVec2 imgSize(240, 135); // 16:9 ratio
 
-                ImGui::Columns(3, "gbuffer_columns", true);
-                for (int i = 0; i < 6; i++) {
+                ImGui::Columns(2, "gbuffer_columns", true);
+                for (int i = 0; i < 4; i++) {
                     ImGui::Text("%s", names[i]);
                     void* texture = Renderer::GetGBufferSRV(i, viewGameGBuffer);
                     if (texture) {
@@ -258,7 +258,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
                         ImGui::Text("No Texture");
                     }
                     ImGui::NextColumn();
-                    if (i == 2) {
+                    if (i == 1) {
                         ImGui::Separator();
                     }
                 }

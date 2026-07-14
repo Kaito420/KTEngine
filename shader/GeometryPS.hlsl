@@ -38,24 +38,17 @@ PS_OUTPUT_GEOMETRY main(PS_IN input)
     output.Position = input.WorldPosition;
     output.Position.a = 1.0f;
 
-    // Metallic
+    // Material (ARM + ShadingModel)
+    float3 arm = float3(1.0f, Material.Roughness, Material.Metallic);
     if (Material.HasMetallicMap) {
-        float metallic = TexturePosition.Sample(Sampler, input.TexCoord).r; // t2
-        output.MaterialMetallic = float4(metallic, metallic, metallic, 1.0f);
-    } else {
-        output.MaterialMetallic = float4(Material.Metallic, Material.Metallic, Material.Metallic, 1.0f);
+        // ARM Map is bound to register t2 (TexturePosition)
+        arm = TexturePosition.Sample(Sampler, input.TexCoord).rgb;
     }
     
-    // Specular (スカラー値のみ)
-    output.MaterialSpecular = float4(Material.Specular, Material.Specular, Material.Specular, 1.0f);
-    
-    // Roughness
-    if (Material.HasRoughnessMap) {
-        float roughness = TextureMaterialMetallic.Sample(Sampler, input.TexCoord).r; // t3
-        output.MaterialRoughness = float4(roughness, roughness, roughness, 1.0f);
-    } else {
-        output.MaterialRoughness = float4(Material.Roughness, Material.Roughness, Material.Roughness, 1.0f);
-    }
+    output.MaterialARM.r = arm.r; // AO
+    output.MaterialARM.g = arm.g; // Roughness
+    output.MaterialARM.b = arm.b; // Metallic
+    output.MaterialARM.a = (float)Material.ShadingModelID / 255.0f; // ShadingModelID
     
     return output;
 }

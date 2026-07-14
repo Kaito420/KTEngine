@@ -27,6 +27,9 @@ void Shader::Awake(){
 	if (!_roughnessMapPath.empty()) {
 		_roughnessMap = Texture::Load(_roughnessMapPath.c_str());
 	}
+	if (!_armMapPath.empty()) {
+		_armMap = Texture::Load(_armMapPath.c_str());
+	}
 }
 
 void Shader::SetVertexShader(std::string id){
@@ -71,6 +74,15 @@ void Shader::SetRoughnessMapPath(const std::string& path) {
 		_roughnessMap = Texture::Load(_roughnessMapPath.c_str());
 	} else {
 		_roughnessMap = nullptr;
+	}
+}
+
+void Shader::SetARMMapPath(const std::string& path) {
+	_armMapPath = path;
+	if (!_armMapPath.empty()) {
+		_armMap = Texture::Load(_armMapPath.c_str());
+	} else {
+		_armMap = nullptr;
 	}
 }
 
@@ -146,4 +158,5 @@ void Shader::ShowUI(){
 	ShowTextureCombo("Normal Map", _normalMapPath, [this](const std::string& p) { SetNormalMapPath(p); });
 	ShowTextureCombo("Metallic Map", _metallicMapPath, [this](const std::string& p) { SetMetallicMapPath(p); });
 	ShowTextureCombo("Roughness Map", _roughnessMapPath, [this](const std::string& p) { SetRoughnessMapPath(p); });
+	ShowTextureCombo("ARM Map", _armMapPath, [this](const std::string& p) { SetARMMapPath(p); });
 }

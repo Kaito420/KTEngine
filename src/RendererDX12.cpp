@@ -64,17 +64,13 @@ namespace RendererDX12 {
         GBufferTarget Color;
         GBufferTarget Normal;
         GBufferTarget Position;
-        GBufferTarget Metallic;
-        GBufferTarget Specular;
-        GBufferTarget Roughness;
+        GBufferTarget Material; // ARM (R:AO, G:Roughness, B:Metallic, A:ShadingModelID)
         
         void Release() {
             Color.Release();
             Normal.Release();
             Position.Release();
-            Metallic.Release();
-            Specular.Release();
-            Roughness.Release();
+            Material.Release();
         }
     };
     
@@ -801,34 +797,30 @@ namespace RendererDX12 {
         if (g_gameRenderTarget) {
             if (g_isGeometryPass) {
                 // MRT ジオメトリパス
-                GBufferTarget* targets[6] = {
+                GBufferTarget* targets[4] = {
                     &g_gameGBuffer.Color,
                     &g_gameGBuffer.Normal,
                     &g_gameGBuffer.Position,
-                    &g_gameGBuffer.Metallic,
-                    &g_gameGBuffer.Specular,
-                    &g_gameGBuffer.Roughness
+                    &g_gameGBuffer.Material
                 };
-                for (int i = 0; i < 6; i++) {
+                for (int i = 0; i < 4; i++) {
                     TransitionTarget(*targets[i], D3D12_RESOURCE_STATE_RENDER_TARGET);
                 }
 
-                D3D12_CPU_DESCRIPTOR_HANDLE rtvs[6];
-                for (int i = 0; i < 6; i++) {
+                D3D12_CPU_DESCRIPTOR_HANDLE rtvs[4];
+                for (int i = 0; i < 4; i++) {
                     rtvs[i] = GetRtvHandle(10 + i);
                 }
                 D3D12_CPU_DESCRIPTOR_HANDLE dsv = GetDsvHandle(2);
-                g_pd3dCommandList->OMSetRenderTargets(6, rtvs, FALSE, &dsv);
+                g_pd3dCommandList->OMSetRenderTargets(4, rtvs, FALSE, &dsv);
 
-                const float clearColors[6][4] = {
+                const float clearColors[4][4] = {
                     { 0.1f, 0.1f, 0.1f, 1.0f },
                     { 0.0f, 0.0f, 0.0f, 1.0f },
                     { 0.0f, 0.0f, 0.0f, 1.0f },
-                    { 0.0f, 0.0f, 0.0f, 1.0f },
-                    { 0.5f, 0.5f, 0.5f, 1.0f },
-                    { 0.5f, 0.5f, 0.5f, 1.0f }
+                    { 1.0f, 0.5f, 0.0f, 1.0f } // R:AO=1.0f, G:Roughness=0.5f, B:Metallic=0.0f, A:ShadingModel=1.0f
                 };
-                for (int i = 0; i < 6; i++) {
+                for (int i = 0; i < 4; i++) {
                     g_pd3dCommandList->ClearRenderTargetView(rtvs[i], clearColors[i], 0, nullptr);
                 }
                 g_pd3dCommandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
@@ -868,35 +860,30 @@ namespace RendererDX12 {
 
         if (g_sceneRenderTarget) {
             if (g_isGeometryPass) {
-                // MRT ジオメトリパス
-                GBufferTarget* targets[6] = {
+                GBufferTarget* targets[4] = {
                     &g_sceneGBuffer.Color,
                     &g_sceneGBuffer.Normal,
                     &g_sceneGBuffer.Position,
-                    &g_sceneGBuffer.Metallic,
-                    &g_sceneGBuffer.Specular,
-                    &g_sceneGBuffer.Roughness
+                    &g_sceneGBuffer.Material
                 };
-                for (int i = 0; i < 6; i++) {
+                for (int i = 0; i < 4; i++) {
                     TransitionTarget(*targets[i], D3D12_RESOURCE_STATE_RENDER_TARGET);
                 }
 
-                D3D12_CPU_DESCRIPTOR_HANDLE rtvs[6];
-                for (int i = 0; i < 6; i++) {
+                D3D12_CPU_DESCRIPTOR_HANDLE rtvs[4];
+                for (int i = 0; i < 4; i++) {
                     rtvs[i] = GetRtvHandle(4 + i);
                 }
                 D3D12_CPU_DESCRIPTOR_HANDLE dsv = GetDsvHandle(1);
-                g_pd3dCommandList->OMSetRenderTargets(6, rtvs, FALSE, &dsv);
+                g_pd3dCommandList->OMSetRenderTargets(4, rtvs, FALSE, &dsv);
 
-                const float clearColors[6][4] = {
+                const float clearColors[4][4] = {
                     { 0.15f, 0.15f, 0.15f, 1.0f },
                     { 0.0f, 0.0f, 0.0f, 1.0f },
                     { 0.0f, 0.0f, 0.0f, 1.0f },
-                    { 0.0f, 0.0f, 0.0f, 1.0f },
-                    { 0.5f, 0.5f, 0.5f, 1.0f },
-                    { 0.5f, 0.5f, 0.5f, 1.0f }
+                    { 1.0f, 0.5f, 0.0f, 1.0f } // R:AO=1.0f, G:Roughness=0.5f, B:Metallic=0.0f, A:ShadingModel=1.0f
                 };
-                for (int i = 0; i < 6; i++) {
+                for (int i = 0; i < 4; i++) {
                     g_pd3dCommandList->ClearRenderTargetView(rtvs[i], clearColors[i], 0, nullptr);
                 }
                 g_pd3dCommandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
@@ -1107,9 +1094,8 @@ namespace RendererDX12 {
         CreateGBufferResource(g_sceneGBuffer.Color, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 4, XMFLOAT4(0.15f, 0.15f, 0.15f, 1.0f));
         CreateGBufferResource(g_sceneGBuffer.Normal, width, height, DXGI_FORMAT_R16G16B16A16_FLOAT, 5, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
         CreateGBufferResource(g_sceneGBuffer.Position, width, height, DXGI_FORMAT_R16G16B16A16_FLOAT, 6, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
-        CreateGBufferResource(g_sceneGBuffer.Metallic, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 7, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
-        CreateGBufferResource(g_sceneGBuffer.Specular, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 8, XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f));
-        CreateGBufferResource(g_sceneGBuffer.Roughness, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 9, XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f));
+        CreateGBufferResource(g_sceneGBuffer.Material, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 7, XMFLOAT4(0.0f, 0.5f, 0.0f, 1.0f)); // R:AO=0.0f, G:Roughness=0.5f, B:Metallic=0.0f, A:ShadingModel=1.0f (will be cleared)
+
 
         // Scene ポストプロセスバッファの作成
         g_scenePostProcess.Release();
@@ -1227,9 +1213,8 @@ namespace RendererDX12 {
         CreateGBufferResource(g_gameGBuffer.Color, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 10, XMFLOAT4(0.1f, 0.1f, 0.1f, 1.0f));
         CreateGBufferResource(g_gameGBuffer.Normal, width, height, DXGI_FORMAT_R16G16B16A16_FLOAT, 11, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
         CreateGBufferResource(g_gameGBuffer.Position, width, height, DXGI_FORMAT_R16G16B16A16_FLOAT, 12, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
-        CreateGBufferResource(g_gameGBuffer.Metallic, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 13, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
-        CreateGBufferResource(g_gameGBuffer.Specular, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 14, XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f));
-        CreateGBufferResource(g_gameGBuffer.Roughness, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 15, XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f));
+        CreateGBufferResource(g_gameGBuffer.Material, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 13, XMFLOAT4(0.0f, 0.5f, 0.0f, 1.0f)); // R:AO=0.0f, G:Roughness=0.5f, B:Metallic=0.0f, A:ShadingModel=1.0f (will be cleared)
+
 
         // Game ポストプロセスバッファの作成
         g_gamePostProcess.Release();
@@ -1431,15 +1416,13 @@ namespace RendererDX12 {
             TransitionTarget(g_tempGameRT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
             // 1. G-Bufferリソースを RENDER_TARGET ➔ PIXEL_SHADER_RESOURCE にバリア遷移
-            GBufferTarget* targets[6] = {
+            GBufferTarget* targets[4] = {
                 &g_gameGBuffer.Color,
                 &g_gameGBuffer.Normal,
                 &g_gameGBuffer.Position,
-                &g_gameGBuffer.Metallic,
-                &g_gameGBuffer.Specular,
-                &g_gameGBuffer.Roughness
+                &g_gameGBuffer.Material
             };
-            for (int i = 0; i < 6; i++) {
+            for (int i = 0; i < 4; i++) {
                 TransitionTarget(*targets[i], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
             }
 
@@ -1457,7 +1440,7 @@ namespace RendererDX12 {
             // 4. 定数バッファやG-Bufferテクスチャ(t0〜t5)のバインド
             BindShaderConstants();
 
-            for (int i = 0; i < 6; i++) {
+            for (int i = 0; i < 4; i++) {
                 D3D12_GPU_DESCRIPTOR_HANDLE handle = g_pd3dSrvDescHeap->GetGPUDescriptorHandleForHeapStart();
                 handle.ptr += targets[i]->SrvIndex * g_srvDescriptorSize;
                 g_pd3dCommandList->SetGraphicsRootDescriptorTable((UINT)(6 + i), handle);
@@ -1477,15 +1460,13 @@ namespace RendererDX12 {
             TransitionTarget(g_tempSceneRT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
             // 1. G-Bufferリソースを RENDER_TARGET ➔ PIXEL_SHADER_RESOURCE にバリア遷移
-            GBufferTarget* targets[6] = {
+            GBufferTarget* targets[4] = {
                 &g_sceneGBuffer.Color,
                 &g_sceneGBuffer.Normal,
                 &g_sceneGBuffer.Position,
-                &g_sceneGBuffer.Metallic,
-                &g_sceneGBuffer.Specular,
-                &g_sceneGBuffer.Roughness
+                &g_sceneGBuffer.Material
             };
-            for (int i = 0; i < 6; i++) {
+            for (int i = 0; i < 4; i++) {
                 TransitionTarget(*targets[i], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
             }
 
@@ -1503,7 +1484,7 @@ namespace RendererDX12 {
             // 4. 定数バッファやG-Bufferテクスチャ(t0〜t5)のバインド
             BindShaderConstants();
 
-            for (int i = 0; i < 6; i++) {
+            for (int i = 0; i < 4; i++) {
                 D3D12_GPU_DESCRIPTOR_HANDLE handle = g_pd3dSrvDescHeap->GetGPUDescriptorHandleForHeapStart();
                 handle.ptr += targets[i]->SrvIndex * g_srvDescriptorSize;
                 g_pd3dCommandList->SetGraphicsRootDescriptorTable((UINT)(6 + i), handle);
@@ -1889,9 +1870,7 @@ namespace RendererDX12 {
             case 0: srvIndex = gbuffer.Color.SrvIndex; break;
             case 1: srvIndex = gbuffer.Normal.SrvIndex; break;
             case 2: srvIndex = gbuffer.Position.SrvIndex; break;
-            case 3: srvIndex = gbuffer.Metallic.SrvIndex; break;
-            case 4: srvIndex = gbuffer.Specular.SrvIndex; break;
-            case 5: srvIndex = gbuffer.Roughness.SrvIndex; break;
+            case 3: srvIndex = gbuffer.Material.SrvIndex; break;
             default: return nullptr;
         }
         D3D12_GPU_DESCRIPTOR_HANDLE handle = GetSrvGpuHandle(srvIndex);

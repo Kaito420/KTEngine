@@ -218,13 +218,11 @@ ID3D12PipelineState* ShaderManager::GetPipelineState(
     psoDesc.PrimitiveTopologyType = topologyType;
     
     if (actualVsId == "Geometry" || actualPsId == "Geometry") {
-        psoDesc.NumRenderTargets = 6;
+        psoDesc.NumRenderTargets = 4;
         psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;       // Color
         psoDesc.RTVFormats[1] = DXGI_FORMAT_R16G16B16A16_FLOAT;  // Normal
-        psoDesc.RTVFormats[2] = DXGI_FORMAT_R16G16B16A16_FLOAT;  // Position (FP16 optimized)
-        psoDesc.RTVFormats[3] = DXGI_FORMAT_R8G8B8A8_UNORM;       // Metallic
-        psoDesc.RTVFormats[4] = DXGI_FORMAT_R8G8B8A8_UNORM;       // Specular
-        psoDesc.RTVFormats[5] = DXGI_FORMAT_R8G8B8A8_UNORM;       // Roughness
+        psoDesc.RTVFormats[2] = DXGI_FORMAT_R16G16B16A16_FLOAT;  // Position
+        psoDesc.RTVFormats[3] = DXGI_FORMAT_R8G8B8A8_UNORM;       // Material (ARM + ShadingModel)
     } else {
         psoDesc.NumRenderTargets = 1;
         psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
