@@ -21,12 +21,6 @@ void Shader::Awake(){
 	if (!_normalMapPath.empty()) {
 		_normalMap = Texture::Load(_normalMapPath.c_str());
 	}
-	if (!_metallicMapPath.empty()) {
-		_metallicMap = Texture::Load(_metallicMapPath.c_str());
-	}
-	if (!_roughnessMapPath.empty()) {
-		_roughnessMap = Texture::Load(_roughnessMapPath.c_str());
-	}
 	if (!_armMapPath.empty()) {
 		_armMap = Texture::Load(_armMapPath.c_str());
 	}
@@ -59,23 +53,7 @@ void Shader::SetNormalMapPath(const std::string& path) {
 	}
 }
 
-void Shader::SetMetallicMapPath(const std::string& path) {
-	_metallicMapPath = path;
-	if (!_metallicMapPath.empty()) {
-		_metallicMap = Texture::Load(_metallicMapPath.c_str());
-	} else {
-		_metallicMap = nullptr;
-	}
-}
 
-void Shader::SetRoughnessMapPath(const std::string& path) {
-	_roughnessMapPath = path;
-	if (!_roughnessMapPath.empty()) {
-		_roughnessMap = Texture::Load(_roughnessMapPath.c_str());
-	} else {
-		_roughnessMap = nullptr;
-	}
-}
 
 void Shader::SetARMMapPath(const std::string& path) {
 	_armMapPath = path;
@@ -156,7 +134,5 @@ void Shader::ShowUI(){
 
 	ShowTextureCombo("BaseColor Map", _texturePath, [this](const std::string& p) { SetTexturePath(p); });
 	ShowTextureCombo("Normal Map", _normalMapPath, [this](const std::string& p) { SetNormalMapPath(p); });
-	ShowTextureCombo("Metallic Map", _metallicMapPath, [this](const std::string& p) { SetMetallicMapPath(p); });
-	ShowTextureCombo("Roughness Map", _roughnessMapPath, [this](const std::string& p) { SetRoughnessMapPath(p); });
 	ShowTextureCombo("ARM Map", _armMapPath, [this](const std::string& p) { SetARMMapPath(p); });
 }

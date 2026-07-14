@@ -40,12 +40,6 @@ private:
 	std::string _normalMapPath = "";
 	const TEXTURE* _normalMap = nullptr;
 
-	std::string _metallicMapPath = "";
-	const TEXTURE* _metallicMap = nullptr;
-
-	std::string _roughnessMapPath = "";
-	const TEXTURE* _roughnessMap = nullptr;
-
 	std::string _armMapPath = "";
 	const TEXTURE* _armMap = nullptr;
 
@@ -87,15 +81,7 @@ public:
 	std::string GetNormalMapPath() const { return _normalMapPath; }
 	void SetNormalMapPath(const std::string& path);
 
-	// Metallic Map
-	const TEXTURE* GetMetallicMap() const { return _metallicMap; }
-	std::string GetMetallicMapPath() const { return _metallicMapPath; }
-	void SetMetallicMapPath(const std::string& path);
 
-	// Roughness Map
-	const TEXTURE* GetRoughnessMap() const { return _roughnessMap; }
-	std::string GetRoughnessMapPath() const { return _roughnessMapPath; }
-	void SetRoughnessMapPath(const std::string& path);
 
 	// ARM Map
 	const TEXTURE* GetARMMap() const { return _armMap; }
@@ -122,8 +108,10 @@ public:
 		ar(cereal::make_nvp("FlipV", _flipV));
 		ar(cereal::make_nvp("TexturePath", _texturePath));
 		ar(cereal::make_nvp("NormalMapPath", _normalMapPath));
-		ar(cereal::make_nvp("MetallicMapPath", _metallicMapPath));
-		ar(cereal::make_nvp("RoughnessMapPath", _roughnessMapPath));
+		std::string dummyMetallicPath = "";
+		std::string dummyRoughnessPath = "";
+		try { ar(cereal::make_nvp("MetallicMapPath", dummyMetallicPath)); } catch (...) {}
+		try { ar(cereal::make_nvp("RoughnessMapPath", dummyRoughnessPath)); } catch (...) {}
 		try {
 			ar(cereal::make_nvp("ARMMapPath", _armMapPath));
 		} catch (...) {
@@ -139,16 +127,6 @@ public:
 			_normalMap = Texture::Load(_normalMapPath.c_str());
 		} else {
 			_normalMap = nullptr;
-		}
-		if (!_metallicMapPath.empty()) {
-			_metallicMap = Texture::Load(_metallicMapPath.c_str());
-		} else {
-			_metallicMap = nullptr;
-		}
-		if (!_roughnessMapPath.empty()) {
-			_roughnessMap = Texture::Load(_roughnessMapPath.c_str());
-		} else {
-			_roughnessMap = nullptr;
 		}
 		if (!_armMapPath.empty()) {
 			_armMap = Texture::Load(_armMapPath.c_str());

@@ -115,7 +115,8 @@
                                                     "TexturePath": "asset/texture/sky2.jpg",
                                                     "NormalMapPath": "",
                                                     "MetallicMapPath": "",
-                                                    "RoughnessMapPath": ""
+                                                    "RoughnessMapPath": "",
+                                                    "ARMMapPath": ""
                                                 }
                                             }
                                         },
@@ -280,17 +281,18 @@
                                                     "z": 0.0,
                                                     "w": 0.0
                                                 },
-                                                "Metallic": 0.9380000233650208,
-                                                "Specular": 0.5,
-                                                "Roughness": 0.39500001072883608,
-                                                "NormalWeight": 1.0,
+                                                "Metallic": 1.0,
+                                                "Specular": 1.0,
+                                                "Roughness": 0.36899998784065249,
+                                                "NormalWeight": 0.8889999985694885,
                                                 "ShadingModelID": 0,
                                                 "FlipU": false,
                                                 "FlipV": false,
                                                 "TexturePath": "asset/model/Drill_01_diff_4k.dds",
                                                 "NormalMapPath": "asset/texture/Drill_01_nor_dx_4k.dds",
                                                 "MetallicMapPath": "",
-                                                "RoughnessMapPath": ""
+                                                "RoughnessMapPath": "",
+                                                "ARMMapPath": ""
                                             }
                                         }
                                     },
@@ -380,7 +382,8 @@
                                                 "TexturePath": "asset/model/field004.dds",
                                                 "NormalMapPath": "",
                                                 "MetallicMapPath": "",
-                                                "RoughnessMapPath": ""
+                                                "RoughnessMapPath": "",
+                                                "ARMMapPath": ""
                                             }
                                         }
                                     },
@@ -469,7 +472,8 @@
                                                 "TexturePath": "",
                                                 "NormalMapPath": "",
                                                 "MetallicMapPath": "",
-                                                "RoughnessMapPath": ""
+                                                "RoughnessMapPath": "",
+                                                "ARMMapPath": ""
                                             }
                                         }
                                     },

@@ -162,7 +162,7 @@ void Cube::Render()const {
 		material.FlipU = shaderComp->GetFlipU() ? 1 : 0;
 		material.FlipV = shaderComp->GetFlipV() ? 1 : 0;
 		material.HasNormalMap = shaderComp->GetNormalMap() ? 1 : 0;
-		material.HasMetallicMap = (shaderComp->GetARMMap() || shaderComp->GetMetallicMap()) ? 1 : 0;
+		material.HasMetallicMap = shaderComp->GetARMMap() ? 1 : 0;
 		material.HasRoughnessMap = 0;
 	} else {
 		material.BaseColor = { 1.0f, 1.0f, 1.0f, 1.0f };
@@ -186,10 +186,9 @@ void Cube::Render()const {
 		Renderer::SetTexture(7, shaderComp->GetNormalMap());
 	}
 	if (shaderComp) {
-		const TEXTURE* armTex = shaderComp->GetARMMap() ? shaderComp->GetARMMap() : shaderComp->GetMetallicMap();
-		if (armTex) {
-			Renderer::SetTexture(8, armTex);
-		}
+		Renderer::SetTexture(8, shaderComp->GetARMMap());
+	} else {
+		Renderer::SetTexture(8, nullptr);
 	}
 
 	cmdList->DrawIndexedInstanced(36, 1, 0, 0, 0);

@@ -48,6 +48,7 @@ namespace RendererDX12 {
         ComPtr<ID3D12Resource> Resource = nullptr;
         unsigned int RtvIndex = 0;
         unsigned int SrvIndex = 0;
+        unsigned int GuiSrvIndex = 0;
         D3D12_RESOURCE_STATES State = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
         
         void Release() {
@@ -55,6 +56,10 @@ namespace RendererDX12 {
             if (SrvIndex != 0) {
                 FreeSrvIndex(SrvIndex);
                 SrvIndex = 0;
+            }
+            if (GuiSrvIndex != 0) {
+                FreeSrvIndex(GuiSrvIndex);
+                GuiSrvIndex = 0;
             }
             State = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
         }
@@ -1018,6 +1023,16 @@ namespace RendererDX12 {
         srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
         srvDesc.Texture2D.MipLevels = 1;
         g_pd3dDevice->CreateShaderResourceView(target.Resource.Get(), &srvDesc, GetSrvCpuHandle(target.SrvIndex));
+
+        target.GuiSrvIndex = AllocateSrvIndex();
+        D3D12_SHADER_RESOURCE_VIEW_DESC guiSrvDesc = srvDesc;
+        guiSrvDesc.Shader4ComponentMapping = D3D12_ENCODE_SHADER_4_COMPONENT_MAPPING(
+            D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_0,
+            D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_1,
+            D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_2,
+            D3D12_SHADER_COMPONENT_MAPPING_FORCE_VALUE_1
+        );
+        g_pd3dDevice->CreateShaderResourceView(target.Resource.Get(), &guiSrvDesc, GetSrvCpuHandle(target.GuiSrvIndex));
     }
 
     void RecreateSceneBuffer(float width, float height) {
@@ -1867,10 +1882,10 @@ namespace RendererDX12 {
         const GBufferSet& gbuffer = isGame ? g_gameGBuffer : g_sceneGBuffer;
         unsigned int srvIndex = 0;
         switch (bufferIndex) {
-            case 0: srvIndex = gbuffer.Color.SrvIndex; break;
-            case 1: srvIndex = gbuffer.Normal.SrvIndex; break;
-            case 2: srvIndex = gbuffer.Position.SrvIndex; break;
-            case 3: srvIndex = gbuffer.Material.SrvIndex; break;
+            case 0: srvIndex = gbuffer.Color.GuiSrvIndex; break;
+            case 1: srvIndex = gbuffer.Normal.GuiSrvIndex; break;
+            case 2: srvIndex = gbuffer.Position.GuiSrvIndex; break;
+            case 3: srvIndex = gbuffer.Material.GuiSrvIndex; break;
             default: return nullptr;
         }
         D3D12_GPU_DESCRIPTOR_HANDLE handle = GetSrvGpuHandle(srvIndex);
