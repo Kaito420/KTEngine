@@ -457,6 +457,7 @@
     <FxCompile Include="shader\DepthOfFieldPS.hlsl">
       <Filter>ソース ファイル\Shader</Filter>
     </FxCompile>
+    <FxCompile Include="shader\ShadowVS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource\resource.rc">
