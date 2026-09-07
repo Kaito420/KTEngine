@@ -76,6 +76,9 @@ StyleCopReport.xml
 *.ilk
 *.meta
 *.obj
+# 3D Model Assets (例外指定: asset 配下の 3D モデル .obj は Git 管理に含める)
+!asset/**/*.obj
+!asset/**/*.OBJ
 *.iobj
 *.pch
 *.pdb
