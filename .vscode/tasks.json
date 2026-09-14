@@ -87,6 +87,15 @@
                 "debug"
             ],
             "problemMatcher": []
+        },
+        {
+            "label": "Run (Development)",
+            "type": "shell",
+            "command": "${workspaceFolder}/run.bat",
+            "args": [
+                "dev"
+            ],
+            "problemMatcher": []
         }
     ]
 }
