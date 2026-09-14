@@ -12,11 +12,13 @@ set NO_PAUSE=0
 
 :parse_args
 if "%~1"=="" goto done_args
-if /i "%~1"=="debug"    (set CONFIG=Debug& shift & goto parse_args)
-if /i "%~1"=="release"  (set CONFIG=Release& shift & goto parse_args)
-if /i "%~1"=="rebuild"  (set TARGET=Rebuild& shift & goto parse_args)
-if /i "%~1"=="clean"    (set TARGET=Clean& shift & goto parse_args)
-if /i "%~1"=="/nopause" (set NO_PAUSE=1& shift & goto parse_args)
+if /i "%~1"=="debug"       (set CONFIG=Debug& shift & goto parse_args)
+if /i "%~1"=="release"     (set CONFIG=Release& shift & goto parse_args)
+if /i "%~1"=="dev"         (set CONFIG=Development& shift & goto parse_args)
+if /i "%~1"=="development" (set CONFIG=Development& shift & goto parse_args)
+if /i "%~1"=="rebuild"     (set TARGET=Rebuild& shift & goto parse_args)
+if /i "%~1"=="clean"       (set TARGET=Clean& shift & goto parse_args)
+if /i "%~1"=="/nopause"    (set NO_PAUSE=1& shift & goto parse_args)
 shift
 goto parse_args
 :done_args

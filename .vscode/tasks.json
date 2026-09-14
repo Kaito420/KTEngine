@@ -41,6 +41,23 @@
             }
         },
         {
+            "label": "Build (Development)",
+            "type": "shell",
+            "command": "${workspaceFolder}/build.bat",
+            "args": [
+                "dev",
+                "/nopause"
+            ],
+            "group": "build",
+            "problemMatcher": "$msCompile",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
             "label": "Rebuild (Debug)",
             "type": "shell",
             "command": "${workspaceFolder}/build.bat",

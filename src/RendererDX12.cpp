@@ -301,7 +301,7 @@ namespace RendererDX12 {
             fclose(fpLog);
         }
 
-#ifdef _DEBUG
+#if defined(_DEBUG) && !defined(DEVELOPMENT)
         ComPtr<ID3D12Debug> debugController;
         if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)))) {
             debugController->EnableDebugLayer();
@@ -1893,6 +1893,9 @@ namespace RendererDX12 {
     }
 
     void PrintDebugMessages() {
+#if !defined(_DEBUG) || defined(DEVELOPMENT)
+        return;
+#else
         ComPtr<ID3D12InfoQueue> infoQueue;
         if (SUCCEEDED(g_pd3dDevice.As(&infoQueue))) {
             UINT64 numStored = infoQueue->GetNumStoredMessages();
@@ -1909,13 +1912,14 @@ namespace RendererDX12 {
                         infoQueue->GetMessage(i, message, &messageLength);
                         
                         fprintf(fp, "[D3D12 %d] %s\n", message->Severity, message->pDescription);
-                        OutputDebugStringA(message->pDescription);
-                        OutputDebugStringA("\n");
+                        //OutputDebugStringA(message->pDescription);
+                        //OutputDebugStringA("\n");
                     }
                     fclose(fp);
                 }
                 infoQueue->ClearStoredMessages();
             }
         }
+#endif
     }
 }

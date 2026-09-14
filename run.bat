@@ -4,14 +4,16 @@ setlocal enabledelayedexpansion
 cd /d "%~dp0"
 
 set CONFIG=Debug
-if /i "%~1"=="release" set CONFIG=Release
+if /i "%~1"=="release"     set CONFIG=Release
+if /i "%~1"=="dev"         set CONFIG=Development
+if /i "%~1"=="development" set CONFIG=Development
 
 echo ========================================================
 echo   KTEngine Build ^& Run Script [%CONFIG% / x64]
 echo ========================================================
 echo.
 
-:: 1. ?r???h???s
+:: 1. ビルド実行
 call "%~dp0build.bat" %* /nopause
 if %ERRORLEVEL% NEQ 0 (
     echo.
@@ -21,7 +23,7 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b %ERRORLEVEL%
 )
 
-:: 2. ???s?t?@?C????m?F
+:: 2. 実行ファイルの確認
 set EXE_PATH=%~dp0x64\%CONFIG%\KTEngine.exe
 
 if not exist "%EXE_PATH%" (
@@ -33,7 +35,7 @@ if not exist "%EXE_PATH%" (
     exit /b 1
 )
 
-:: 3. ?A?v???P?[?V?????N??
+:: 3. アプリケーション起動
 echo.
 echo [INFO] Launching KTEngine...
 echo        Working Directory: %~dp0
