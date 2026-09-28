@@ -28,6 +28,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         return true;
 
     switch (msg) {
+    case WM_SIZE:
+        if (wParam != SIZE_MINIMIZED) {
+            UINT width = (UINT)LOWORD(lParam);
+            UINT height = (UINT)HIWORD(lParam);
+            Renderer::ResizeMainWindow(width, height);
+        }
+        return 0;
+
     case WM_INPUT:
         Input::ProcessRawInput(lParam);
         break;

@@ -136,6 +136,7 @@ namespace RendererDX12 {
     void Shutdown();
     void BeginFrame();
     void EndFrame();
+    void ResizeMainWindow(UINT width, UINT height);
     
     bool InitSceneRenderTarget(int width, int height);
     void BeginSceneRender();
@@ -209,6 +210,7 @@ namespace Renderer {
     void Shutdown();
     void BeginFrame();
     void EndFrame();
+    void ResizeMainWindow(UINT width, UINT height);
     ID3D11Device* GetDevice();
     ID3D11DeviceContext* GetContext();
 

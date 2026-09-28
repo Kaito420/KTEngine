@@ -28,6 +28,10 @@ namespace Renderer {
         RendererDX12::EndFrame();
     }
 
+    void ResizeMainWindow(UINT width, UINT height) {
+        RendererDX12::ResizeMainWindow(width, height);
+    }
+
     ID3D11Device* GetDevice() {
         return nullptr;
     }

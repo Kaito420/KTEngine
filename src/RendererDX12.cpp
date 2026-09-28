@@ -964,6 +964,75 @@ namespace RendererDX12 {
         PrintDebugMessages();
     }
 
+    void ResizeMainWindow(UINT width, UINT height) {
+        if (width == 0 || height == 0) return;
+        if (!g_pSwapChain || !g_pd3dDevice) return;
+
+        // 1. GPU execution sync
+        WaitForLastSubmittedFrame();
+
+        // 2. Release backbuffer and main depth resources before resizing swapchain
+        for (UINT i = 0; i < FrameCount; i++) {
+            g_mainRenderTargetResource[i].Reset();
+        }
+        g_depthStencilBuffer.Reset();
+
+        // 3. Resize swapchain buffers
+        DXGI_SWAP_CHAIN_DESC1 desc = {};
+        g_pSwapChain->GetDesc1(&desc);
+        HRESULT hr = g_pSwapChain->ResizeBuffers(FrameCount, width, height, desc.Format, desc.Flags);
+        assert(SUCCEEDED(hr));
+
+        // 4. Update backbuffer index and recreate RTVs
+        g_frameIndex = g_pSwapChain->GetCurrentBackBufferIndex();
+        for (UINT i = 0; i < FrameCount; i++) {
+            hr = g_pSwapChain->GetBuffer(i, IID_PPV_ARGS(&g_mainRenderTargetResource[i]));
+            assert(SUCCEEDED(hr));
+            g_pd3dDevice->CreateRenderTargetView(g_mainRenderTargetResource[i].Get(), nullptr, GetRtvHandle(i));
+        }
+
+        // 5. Recreate main depth stencil buffer
+        D3D12_RESOURCE_DESC depthDesc = {};
+        depthDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+        depthDesc.Width = width;
+        depthDesc.Height = height;
+        depthDesc.DepthOrArraySize = 1;
+        depthDesc.MipLevels = 1;
+        depthDesc.Format = DXGI_FORMAT_D32_FLOAT;
+        depthDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+        depthDesc.SampleDesc.Count = 1;
+        depthDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+
+        D3D12_CLEAR_VALUE depthClear = {};
+        depthClear.Format = DXGI_FORMAT_D32_FLOAT;
+        depthClear.DepthStencil.Depth = 1.0f;
+
+        auto heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+        hr = g_pd3dDevice->CreateCommittedResource(
+            &heapProperties,
+            D3D12_HEAP_FLAG_NONE,
+            &depthDesc,
+            D3D12_RESOURCE_STATE_DEPTH_WRITE,
+            &depthClear,
+            IID_PPV_ARGS(&g_depthStencilBuffer)
+        );
+        assert(SUCCEEDED(hr));
+        g_pd3dDevice->CreateDepthStencilView(g_depthStencilBuffer.Get(), nullptr, GetDsvHandle(0));
+
+        // 6. Update main viewport and scissor rect
+        g_viewport.TopLeftX = 0.0f;
+        g_viewport.TopLeftY = 0.0f;
+        g_viewport.Width = (float)width;
+        g_viewport.Height = (float)height;
+        g_viewport.MinDepth = 0.0f;
+        g_viewport.MaxDepth = 1.0f;
+
+        g_scissorRect.left = 0;
+        g_scissorRect.top = 0;
+        g_scissorRect.right = (LONG)width;
+        g_scissorRect.bottom = (LONG)height;
+    }
+
     bool InitSceneRenderTarget(int width, int height) {
         g_sceneWidth = (float)width;
         g_sceneHeight = (float)height;
