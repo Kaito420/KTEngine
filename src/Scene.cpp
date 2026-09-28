@@ -17,6 +17,7 @@
 #include "CubeObject.h"
 #include "SphereObject.h"
 #include "CapsuleObject.h"
+#include "Profiler.h"
 
 std::string Scene::GenerateUniqueName(const std::string& baseName){
 	std::string uniqueName = baseName;
@@ -47,27 +48,36 @@ void Scene::Finalize() {
 }
 
 void Scene::Update(){
-	for( auto& gameObject : _gameObjects ){
-		if(gameObject->GetActive() && gameObject->GetStarted() == false) {
-			gameObject->Start();
-			gameObject->Started();
-		}
-		if (gameObject->GetActive()) {
-			gameObject->Update();
-			gameObject->UpdateComponents();
-		}
-	}
-
-	_physicsSystem->Update();
-
-	for( auto& gameObject : _gameObjects ){
-		if (gameObject->GetActive()) {
-			gameObject->LateUpdate();
-			gameObject->LateUpdateComponents();
+	{
+		PROFILE_SCOPE("Game Logic");
+		for( auto& gameObject : _gameObjects ){
+			if(gameObject->GetActive() && gameObject->GetStarted() == false) {
+				gameObject->Start();
+				gameObject->Started();
+			}
+			if (gameObject->GetActive()) {
+				gameObject->Update();
+				gameObject->UpdateComponents();
+			}
 		}
 	}
 
-	//폜
+	{
+		PROFILE_SCOPE("Physics");
+		_physicsSystem->Update();
+	}
+
+	{
+		PROFILE_SCOPE("Late Update");
+		for( auto& gameObject : _gameObjects ){
+			if (gameObject->GetActive()) {
+				gameObject->LateUpdate();
+				gameObject->LateUpdateComponents();
+			}
+		}
+	}
+
+	//削除
 	_gameObjects.remove_if([](const std::shared_ptr<GameObject>& obj) { 
 		if (obj->IsDestroy())
 			obj->ProcessDestroyComponents();
@@ -76,8 +86,9 @@ void Scene::Update(){
 }
 
 void Scene::UpdateEditor() {
-	//GfB^[hłsIuWFNg̍XV
-	//(JXJCh[CgȂǁAVXe͍XVȂj
+	PROFILE_SCOPE("Editor Logic");
+	//エディタモードでのみオブジェクトの更新
+	//(カスタムスクリプトなどは実行せず、システムのみ更新など)
 	for (auto& gameObject : _gameObjects) {
 		if (gameObject->GetActive()) {
 			gameObject->UpdateEditor();

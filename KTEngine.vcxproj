@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -85,6 +85,7 @@
     <ClCompile Include="src\TitleManager.cpp" />
     <ClCompile Include="src\Wave.cpp" />
     <ClCompile Include="src\PostProcessSystem.cpp" />
+    <ClCompile Include="src\Profiler.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource\resource.rc" />
@@ -154,6 +155,7 @@
     <ClInclude Include="src\TitleManager.h" />
     <ClInclude Include="src\Wave.h" />
     <ClInclude Include="src\PostProcessSystem.h" />
+    <ClInclude Include="src\Profiler.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="shader\ColorGradingPS.hlsl">

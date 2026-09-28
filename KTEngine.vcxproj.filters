@@ -216,6 +216,9 @@
     <ClCompile Include="src\PostProcessSystem.cpp">
       <Filter>ソース ファイル\Framework</Filter>
     </ClCompile>
+    <ClCompile Include="src\Profiler.cpp">
+      <Filter>ソース ファイル\Framework</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ImGuiLayer.h">
@@ -396,6 +399,9 @@
       <Filter>ヘッダー ファイル\Framework\ImGui</Filter>
     </ClInclude>
     <ClInclude Include="src\PostProcessSystem.h">
+      <Filter>ヘッダー ファイル\Framework</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Profiler.h">
       <Filter>ヘッダー ファイル\Framework</Filter>
     </ClInclude>
   </ItemGroup>

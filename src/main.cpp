@@ -14,6 +14,7 @@
 #include "Scene.h"
 #include "Input.h"
 #include "PostProcessSystem.h"
+#include "Profiler.h"
 #include "../resource/resource.h"
 
 // グローバル変数
@@ -77,83 +78,95 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
             continue;
         }
 
+        Profiler::BeginFrame();
+
         Manager::Update(); // Managerの更新
 
-        // ゲームビューテクスチャにレンダリング
-        if (Manager::IsShowGameView()) {
-            // --- 0. シャドウマップ描画パス ---
-            Renderer::SetShadowPass(true);
-            Renderer::BeginShadowRender();
-            Renderer::BindShaderConstantsDX12();
-            Manager::Render();
-            Renderer::EndShadowRender();
-            Renderer::SetShadowPass(false);
+        {
+            PROFILE_SCOPE("Render");
 
-            // --- 1. ジオメトリパス (G-Buffer生成) ---
-            Renderer::SetGeometryPass(true);
-            Renderer::BeginGameRender();
-            Camera* mainCamera = nullptr;
-            if (Manager::GetCurrentScene()) {
-                mainCamera = Manager::GetCurrentScene()->FindGameObjectByName<Camera>("Camera");
+            // ゲームビューテクスチャにレンダリング
+            if (Manager::IsShowGameView()) {
+                // --- 0. シャドウマップ描画パス ---
+                Renderer::SetShadowPass(true);
+                Renderer::BeginShadowRender();
+                Renderer::BindShaderConstantsDX12();
+                Manager::Render();
+                Renderer::EndShadowRender();
+                Renderer::SetShadowPass(false);
+
+                // --- 1. ジオメトリパス (G-Buffer生成) ---
+                Renderer::SetGeometryPass(true);
+                Renderer::BeginGameRender();
+                Camera* mainCamera = nullptr;
+                if (Manager::GetCurrentScene()) {
+                    mainCamera = Manager::GetCurrentScene()->FindGameObjectByName<Camera>("Camera");
+                }
+                if (mainCamera) {
+                    Renderer::SetViewMatrix(mainCamera->GetViewMatrix());
+                    Renderer::SetProjectionMatrix(mainCamera->GetProjectionMatrix());
+                    Renderer::SetCameraPosition(XMFLOAT4(mainCamera->_transform._position.x, mainCamera->_transform._position.y, mainCamera->_transform._position.z, 1.0f));
+                }
+                Renderer::BindShaderConstantsDX12();
+                Manager::Render();
+
+                Renderer::SetGeometryPass(false);
+                Renderer::ApplyDeferredLighting();
+                Manager::Render();
+                Renderer::ApplyPostProcess();
             }
-            if (mainCamera) {
-                Renderer::SetViewMatrix(mainCamera->GetViewMatrix());
-                Renderer::SetProjectionMatrix(mainCamera->GetProjectionMatrix());
-                Renderer::SetCameraPosition(XMFLOAT4(mainCamera->_transform._position.x, mainCamera->_transform._position.y, mainCamera->_transform._position.z, 1.0f));
+
+            // シーンビューテクスチャにレンダリング
+            if (Manager::IsShowSceneView()) {
+                // --- 0. シャドウマップ描画パス ---
+                Renderer::SetShadowPass(true);
+                Renderer::BeginShadowRender();
+                Renderer::BindShaderConstantsDX12();
+                Manager::Render();
+                Renderer::EndShadowRender();
+                Renderer::SetShadowPass(false);
+
+                // --- 1. ジオメトリパス (G-Buffer生成) ---
+                Renderer::SetGeometryPass(true);
+                Renderer::BeginSceneRender();
+                Renderer::SetViewMatrix(Manager::GetEditorCamera()->GetViewMatrix());
+                Renderer::SetProjectionMatrix(Manager::GetEditorCamera()->GetProjectionMatrix());
+                {
+                    XMMATRIX invView = XMMatrixInverse(nullptr, Manager::GetEditorCamera()->GetViewMatrix());
+                    XMFLOAT4 editorCamPos;
+                    XMStoreFloat4(&editorCamPos, invView.r[3]);
+                    Renderer::SetCameraPosition(editorCamPos);
+                }
+                Renderer::BindShaderConstantsDX12();
+                Manager::Render();
+
+                Renderer::SetGeometryPass(false);
+                Renderer::ApplyDeferredLighting();
+                Manager::Render();
+                Renderer::ApplyPostProcess();
             }
-            Renderer::BindShaderConstantsDX12();
-            Manager::Render();
-
-            Renderer::SetGeometryPass(false);
-            Renderer::ApplyDeferredLighting();
-            Manager::Render();
-            Renderer::ApplyPostProcess();
-        }
-
-        // シーンビューテクスチャにレンダリング
-        if (Manager::IsShowSceneView()) {
-            // --- 0. シャドウマップ描画パス ---
-            Renderer::SetShadowPass(true);
-            Renderer::BeginShadowRender();
-            Renderer::BindShaderConstantsDX12();
-            Manager::Render();
-            Renderer::EndShadowRender();
-            Renderer::SetShadowPass(false);
-
-            // --- 1. ジオメトリパス (G-Buffer生成) ---
-            Renderer::SetGeometryPass(true);
-            Renderer::BeginSceneRender();
-            Renderer::SetViewMatrix(Manager::GetEditorCamera()->GetViewMatrix());
-            Renderer::SetProjectionMatrix(Manager::GetEditorCamera()->GetProjectionMatrix());
-            {
-                XMMATRIX invView = XMMatrixInverse(nullptr, Manager::GetEditorCamera()->GetViewMatrix());
-                XMFLOAT4 editorCamPos;
-                XMStoreFloat4(&editorCamPos, invView.r[3]);
-                Renderer::SetCameraPosition(editorCamPos);
-            }
-            Renderer::BindShaderConstantsDX12();
-            Manager::Render();
-
-            Renderer::SetGeometryPass(false);
-            Renderer::ApplyDeferredLighting();
-            Manager::Render();
-            Renderer::ApplyPostProcess();
         }
 
         //ImGuiとウィンドウ全体のレンダリング
         Renderer::BeginFrame();
 
-        ImGuiLayer::Begin();
-        ImGuizmo::BeginFrame();
         {
-			Manager::RenderMenuBar();
-            if (Manager::IsShowContentBrowser())
-                fileBrowser.Render();
-            if (Manager::IsShowHierarchy())
-                Manager::GetCurrentScene()->RenderHierarchy();
-            if (Manager::IsShowInspector())
-                Manager::GetCurrentScene()->RenderInspector();
-            Manager::GetCurrentScene()->RenderButton();
+            PROFILE_SCOPE("ImGui");
+            ImGuiLayer::Begin();
+            ImGuizmo::BeginFrame();
+            {
+                Manager::RenderMenuBar();
+                if (Manager::IsShowContentBrowser())
+                    fileBrowser.Render();
+                if (Manager::IsShowHierarchy())
+                    Manager::GetCurrentScene()->RenderHierarchy();
+                if (Manager::IsShowInspector())
+                    Manager::GetCurrentScene()->RenderInspector();
+                Manager::GetCurrentScene()->RenderButton();
+
+                if (Manager::IsShowProfiler()) {
+                    Profiler::RenderUI(&Manager::GetShowProfiler());
+                }
 
             if (Manager::IsShowSceneView()) {
                 ImGui::Begin("Scene View", nullptr, ImGuiWindowFlags_NoScrollbar);
@@ -281,12 +294,13 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
             PostProcessSystem::RenderUI();
         }
         ImGuiLayer::End();
-
+        }
 
         Renderer::EndFrame();
 
         Input::Update();    //Inputの更新
 
+        Profiler::EndFrame();
     }
 
     // クリーンアップ

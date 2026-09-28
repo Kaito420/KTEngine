@@ -36,6 +36,7 @@ bool Manager::_showInspector = true;
 bool Manager::_showContentBrowser = true;
 bool Manager::_showGameView = true;
 bool Manager::_showSceneView = true;
+bool Manager::_showProfiler = true;
 EditorCamera Manager::_editorCamera;
 bool Manager::_playPending = false;
 bool Manager::_stopPending = false;
@@ -282,6 +283,8 @@ void Manager::RenderMenuBar(){
 			ImGui::MenuItem("Content Browser", nullptr, &_showContentBrowser);
 			ImGui::MenuItem("Game View", nullptr, &_showGameView);
 			ImGui::MenuItem("Scene View", nullptr, &_showSceneView);
+			ImGui::Separator();
+			ImGui::MenuItem("Profiler", nullptr, &_showProfiler);
 			
 			ImGui::EndMenu();
 		}
