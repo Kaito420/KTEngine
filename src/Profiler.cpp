@@ -35,6 +35,15 @@ namespace {
 
     bool s_freeze = false; // Freeze graph updates
     float s_maxPlotScale = 35.0f; // Graph Y-max (33.3ms = 30fps)
+
+    std::string FormatWithCommas(int value) {
+        std::string s = std::to_string(value);
+        int start = (value < 0) ? 1 : 0;
+        for (int i = (int)s.length() - 3; i > start; i -= 3) {
+            s.insert(i, ",");
+        }
+        return s;
+    }
 }
 
 void Profiler::BeginFrame() {
@@ -270,12 +279,12 @@ void Profiler::RenderUI(bool* pOpen) {
 
         ImGui::Text("Broadphase Pairs:");
         ImGui::NextColumn();
-        ImGui::Text("%d tested pairs", s_lastPhysicsMetrics.broadphasePairs);
+        ImGui::Text("%s tested pairs", FormatWithCommas(s_lastPhysicsMetrics.broadphasePairs).c_str());
         ImGui::NextColumn();
 
         ImGui::Text("Narrowphase Tests:");
         ImGui::NextColumn();
-        ImGui::Text("%d geometric tests", s_lastPhysicsMetrics.narrowphaseTests);
+        ImGui::Text("%s geometric tests", FormatWithCommas(s_lastPhysicsMetrics.narrowphaseTests).c_str());
         ImGui::NextColumn();
 
         ImGui::Text("Contact Manifolds:");
@@ -310,12 +319,12 @@ void Profiler::RenderUI(bool* pOpen) {
 
         ImGui::Text("Triangles (Polys):");
         ImGui::NextColumn();
-        ImGui::Text("%'d triangles", s_lastRenderMetrics.totalTriangles);
+        ImGui::Text("%s triangles", FormatWithCommas(s_lastRenderMetrics.totalTriangles).c_str());
         ImGui::NextColumn();
 
         ImGui::Text("Vertices:");
         ImGui::NextColumn();
-        ImGui::Text("%'d vertices", s_lastRenderMetrics.totalVertices);
+        ImGui::Text("%s vertices", FormatWithCommas(s_lastRenderMetrics.totalVertices).c_str());
         ImGui::NextColumn();
 
         ImGui::Text("Scene GameObjects:");
