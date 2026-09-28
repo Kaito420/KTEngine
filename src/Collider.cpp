@@ -73,17 +73,33 @@ void ClosestPointSegSeg(const KTVECTOR3& s1, const KTVECTOR3& e1, const KTVECTOR
 
 void ColliderSphere::Awake(){
 	_executeInEditor = true;
+	if (Manager::GetCurrentScene() && Manager::GetCurrentScene()->GetPhysicsSystem()) {
+		Manager::GetCurrentScene()->GetPhysicsSystem()->RegisterCollider(this);
+	}
 }
 
 void ColliderSphere::Start(){
-	Manager::GetCurrentScene()->GetPhysicsSystem()->RegisterCollider(this);
+	if (Manager::GetCurrentScene() && Manager::GetCurrentScene()->GetPhysicsSystem()) {
+		Manager::GetCurrentScene()->GetPhysicsSystem()->RegisterCollider(this);
+	}
 }
 
 void ColliderSphere::OnDestroy(){
-	Manager::GetCurrentScene()->GetPhysicsSystem()->RemoveCollider(this);
+	if (Manager::GetCurrentScene() && Manager::GetCurrentScene()->GetPhysicsSystem()) {
+		Manager::GetCurrentScene()->GetPhysicsSystem()->RemoveCollider(this);
+	}
+}
+
+void ColliderSphere::OnDestroyOnEditor(){
+	if (Manager::GetCurrentScene() && Manager::GetCurrentScene()->GetPhysicsSystem()) {
+		Manager::GetCurrentScene()->GetPhysicsSystem()->RemoveCollider(this);
+	}
 }
 
 void ColliderSphere::Update(){
+	if (Manager::GetCurrentScene() && Manager::GetCurrentScene()->GetPhysicsSystem()) {
+		Manager::GetCurrentScene()->GetPhysicsSystem()->RegisterCollider(this);
+	}
 	//_owner->_transform._scalëԑ傫l𔽉f
 	float tempScale = _owner->_transform._scale.x;
 	if (tempScale < _owner->_transform._scale.y) {
@@ -110,10 +126,6 @@ void ColliderSphere::Update(){
 		_hasChangedScale = false;
 
 	_oldRadius = _radius;
-
-}
-
-void ColliderSphere::Render() const{
 
 }
 
@@ -223,50 +235,33 @@ void ColliderBox::Awake() {
 
 	_extents = _owner->_transform._scale * 0.5f;
 
-	_vertexBuffer = Renderer::CreateVertexBuffer(sizeof(Vertex), 8);
-
-	Vertex vertex[8] = {
-		{ { -_extents.x, +_extents.y, +_extents.z},{0,0,0},{0,1,0,1},{0,0} },
-		{ { +_extents.x, +_extents.y, +_extents.z},{0,0,0},{0,1,0,1},{0,0} },
-		{ { +_extents.x, +_extents.y, -_extents.z},{0,0,0},{0,1,0,1},{0,0} },
-		{ { -_extents.x, +_extents.y, -_extents.z},{0,0,0},{0,1,0,1},{0,0} },
-		{ { -_extents.x, -_extents.y, +_extents.z},{0,0,0},{0,1,0,1},{0,0} },
-		{ { +_extents.x, -_extents.y, +_extents.z},{0,0,0},{0,1,0,1},{0,0} },
-		{ { +_extents.x, -_extents.y, -_extents.z},{0,0,0},{0,1,0,1},{0,0} },
-		{ { -_extents.x, -_extents.y, -_extents.z},{0,0,0},{0,1,0,1},{0,0} }
-	};
-
-	void* data = nullptr;
-	HRESULT hr = _vertexBuffer->Resource->Map(0, nullptr, &data);
-	if (SUCCEEDED(hr)) {
-		memcpy(data, vertex, sizeof(vertex));
-		_vertexBuffer->Resource->Unmap(0, nullptr);
-	}
-
-	_indexBuffer = Renderer::CreateIndexBuffer(24);
-
-	unsigned int indices[] = {
-		0,1, 1,2, 2,3, 3,0,
-		4,5, 5,6, 6,7, 7,4,
-		0,4, 1,5, 2,6, 3,7
-	};
-
-	hr = _indexBuffer->Resource->Map(0, nullptr, &data);
-	if (SUCCEEDED(hr)) {
-		memcpy(data, indices, sizeof(indices));
-		_indexBuffer->Resource->Unmap(0, nullptr);
+	if (Manager::GetCurrentScene() && Manager::GetCurrentScene()->GetPhysicsSystem()) {
+		Manager::GetCurrentScene()->GetPhysicsSystem()->RegisterCollider(this);
 	}
 }
 
 void ColliderBox::Start(){
-	Manager::GetCurrentScene()->GetPhysicsSystem()->RegisterCollider(this);
+	if (Manager::GetCurrentScene() && Manager::GetCurrentScene()->GetPhysicsSystem()) {
+		Manager::GetCurrentScene()->GetPhysicsSystem()->RegisterCollider(this);
+	}
 }
 
 void ColliderBox::OnDestroy(){
-	Manager::GetCurrentScene()->GetPhysicsSystem()->RemoveCollider(this);
+	if (Manager::GetCurrentScene() && Manager::GetCurrentScene()->GetPhysicsSystem()) {
+		Manager::GetCurrentScene()->GetPhysicsSystem()->RemoveCollider(this);
+	}
+}
+
+void ColliderBox::OnDestroyOnEditor(){
+	if (Manager::GetCurrentScene() && Manager::GetCurrentScene()->GetPhysicsSystem()) {
+		Manager::GetCurrentScene()->GetPhysicsSystem()->RemoveCollider(this);
+	}
 }
 
 void ColliderBox::Update() {
+	if (Manager::GetCurrentScene() && Manager::GetCurrentScene()->GetPhysicsSystem()) {
+		Manager::GetCurrentScene()->GetPhysicsSystem()->RegisterCollider(this);
+	}
 	//[JXV
 	_center = _owner->_transform._position;
 	_axis[0] = _owner->GetRight();
@@ -291,71 +286,6 @@ void ColliderBox::Update() {
 
 	_oldExtents = _extents;
 
-}
-
-void ColliderBox::Render() const {
-	Vertex vertex[8] = {
-		{ { -_extents.x, +_extents.y, +_extents.z},{0,0,0},{0,1,0,1},{0,0} },
-		{ { +_extents.x, +_extents.y, +_extents.z},{0,0,0},{0,1,0,1},{0,0} },
-		{ { +_extents.x, +_extents.y, -_extents.z},{0,0,0},{0,1,0,1},{0,0} },
-		{ { -_extents.x, +_extents.y, -_extents.z},{0,0,0},{0,1,0,1},{0,0} },
-		{ { -_extents.x, -_extents.y, +_extents.z},{0,0,0},{0,1,0,1},{0,0} },
-		{ { +_extents.x, -_extents.y, +_extents.z},{0,0,0},{0,1,0,1},{0,0} },
-		{ { +_extents.x, -_extents.y, -_extents.z},{0,0,0},{0,1,0,1},{0,0} },
-		{ { -_extents.x, -_extents.y, -_extents.z},{0,0,0},{0,1,0,1},{0,0} }
-	};
-
-	void* data = nullptr;
-	HRESULT hr = _vertexBuffer->Resource->Map(0, nullptr, &data);
-	if (SUCCEEDED(hr)) {
-		memcpy(data, vertex, sizeof(vertex));
-		_vertexBuffer->Resource->Unmap(0, nullptr);
-	}
-
-	auto cmdList = Renderer::GetCommandListDX12();
-	if (!cmdList) return;
-
-	D3D12_VERTEX_BUFFER_VIEW vbView = {};
-	vbView.BufferLocation = _vertexBuffer->Resource->GetGPUVirtualAddress();
-	vbView.StrideInBytes = _vertexBuffer->Stride;
-	vbView.SizeInBytes = _vertexBuffer->Stride * _vertexBuffer->Size;
-	cmdList->IASetVertexBuffers(0, 1, &vbView);
-
-	D3D12_INDEX_BUFFER_VIEW ibView = {};
-	ibView.BufferLocation = _indexBuffer->Resource->GetGPUVirtualAddress();
-	ibView.SizeInBytes = sizeof(unsigned int) * _indexBuffer->Size;
-	ibView.Format = DXGI_FORMAT_R32_UINT;
-	cmdList->IASetIndexBuffer(&ibView);
-
-	XMMATRIX translation = XMMatrixTranslation(_owner->_transform._position.x, _owner->_transform._position.y, _owner->_transform._position.z);
-	XMFLOAT4 q = XMFLOAT4(_owner->_transform._quaternion.x, _owner->_transform._quaternion.y, _owner->_transform._quaternion.z, _owner->_transform._quaternion.w);
-	XMMATRIX rotation = XMMatrixRotationQuaternion(XMLoadFloat4(&q));
-	XMMATRIX worldMatrix = rotation * translation;
-
-	Renderer::SetWorldMatrix(worldMatrix);
-
-	MATERIAL material = {};
-	material.Diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
-	material.TextureEnable = false;
-	Renderer::SetConstant(3, &material, sizeof(material));
-
-	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
-	// PSOバインド
-	{
-		std::string vsId = "UnlitColorVS";
-		std::string psId = "UnlitColorPS";
-		auto shaderComp = _owner->GetComponent<Shader>();
-		if (shaderComp) {
-			vsId = shaderComp->GetVertexShaderID();
-			psId = shaderComp->GetPixelShaderID();
-		}
-		ID3D12PipelineState* pso = ShaderManager::Instance().GetPipelineState(vsId, psId, 1, Renderer::GetCullModeDX12(), Renderer::GetDepthEnableDX12(), Renderer::GetDepthWriteDX12(), D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE);
-		if (pso == nullptr) return;
-		cmdList->SetPipelineState(pso);
-	}
-
-		Renderer::BindShaderConstantsDX12();
-cmdList->DrawIndexedInstanced(24, 1, 0, 0, 0);
 }
 
 bool ColliderBox::CheckVSOBB(const ColliderBox* other, CollisionManifold& manifold) const {
@@ -653,17 +583,33 @@ void ColliderBox::ShowUI() {
 
 void ColliderCapsule::Awake() {
 	_executeInEditor = true;
+	if (Manager::GetCurrentScene() && Manager::GetCurrentScene()->GetPhysicsSystem()) {
+		Manager::GetCurrentScene()->GetPhysicsSystem()->RegisterCollider(this);
+	}
 }
 
 void ColliderCapsule::Start() {
-	Manager::GetCurrentScene()->GetPhysicsSystem()->RegisterCollider(this);
+	if (Manager::GetCurrentScene() && Manager::GetCurrentScene()->GetPhysicsSystem()) {
+		Manager::GetCurrentScene()->GetPhysicsSystem()->RegisterCollider(this);
+	}
 }
 
 void ColliderCapsule::OnDestroy() {
-	Manager::GetCurrentScene()->GetPhysicsSystem()->RemoveCollider(this);
+	if (Manager::GetCurrentScene() && Manager::GetCurrentScene()->GetPhysicsSystem()) {
+		Manager::GetCurrentScene()->GetPhysicsSystem()->RemoveCollider(this);
+	}
+}
+
+void ColliderCapsule::OnDestroyOnEditor() {
+	if (Manager::GetCurrentScene() && Manager::GetCurrentScene()->GetPhysicsSystem()) {
+		Manager::GetCurrentScene()->GetPhysicsSystem()->RemoveCollider(this);
+	}
 }
 
 void ColliderCapsule::Update() {
+	if (Manager::GetCurrentScene() && Manager::GetCurrentScene()->GetPhysicsSystem()) {
+		Manager::GetCurrentScene()->GetPhysicsSystem()->RegisterCollider(this);
+	}
 	//GameObject̏ōXV
 	// _owner->_transform._scale ̈ԑ傫l𔽉fic݂h߂̋ϓXP[j
 	float tempScaleRad = _owner->_transform._scale.x;
@@ -696,9 +642,6 @@ void ColliderCapsule::Update() {
 	//AABB̍ŏlƍőlXV
 	_aabb.min = _owner->_transform._position - extents;
 	_aabb.max = _owner->_transform._position + extents;
-}
-
-void ColliderCapsule::Render() const{
 }
 
 bool ColliderCapsule::CheckVSCapsule(const ColliderCapsule* other, CollisionManifold& outCollisionManifold) const{

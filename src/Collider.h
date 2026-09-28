@@ -105,9 +105,6 @@ class Collider : public Component{
 protected:
 	KTVECTOR3 _center;
 
-	std::unique_ptr<VERTEX_BUFFER> _vertexBuffer;
-	std::unique_ptr<INDEX_BUFFER> _indexBuffer;
-
 public:
 	AABB _aabb;
 	bool _hasChangedScale = false;
@@ -163,12 +160,10 @@ public:
 	void Awake() override;
 	void Start() override;
 	void OnDestroy() override;
+	void OnDestroyOnEditor() override;
 
 	// GameObjectの情報で更新する
 	void Update() override;
-
-	//デバッグ描画用
-	void Render()const override;
 
 	bool Collide(Collider* other, CollisionManifold& outCollisionManifold) {
 		return other->CollideWith(this, outCollisionManifold);	//ここで自身と相手が入れ替わる
@@ -215,12 +210,10 @@ public:
 	void Awake() override;
 	void Start() override;
 	void OnDestroy() override;
+	void OnDestroyOnEditor() override;
 
 	// GameObjectの情報で更新する
 	void Update() override;
-
-	//デバッグ描画用
-	void Render()const override;
 
 
 	bool Collide(Collider* other, CollisionManifold& outCollisionManifold) {
@@ -276,12 +269,13 @@ public:
 	void Awake() override;
 	void Start() override;
 	void OnDestroy() override;
+	void OnDestroyOnEditor() override;
 
 	// GameObjectの情報で更新する
 	void Update() override;
 
-	//デバッグ描画用
-	void Render()const override;
+	float GetRadius() const { return _radius; }
+	float GetHeight() const { return _height; }
 	bool Collide(Collider* other, CollisionManifold& outCollisionManifold) {
 		return other->CollideWith(this, outCollisionManifold);	//ここで自身と相手が入れ替わる
 	}

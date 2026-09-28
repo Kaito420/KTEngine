@@ -113,6 +113,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
                 Renderer::SetGeometryPass(false);
                 Renderer::ApplyDeferredLighting();
                 Manager::Render();
+                if (Manager::GetCurrentScene() && Manager::GetCurrentScene()->GetPhysicsSystem()) {
+                    Manager::GetCurrentScene()->GetPhysicsSystem()->RenderDebug();
+                }
                 Renderer::ApplyPostProcess();
             }
 
@@ -143,6 +146,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
                 Renderer::SetGeometryPass(false);
                 Renderer::ApplyDeferredLighting();
                 Manager::Render();
+                if (Manager::GetCurrentScene() && Manager::GetCurrentScene()->GetPhysicsSystem()) {
+                    Manager::GetCurrentScene()->GetPhysicsSystem()->RenderDebug();
+                }
                 Renderer::ApplyPostProcess();
             }
         }

@@ -38,6 +38,7 @@ private:
 	static bool _showGameView;
 	static bool _showSceneView;
 	static bool _showProfiler;
+	static bool _showColliderWireframe;
 
 	static EditorCamera _editorCamera;
 
@@ -63,6 +64,8 @@ public:
 	static bool IsShowSceneView() { return _showSceneView; }
 	static bool IsShowProfiler() { return _showProfiler; }
 	static bool& GetShowProfiler() { return _showProfiler; }
+	static bool IsShowColliderWireframe() { return _showColliderWireframe; }
+	static bool& GetShowColliderWireframe() { return _showColliderWireframe; }
 
 	static EditorCamera* GetEditorCamera() { return &_editorCamera; }
 

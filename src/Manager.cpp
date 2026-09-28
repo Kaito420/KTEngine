@@ -37,6 +37,7 @@ bool Manager::_showContentBrowser = true;
 bool Manager::_showGameView = true;
 bool Manager::_showSceneView = true;
 bool Manager::_showProfiler = true;
+bool Manager::_showColliderWireframe = false;
 EditorCamera Manager::_editorCamera;
 bool Manager::_playPending = false;
 bool Manager::_stopPending = false;
@@ -273,6 +274,8 @@ void Manager::RenderMenuBar(){
                         bShowRestartPopup = true;
                     }
                 }
+                ImGui::Separator();
+                ImGui::MenuItem("Show Collider Wireframes", nullptr, &_showColliderWireframe);
                 ImGui::EndMenu();
             }
 

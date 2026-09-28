@@ -30,7 +30,10 @@ class PhysicsSystem {
 	uint64_t MakePairKey(Collider* a, Collider* b);
 public:
 	void RegisterCollider(Collider* collider) {
-		_colliders.push_back(collider);
+		if (!collider) return;
+		if (std::find(_colliders.begin(), _colliders.end(), collider) == _colliders.end()) {
+			_colliders.push_back(collider);
+		}
 	}
 
 	void RemoveCollider(Collider* collider) {
@@ -41,7 +44,10 @@ public:
 	}
 
 	void RegisterRigidBody(RigidBody* rigidBody) {
-		_rigidBodys.push_back(rigidBody);
+		if (!rigidBody) return;
+		if (std::find(_rigidBodys.begin(), _rigidBodys.end(), rigidBody) == _rigidBodys.end()) {
+			_rigidBodys.push_back(rigidBody);
+		}
 	}
 
 	void RemoveRigidBody(RigidBody* rigidBody) {
@@ -52,6 +58,7 @@ public:
 	}
 
 	void Update();
+	void UpdateEditor();
 
 	void SetLocalInertiaTensor();
 
@@ -62,6 +69,8 @@ public:
 	void ClearManifold() { _manifolds.clear(); }
 
 	void ApplyWarmStarting();
+
+	void RenderDebug();
 };
 
 #endif // !_PHYSICSSYSTEM_H_

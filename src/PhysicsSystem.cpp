@@ -1,4 +1,4 @@
-﻿//=====================================================================================
+//=====================================================================================
 // PhysicsSystem.h
 // Author:Kaito Aoki
 // Date:2025/09/09
@@ -7,6 +7,11 @@
 #include "PhysicsSystem.h"
 #include <algorithm>
 #include <map>
+#include <vector>
+#include <cmath>
+#include "Manager.h"
+#include "ShaderManager.h"
+#include "Renderer.h"
 
 void PhysicsSystem::Update() {
 	PhysicsMetrics metrics;
@@ -154,6 +159,78 @@ void PhysicsSystem::Update() {
 		}
 	}
 
+	Profiler::RecordPhysicsMetrics(metrics);
+}
+
+void PhysicsSystem::UpdateEditor() {
+	PhysicsMetrics metrics;
+	metrics.totalRigidBodies = (int)_rigidBodys.size();
+	metrics.totalColliders = (int)_colliders.size();
+
+	for (auto* col : _colliders) {
+		if (col && col->GetActive() && col->GetOwner() && col->GetOwner()->GetActive()) {
+			metrics.activeColliders++;
+		}
+	}
+
+	if (_colliders.size() < 2) {
+		for (auto* col : _colliders) {
+			if (col) col->EndFrame();
+		}
+		Profiler::RecordPhysicsMetrics(metrics);
+		return;
+	}
+
+	// Broadphase & Sort
+	{
+		for (auto* col : _colliders) {
+			if (col) col->BeginFrame();
+		}
+
+		std::sort(_colliders.begin(), _colliders.end(),
+			[](Collider* a, Collider* b) {
+				if (!a || !b) return a < b;
+				return a->_aabb.min.x < b->_aabb.min.x;
+			});
+
+		ClearManifold();
+	}
+
+	// Narrowphase Collision Detection
+	{
+		for (size_t i = 0; i < _colliders.size() - 1; i++) {
+			for (size_t j = i + 1; j < _colliders.size(); j++) {
+				auto* colA = _colliders[i];
+				auto* colB = _colliders[j];
+				if (!colA || !colB) continue;
+				if (!colA->GetActive() || !colB->GetActive()) continue;
+				if (!colA->GetOwner() || !colB->GetOwner() || !colA->GetOwner()->GetActive() || !colB->GetOwner()->GetActive()) continue;
+
+				metrics.broadphasePairs++;
+
+				if (colA->_aabb.max.x < colB->_aabb.min.x) {
+					break;
+				}
+
+				metrics.narrowphaseTests++;
+				CollisionManifold manifold;
+
+				if (colA->Collide(colB, manifold)) {
+					colA->_isOverlap = true;
+					colB->_isOverlap = true;
+					colA->_currentOverlaps.insert(colB);
+					colB->_currentOverlaps.insert(colA);
+					_manifolds.push_back(manifold);
+				}
+			}
+		}
+
+		for (auto* col : _colliders) {
+			if (col) col->EndFrame();
+		}
+	}
+
+	metrics.contactManifolds = (int)_manifolds.size();
 	Profiler::RecordPhysicsMetrics(metrics);
 }
 
@@ -427,5 +504,259 @@ void PhysicsSystem::ApplyWarmStarting(){
 uint64_t PhysicsSystem::MakePairKey(Collider* a, Collider* b) {
 	if (a > b) std::swap(a, b);
 	return (uint64_t)a ^ ((uint64_t)b << 32);
+}
+
+void PhysicsSystem::RenderDebug() {
+	if (!Manager::IsShowColliderWireframe()) return;
+
+	auto cmdList = Renderer::GetCommandListDX12();
+	if (!cmdList) return;
+
+	// 1. Static Wireframe Buffers Initialization
+	static std::unique_ptr<VERTEX_BUFFER> s_boxVB = nullptr;
+	static std::unique_ptr<INDEX_BUFFER> s_boxIB = nullptr;
+
+	static std::unique_ptr<VERTEX_BUFFER> s_sphereVB = nullptr;
+	static std::unique_ptr<INDEX_BUFFER> s_sphereIB = nullptr;
+	static int s_sphereIndexCount = 0;
+
+	static std::unique_ptr<VERTEX_BUFFER> s_capsuleVB = nullptr;
+	static constexpr int CAPSULE_MAX_VERTS = 256;
+
+	if (!s_boxVB) {
+		// Unit Box [-0.5, 0.5]
+		Vertex boxVerts[8] = {
+			{ { -0.5f,  0.5f,  0.5f }, {0,0,0}, {1,1,1,1}, {0,0} },
+			{ {  0.5f,  0.5f,  0.5f }, {0,0,0}, {1,1,1,1}, {0,0} },
+			{ {  0.5f,  0.5f, -0.5f }, {0,0,0}, {1,1,1,1}, {0,0} },
+			{ { -0.5f,  0.5f, -0.5f }, {0,0,0}, {1,1,1,1}, {0,0} },
+			{ { -0.5f, -0.5f,  0.5f }, {0,0,0}, {1,1,1,1}, {0,0} },
+			{ {  0.5f, -0.5f,  0.5f }, {0,0,0}, {1,1,1,1}, {0,0} },
+			{ {  0.5f, -0.5f, -0.5f }, {0,0,0}, {1,1,1,1}, {0,0} },
+			{ { -0.5f, -0.5f, -0.5f }, {0,0,0}, {1,1,1,1}, {0,0} }
+		};
+		unsigned int boxIndices[24] = {
+			0,1, 1,2, 2,3, 3,0,
+			4,5, 5,6, 6,7, 7,4,
+			0,4, 1,5, 2,6, 3,7
+		};
+
+		s_boxVB = Renderer::CreateVertexBuffer(sizeof(Vertex), 8);
+		void* data = nullptr;
+		if (SUCCEEDED(s_boxVB->Resource->Map(0, nullptr, &data))) {
+			memcpy(data, boxVerts, sizeof(boxVerts));
+			s_boxVB->Resource->Unmap(0, nullptr);
+		}
+
+		s_boxIB = Renderer::CreateIndexBuffer(24);
+		if (SUCCEEDED(s_boxIB->Resource->Map(0, nullptr, &data))) {
+			memcpy(data, boxIndices, sizeof(boxIndices));
+			s_boxIB->Resource->Unmap(0, nullptr);
+		}
+	}
+
+	if (!s_sphereVB) {
+		// 3 Orthogonal circles of unit radius 1.0 (XY, XZ, YZ)
+		constexpr int SEGS = 24;
+		std::vector<Vertex> sphereVerts;
+		std::vector<unsigned int> sphereIndices;
+		sphereVerts.reserve(SEGS * 3);
+		sphereIndices.reserve(SEGS * 6);
+
+		auto addCircle = [&](int plane) {
+			// plane: 0 = XY, 1 = XZ, 2 = YZ
+			unsigned int baseIdx = (unsigned int)sphereVerts.size();
+			for (int i = 0; i < SEGS; i++) {
+				float theta = (float)i * 2.0f * 3.14159265f / (float)SEGS;
+				float c = cosf(theta);
+				float s = sinf(theta);
+
+				XMFLOAT3 pos;
+				if (plane == 0) pos = XMFLOAT3(c, s, 0.0f);
+				else if (plane == 1) pos = XMFLOAT3(c, 0.0f, s);
+				else pos = XMFLOAT3(0.0f, c, s);
+
+				sphereVerts.push_back({ pos, {0,0,0}, {1,1,1,1}, {0,0} });
+
+				unsigned int next = (i + 1) % SEGS;
+				sphereIndices.push_back(baseIdx + i);
+				sphereIndices.push_back(baseIdx + next);
+			}
+		};
+
+		addCircle(0); // XY
+		addCircle(1); // XZ
+		addCircle(2); // YZ
+
+		s_sphereIndexCount = (int)sphereIndices.size();
+
+		s_sphereVB = Renderer::CreateVertexBuffer(sizeof(Vertex), (UINT)sphereVerts.size());
+		void* data = nullptr;
+		if (SUCCEEDED(s_sphereVB->Resource->Map(0, nullptr, &data))) {
+			memcpy(data, sphereVerts.data(), sizeof(Vertex) * sphereVerts.size());
+			s_sphereVB->Resource->Unmap(0, nullptr);
+		}
+
+		s_sphereIB = Renderer::CreateIndexBuffer((UINT)sphereIndices.size());
+		if (SUCCEEDED(s_sphereIB->Resource->Map(0, nullptr, &data))) {
+			memcpy(data, sphereIndices.data(), sizeof(unsigned int) * sphereIndices.size());
+			s_sphereIB->Resource->Unmap(0, nullptr);
+		}
+	}
+
+	if (!s_capsuleVB) {
+		s_capsuleVB = Renderer::CreateVertexBuffer(sizeof(Vertex), CAPSULE_MAX_VERTS);
+	}
+
+	// 2. Bind Line PSO
+	ID3D12PipelineState* pso = ShaderManager::Instance().GetPipelineState(
+		"UnlitColorVS", "UnlitColorPS", 1,
+		D3D12_CULL_MODE_NONE,
+		true,
+		false,
+		D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE);
+	if (!pso) return;
+
+	cmdList->SetPipelineState(pso);
+	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
+
+	// 3. Render Each Collider
+	for (auto* col : _colliders) {
+		if (!col || !col->GetActive() || !col->GetOwner() || !col->GetOwner()->GetActive()) continue;
+
+		// Set color: Red if overlapping, Green if normal
+		MATERIAL material = {};
+		if (col->_wasOverlap || col->_isOverlap) {
+			material.Diffuse = XMFLOAT4(1.0f, 0.2f, 0.2f, 1.0f); // Bright Red
+		} else {
+			material.Diffuse = XMFLOAT4(0.2f, 1.0f, 0.3f, 1.0f); // Bright Green
+		}
+		material.TextureEnable = false;
+		Renderer::SetConstant(3, &material, sizeof(material));
+
+		auto owner = col->GetOwner();
+		XMMATRIX translation = XMMatrixTranslation(owner->_transform._position.x, owner->_transform._position.y, owner->_transform._position.z);
+		XMFLOAT4 q = XMFLOAT4(owner->_transform._quaternion.x, owner->_transform._quaternion.y, owner->_transform._quaternion.z, owner->_transform._quaternion.w);
+		XMMATRIX rotation = XMMatrixRotationQuaternion(XMLoadFloat4(&q));
+
+		if (auto* box = dynamic_cast<ColliderBox*>(col)) {
+			// Box wireframe
+			XMMATRIX scale = XMMatrixScaling(box->_extents.x * 2.0f, box->_extents.y * 2.0f, box->_extents.z * 2.0f);
+			XMMATRIX worldMatrix = scale * rotation * translation;
+			Renderer::SetWorldMatrix(worldMatrix);
+			Renderer::BindShaderConstantsDX12();
+
+			D3D12_VERTEX_BUFFER_VIEW vbView = {};
+			vbView.BufferLocation = s_boxVB->Resource->GetGPUVirtualAddress();
+			vbView.StrideInBytes = s_boxVB->Stride;
+			vbView.SizeInBytes = s_boxVB->Stride * s_boxVB->Size;
+			cmdList->IASetVertexBuffers(0, 1, &vbView);
+
+			D3D12_INDEX_BUFFER_VIEW ibView = {};
+			ibView.BufferLocation = s_boxIB->Resource->GetGPUVirtualAddress();
+			ibView.SizeInBytes = sizeof(unsigned int) * s_boxIB->Size;
+			ibView.Format = DXGI_FORMAT_R32_UINT;
+			cmdList->IASetIndexBuffer(&ibView);
+
+			cmdList->DrawIndexedInstanced(24, 1, 0, 0, 0);
+		}
+		else if (auto* sphere = dynamic_cast<ColliderSphere*>(col)) {
+			// Sphere wireframe
+			XMMATRIX scale = XMMatrixScaling(sphere->_radius, sphere->_radius, sphere->_radius);
+			XMMATRIX worldMatrix = scale * rotation * translation;
+			Renderer::SetWorldMatrix(worldMatrix);
+			Renderer::BindShaderConstantsDX12();
+
+			D3D12_VERTEX_BUFFER_VIEW vbView = {};
+			vbView.BufferLocation = s_sphereVB->Resource->GetGPUVirtualAddress();
+			vbView.StrideInBytes = s_sphereVB->Stride;
+			vbView.SizeInBytes = s_sphereVB->Stride * s_sphereVB->Size;
+			cmdList->IASetVertexBuffers(0, 1, &vbView);
+
+			D3D12_INDEX_BUFFER_VIEW ibView = {};
+			ibView.BufferLocation = s_sphereIB->Resource->GetGPUVirtualAddress();
+			ibView.SizeInBytes = sizeof(unsigned int) * s_sphereIB->Size;
+			ibView.Format = DXGI_FORMAT_R32_UINT;
+			cmdList->IASetIndexBuffer(&ibView);
+
+			cmdList->DrawIndexedInstanced((UINT)s_sphereIndexCount, 1, 0, 0, 0);
+		}
+		else if (auto* capsule = dynamic_cast<ColliderCapsule*>(col)) {
+			// Capsule wireframe (Dynamic lines)
+			float r = capsule->GetRadius();
+			float h = (std::max)(0.0f, capsule->GetHeight() - 2.0f * r);
+			float halfH = h * 0.5f;
+
+			std::vector<Vertex> capVerts;
+			constexpr int SEGS = 16;
+
+			// Helper to add circle at Y offset
+			auto addHCircle = [&](float y) {
+				for (int i = 0; i < SEGS; i++) {
+					float theta1 = (float)i * 2.0f * 3.14159265f / (float)SEGS;
+					float theta2 = (float)(i + 1) * 2.0f * 3.14159265f / (float)SEGS;
+					capVerts.push_back({ XMFLOAT3(r * cosf(theta1), y, r * sinf(theta1)), {0,0,0}, {1,1,1,1}, {0,0} });
+					capVerts.push_back({ XMFLOAT3(r * cosf(theta2), y, r * sinf(theta2)), {0,0,0}, {1,1,1,1}, {0,0} });
+				}
+			};
+
+			addHCircle(+halfH); // Top rim
+			addHCircle(-halfH); // Bottom rim
+
+			// 4 Cylinder side lines
+			capVerts.push_back({ XMFLOAT3(+r, +halfH, 0), {0,0,0}, {1,1,1,1}, {0,0} });
+			capVerts.push_back({ XMFLOAT3(+r, -halfH, 0), {0,0,0}, {1,1,1,1}, {0,0} });
+			capVerts.push_back({ XMFLOAT3(-r, +halfH, 0), {0,0,0}, {1,1,1,1}, {0,0} });
+			capVerts.push_back({ XMFLOAT3(-r, -halfH, 0), {0,0,0}, {1,1,1,1}, {0,0} });
+			capVerts.push_back({ XMFLOAT3(0, +halfH, +r), {0,0,0}, {1,1,1,1}, {0,0} });
+			capVerts.push_back({ XMFLOAT3(0, -halfH, +r), {0,0,0}, {1,1,1,1}, {0,0} });
+			capVerts.push_back({ XMFLOAT3(0, +halfH, -r), {0,0,0}, {1,1,1,1}, {0,0} });
+			capVerts.push_back({ XMFLOAT3(0, -halfH, -r), {0,0,0}, {1,1,1,1}, {0,0} });
+
+			// Top dome arch (XY & ZY)
+			for (int i = 0; i < SEGS / 2; i++) {
+				float t1 = (float)i * 3.14159265f / (float)(SEGS / 2);
+				float t2 = (float)(i + 1) * 3.14159265f / (float)(SEGS / 2);
+				// XY arch
+				capVerts.push_back({ XMFLOAT3(r * cosf(t1), +halfH + r * sinf(t1), 0), {0,0,0}, {1,1,1,1}, {0,0} });
+				capVerts.push_back({ XMFLOAT3(r * cosf(t2), +halfH + r * sinf(t2), 0), {0,0,0}, {1,1,1,1}, {0,0} });
+				// ZY arch
+				capVerts.push_back({ XMFLOAT3(0, +halfH + r * sinf(t1), r * cosf(t1)), {0,0,0}, {1,1,1,1}, {0,0} });
+				capVerts.push_back({ XMFLOAT3(0, +halfH + r * sinf(t2), r * cosf(t2)), {0,0,0}, {1,1,1,1}, {0,0} });
+			}
+
+			// Bottom dome arch (XY & ZY)
+			for (int i = 0; i < SEGS / 2; i++) {
+				float t1 = (float)i * 3.14159265f / (float)(SEGS / 2);
+				float t2 = (float)(i + 1) * 3.14159265f / (float)(SEGS / 2);
+				// XY arch
+				capVerts.push_back({ XMFLOAT3(r * cosf(t1), -halfH - r * sinf(t1), 0), {0,0,0}, {1,1,1,1}, {0,0} });
+				capVerts.push_back({ XMFLOAT3(r * cosf(t2), -halfH - r * sinf(t2), 0), {0,0,0}, {1,1,1,1}, {0,0} });
+				// ZY arch
+				capVerts.push_back({ XMFLOAT3(0, -halfH - r * sinf(t1), r * cosf(t1)), {0,0,0}, {1,1,1,1}, {0,0} });
+				capVerts.push_back({ XMFLOAT3(0, -halfH - r * sinf(t2), r * cosf(t2)), {0,0,0}, {1,1,1,1}, {0,0} });
+			}
+
+			if (capVerts.size() <= CAPSULE_MAX_VERTS) {
+				void* data = nullptr;
+				if (SUCCEEDED(s_capsuleVB->Resource->Map(0, nullptr, &data))) {
+					memcpy(data, capVerts.data(), sizeof(Vertex) * capVerts.size());
+					s_capsuleVB->Resource->Unmap(0, nullptr);
+
+					XMMATRIX worldMatrix = rotation * translation;
+					Renderer::SetWorldMatrix(worldMatrix);
+					Renderer::BindShaderConstantsDX12();
+
+					D3D12_VERTEX_BUFFER_VIEW vbView = {};
+					vbView.BufferLocation = s_capsuleVB->Resource->GetGPUVirtualAddress();
+					vbView.StrideInBytes = s_capsuleVB->Stride;
+					vbView.SizeInBytes = s_capsuleVB->Stride * (UINT)capVerts.size();
+					cmdList->IASetVertexBuffers(0, 1, &vbView);
+
+					cmdList->DrawInstanced((UINT)capVerts.size(), 1, 0, 0);
+				}
+			}
+		}
+	}
 }
 

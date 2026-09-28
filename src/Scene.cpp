@@ -18,6 +18,7 @@
 #include "SphereObject.h"
 #include "CapsuleObject.h"
 #include "Profiler.h"
+#include "Collider.h"
 
 std::string Scene::GenerateUniqueName(const std::string& baseName){
 	std::string uniqueName = baseName;
@@ -99,6 +100,11 @@ void Scene::UpdateEditor() {
 	}
 	Profiler::RecordSceneObjects((int)_gameObjects.size(), activeCount);
 
+	if (_physicsSystem) {
+		PROFILE_SCOPE("Physics");
+		_physicsSystem->UpdateEditor();
+	}
+
 	//폜
 	_gameObjects.remove_if([](const std::shared_ptr<GameObject>& obj) {
 		if (obj->IsDestroy())
@@ -127,6 +133,12 @@ void Scene::OnLoaded() {
 		//id̍őlXV
 		if(maxId < gameObject->_id)
 			maxId = gameObject->_id;
+
+		for (auto& comp : gameObject->_components) {
+			if (auto* col = dynamic_cast<Collider*>(comp.get())) {
+				_physicsSystem->RegisterCollider(col);
+			}
+		}
 	}
 	GameObject::_nextId = maxId + 1; //IDől+1ɐݒ
 }

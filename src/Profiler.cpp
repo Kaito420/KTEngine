@@ -6,6 +6,7 @@
 
 #include "Profiler.h"
 #include "Renderer.h"
+#include "Manager.h"
 #include "imgui.h"
 #include <algorithm>
 #include <numeric>
@@ -255,6 +256,9 @@ void Profiler::RenderUI(bool* pOpen) {
     // 3. Physics Metrics (Phase 2)
     // =========================================================================
     if (ImGui::CollapsingHeader("Physics Metrics", ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::Checkbox("Show Collision Wireframes", &Manager::GetShowColliderWireframe());
+        ImGui::Spacing();
+
         int inactiveRBs = s_lastPhysicsMetrics.totalRigidBodies - s_lastPhysicsMetrics.activeRigidBodies;
         int inactiveCols = s_lastPhysicsMetrics.totalColliders - s_lastPhysicsMetrics.activeColliders;
 

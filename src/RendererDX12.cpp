@@ -558,6 +558,8 @@ namespace RendererDX12 {
 
         ShaderManager::Instance().LoadVertexShader("UnlitColor", "shader/UnlitColorVS.cso");
         ShaderManager::Instance().LoadPixelShader("UnlitColor", "shader/UnlitColorPS.cso");
+        ShaderManager::Instance().LoadVertexShader("UnlitColorVS", "shader/UnlitColorVS.cso");
+        ShaderManager::Instance().LoadPixelShader("UnlitColorPS", "shader/UnlitColorPS.cso");
 
         ShaderManager::Instance().LoadVertexShader("Geometry", "shader/GeometryVS.cso");
         ShaderManager::Instance().LoadPixelShader("Geometry", "shader/GeometryPS.cso");
