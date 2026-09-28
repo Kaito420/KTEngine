@@ -78,6 +78,12 @@ void Manager::LoadEngineConfig() {
             int api = 0;
             iarchive(cereal::make_nvp("GraphicsAPI", api));
             Renderer::SetGraphicsAPI(static_cast<GraphicsAPI>(api));
+
+            int theme = 0;
+            try {
+                iarchive(cereal::make_nvp("Theme", theme));
+                ImGuiLayer::SetTheme(static_cast<EditorTheme>(theme));
+            } catch (...) {}
         } catch(...) {}
     }
 }
@@ -88,7 +94,13 @@ void Manager::SaveEngineConfig(GraphicsAPI api) {
         cereal::JSONOutputArchive oarchive(ofs);
         int api_val = static_cast<int>(api);
         oarchive(cereal::make_nvp("GraphicsAPI", api_val));
+        int theme_val = static_cast<int>(ImGuiLayer::GetTheme());
+        oarchive(cereal::make_nvp("Theme", theme_val));
     }
+}
+
+void Manager::SaveEngineConfig() {
+    SaveEngineConfig(Renderer::GetGraphicsAPI());
 }
 
 void Manager::Initialize() {
@@ -273,6 +285,28 @@ void Manager::RenderMenuBar(){
                         SaveEngineConfig(static_cast<GraphicsAPI>(api_int));
                         bShowRestartPopup = true;
                     }
+                }
+                ImGui::Separator();
+                if (ImGui::BeginMenu("Theme")) {
+                    EditorTheme currentTheme = ImGuiLayer::GetTheme();
+                    if (ImGui::MenuItem("Modern Engine (UE5 / Rider)", nullptr, currentTheme == EditorTheme::ModernEngine)) {
+                        ImGuiLayer::SetTheme(EditorTheme::ModernEngine);
+                        SaveEngineConfig();
+                    }
+                    if (ImGui::MenuItem("Cyber Slate (VSCode / Neon)", nullptr, currentTheme == EditorTheme::CyberSlate)) {
+                        ImGuiLayer::SetTheme(EditorTheme::CyberSlate);
+                        SaveEngineConfig();
+                    }
+                    if (ImGui::MenuItem("Nord / Catppuccin (Soft Pastel)", nullptr, currentTheme == EditorTheme::Catppuccin)) {
+                        ImGuiLayer::SetTheme(EditorTheme::Catppuccin);
+                        SaveEngineConfig();
+                    }
+                    ImGui::Separator();
+                    if (ImGui::MenuItem("Classic Dark (ImGui Default)", nullptr, currentTheme == EditorTheme::ClassicDark)) {
+                        ImGuiLayer::SetTheme(EditorTheme::ClassicDark);
+                        SaveEngineConfig();
+                    }
+                    ImGui::EndMenu();
                 }
                 ImGui::Separator();
                 ImGui::MenuItem("Show Collider Wireframes", nullptr, &_showColliderWireframe);

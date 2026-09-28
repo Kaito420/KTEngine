@@ -52,6 +52,7 @@ private:
 public:
 	static void LoadEngineConfig();
 	static void SaveEngineConfig(GraphicsAPI api);
+	static void SaveEngineConfig();
 	static void Initialize();
 	static void Finalize();
 	static void Update();
