@@ -1,4 +1,4 @@
-//=====================================================================================
+Ôªø//=====================================================================================
 // PhysicsSystem.h
 // Author:Kaito Aoki
 // Date:2025/09/09
@@ -9,139 +9,152 @@
 #include <map>
 
 void PhysicsSystem::Update() {
+	PhysicsMetrics metrics;
+	metrics.totalRigidBodies = (int)_rigidBodys.size();
+	metrics.totalColliders = (int)_colliders.size();
 
-	//çÑëÃâ^ìÆ
-	for (auto* rb : _rigidBodys) {
-		if (rb->GetActive()) {
-			rb->Integrate();
+	// 1. Integrate
+	{
+		PROFILE_SCOPE("Physics: Integrate");
+		for (auto* rb : _rigidBodys) {
+			if (rb->GetActive()) {
+				metrics.activeRigidBodies++;
+				rb->Integrate();
+			}
 		}
 	}
 
-	//à»â∫è’ìÀîªíË
-	if (_colliders.size() < 2) return; //è’ìÀîªíËÇ∑ÇÈÇ‡ÇÃÇ™2Ç¬ñ¢ñûÇ»ÇÁÉXÉLÉbÉv
-
-	//äeColliderÇÃåªç›ÉtÉåÅ[ÉÄÇÃèÓïÒÇÉäÉZÉbÉg
 	for (auto* col : _colliders) {
-		col->BeginFrame();
+		if (col->GetActive()) {
+			metrics.activeColliders++;
+		}
 	}
 
-	//xé≤Ç…Ç¬Ç¢ÇƒÉ\Å[Ég
-	std::sort(_colliders.begin(), _colliders.end(),
-		[](Collider* a, Collider* b) {
-			return a->_aabb.min.x < b->_aabb.min.x;
-		});
+	if (_colliders.size() < 2) {
+		Profiler::RecordPhysicsMetrics(metrics);
+		return;
+	}
 
-	//manifoldsÇÃï€ë∂
-	_prevManifolds = std::move(_manifolds);
-	//manifoldsÇÃÉNÉäÉAÅiîOÇÃÇΩÇﬂÅj
-	ClearManifold();
-	//äµê´ÉeÉìÉ\ÉãÇÃçXêV
-	SetLocalInertiaTensor();
+	// 2. Broadphase & Sort
+	{
+		PROFILE_SCOPE("Physics: Broadphase");
+		for (auto* col : _colliders) {
+			col->BeginFrame();
+		}
 
-	for (size_t i = 0; i < _colliders.size() - 1; i++) {
-		for (size_t j = i + 1; j < _colliders.size(); j++) {
-			auto* colA = _colliders[i];
-			auto* colB = _colliders[j];
+		std::sort(_colliders.begin(), _colliders.end(),
+			[](Collider* a, Collider* b) {
+				return a->_aabb.min.x < b->_aabb.min.x;
+			});
 
-			//xé≤Ç≈èdÇ»Ç¡ÇƒÇ¢Ç»Ç©Ç¡ÇΩÇÁbreak
-			if (colA->_aabb.max.x < colB->_aabb.min.x) {
-				break;
-			}
+		_prevManifolds = std::move(_manifolds);
+		ClearManifold();
+		SetLocalInertiaTensor();
+	}
 
-			CollisionManifold manifold;
+	// 3. Narrowphase Collision Detection
+	{
+		PROFILE_SCOPE("Physics: Narrowphase");
+		for (size_t i = 0; i < _colliders.size() - 1; i++) {
+			for (size_t j = i + 1; j < _colliders.size(); j++) {
+				metrics.broadphasePairs++;
+				auto* colA = _colliders[i];
+				auto* colB = _colliders[j];
 
-			if (colA->Collide(colB, manifold)) {	//è’ìÀÇµÇΩç€
-
-				colA->_isOverlap = true;//ämîFóp
-				colB->_isOverlap = true;
-
-				colA->_currentOverlaps.insert(colB);
-				colB->_currentOverlaps.insert(colA);
-
-				if (colA->_previousOverlaps.find(colB) == colA->_previousOverlaps.end()) {
-					colA->GetOwner()->DispatchOnCollisionEnter(colB);
-					if (colA->GetOwner()->GetComponent<RigidBody>())
-						colA->GetOwner()->GetComponent<RigidBody>()->WakeUp();
+				if (colA->_aabb.max.x < colB->_aabb.min.x) {
+					break;
 				}
-				else
-					colA->GetOwner()->DispatchOnCollisionStay(colB);
 
-				if (colB->_previousOverlaps.find(colA) == colB->_previousOverlaps.end()) {
-					colB->GetOwner()->DispatchOnCollisionEnter(colA);
-					if (colB->GetOwner()->GetComponent<RigidBody>())
-						colB->GetOwner()->GetComponent<RigidBody>()->WakeUp();
+				metrics.narrowphaseTests++;
+				CollisionManifold manifold;
+
+				if (colA->Collide(colB, manifold)) {
+					colA->_isOverlap = true;
+					colB->_isOverlap = true;
+
+					colA->_currentOverlaps.insert(colB);
+					colB->_currentOverlaps.insert(colA);
+
+					if (colA->_previousOverlaps.find(colB) == colA->_previousOverlaps.end()) {
+						colA->GetOwner()->DispatchOnCollisionEnter(colB);
+						if (colA->GetOwner()->GetComponent<RigidBody>())
+							colA->GetOwner()->GetComponent<RigidBody>()->WakeUp();
+					}
+					else
+						colA->GetOwner()->DispatchOnCollisionStay(colB);
+
+					if (colB->_previousOverlaps.find(colA) == colB->_previousOverlaps.end()) {
+						colB->GetOwner()->DispatchOnCollisionEnter(colA);
+						if (colB->GetOwner()->GetComponent<RigidBody>())
+							colB->GetOwner()->GetComponent<RigidBody>()->WakeUp();
+					}
+					else
+						colB->GetOwner()->DispatchOnCollisionStay(colA);
+				
+					_manifolds.push_back(manifold);
 				}
-				else
-					colB->GetOwner()->DispatchOnCollisionStay(colA);
-			
-				_manifolds.push_back(manifold);	//manifoldÇÃï€ë∂
+			}
+		}
+
+		// Exit events
+		for (auto* col : _colliders) {
+			for (auto* prevCol : col->_previousOverlaps) {
+				if (col->_currentOverlaps.find(prevCol) == col->_currentOverlaps.end()) {
+					col->GetOwner()->DispatchOnCollisionExit(prevCol);
+					if(col->GetOwner()->GetComponent<RigidBody>())
+						col->GetOwner()->GetComponent<RigidBody>()->WakeUp();
+				}
 			}
 		}
 	}
 
-	//ExitîªíË
-	for (auto* col : _colliders) {
-		for (auto* prevCol : col->_previousOverlaps) {
-			if (col->_currentOverlaps.find(prevCol) == col->_currentOverlaps.end()) {
-				col->GetOwner()->DispatchOnCollisionExit(prevCol);
-				if(col->GetOwner()->GetComponent<RigidBody>())
-					col->GetOwner()->GetComponent<RigidBody>()->WakeUp();
+	metrics.contactManifolds = (int)_manifolds.size();
+
+	// 4. Solve Collisions & Impulses
+	{
+		PROFILE_SCOPE("Physics: Solve");
+		for (auto& manifold : _manifolds) {
+			RigidBody* rbA = manifold.a->GetOwner()->GetComponent<RigidBody>();
+			RigidBody* rbB = manifold.b->GetOwner()->GetComponent<RigidBody>();
+
+			float e = 0.0f;
+			if (rbA && rbB) e = (std::max)(rbA->_restitution, rbB->_restitution);
+			else if (rbA) e = rbA->_restitution;
+			else if (rbB) e = rbB->_restitution;
+
+			for (auto& cp : manifold.contacts) {
+				KTVECTOR3 rA = cp.position - manifold.a->GetOwner()->_transform._position;
+				KTVECTOR3 rB = cp.position - manifold.b->GetOwner()->_transform._position;
+
+				KTVECTOR3 vA = rbA ? rbA->_velocity + Cross(rbA->_angularVelocity, rA) : KTVECTOR3(0, 0, 0);
+				KTVECTOR3 vB = rbB ? rbB->_velocity + Cross(rbB->_angularVelocity, rB) : KTVECTOR3(0, 0, 0);
+				KTVECTOR3 rv = vA - vB;
+				float vRel = Dot(rv, manifold.normal);
+
+				if (vRel <= -1.0f) {
+					cp.velocityBias = -e * vRel;
+				}
+				else {
+					cp.velocityBias = 0.0f;
+				}
 			}
+		}
+
+		ApplyWarmStarting();
+
+		for (auto& manifold : _manifolds) {
+			for (int iter = 0; iter < 20; iter++) {
+				ResolveInpulse(manifold);
+			}
+			ResolveCollision(manifold);
+		}
+
+		for (auto* col : _colliders) {
+			col->EndFrame();
 		}
 	}
 
-	//=====================================================================
-	//ï®óùââéZ
-	//=====================================================================
-
-	//îΩî≠ë¨ìxÅiBiasÅjÇÃéñëOåvéZ
-	for (auto& manifold : _manifolds) {
-		RigidBody* rbA = manifold.a->GetOwner()->GetComponent<RigidBody>();
-		RigidBody* rbB = manifold.b->GetOwner()->GetComponent<RigidBody>();
-
-		// îΩî≠åWêîÇÃåàíË
-		float e = 0.0f;
-		if (rbA && rbB) e = (std::max)(rbA->_restitution, rbB->_restitution);
-		else if (rbA) e = rbA->_restitution;
-		else if (rbB) e = rbB->_restitution;
-
-		for (auto& cp : manifold.contacts) {
-			KTVECTOR3 rA = cp.position - manifold.a->GetOwner()->_transform._position;
-			KTVECTOR3 rB = cp.position - manifold.b->GetOwner()->_transform._position;
-
-			// ëäëŒë¨ìxÇÃåvéZ
-			KTVECTOR3 vA = rbA ? rbA->_velocity + Cross(rbA->_angularVelocity, rA) : KTVECTOR3(0, 0, 0);
-			KTVECTOR3 vB = rbB ? rbB->_velocity + Cross(rbB->_angularVelocity, rB) : KTVECTOR3(0, 0, 0);
-			KTVECTOR3 rv = vA - vB;
-			float vRel = Dot(rv, manifold.normal);
-
-			// îΩî≠Ëáíl
-			if (vRel <= -1.0f) {
-				cp.velocityBias = -e * vRel;
-			}
-			else {
-				cp.velocityBias = 0.0f;
-			}
-		}
-	}
-
-	//ÉEÉHÅ[ÉÄÉXÉ^Å[Ég
-	ApplyWarmStarting();
-
-	for (auto& manifold : _manifolds) {
-
-		for (int iter = 0; iter < 20; iter++) {
-			ResolveInpulse(manifold);
-		}
-		ResolveCollision(manifold);
-	}
-
-
-	//èÛë‘çXêV
-	for (auto* col : _colliders) {
-		col->EndFrame();
-	}
-
+	Profiler::RecordPhysicsMetrics(metrics);
 }
 
 void PhysicsSystem::SetLocalInertiaTensor(){
@@ -149,7 +162,7 @@ void PhysicsSystem::SetLocalInertiaTensor(){
 		RigidBody* rb = col->GetOwner()->GetComponent<RigidBody>();
 		if (rb == nullptr)continue;
 		bool massChanged = ((rb->_oldMass - rb->_mass) * (rb->_oldMass - rb->_mass) > 1e-6f);
-		if (!col->_hasChangedScale && !massChanged) continue; //ÉXÉPÅ[ÉãÇ©éøó Ç™ïœâªÇµÇƒÇ¢Ç»ÇØÇÍÇŒÉXÉLÉbÉv
+		if (!col->_hasChangedScale && !massChanged) continue; //„Çπ„Ç±„Éº„É´„ÅãË≥™Èáè„ÅåÂ§âÂåñ„Åó„Å¶„ÅÑ„Å™„Åë„Çå„Å∞„Çπ„Ç≠„ÉÉ„Éó
 		if (rb->_mass > 0.0f && !rb->_isKinematic) {
 			rb->_inertiaTensorBody = col->ComputeLocalInertiaTensor(rb->_mass);
 			rb->_inertiaTensorBodyInv = rb->_inertiaTensorBody.Inverse();
@@ -166,21 +179,21 @@ void PhysicsSystem::ResolveCollision(CollisionManifold& manifold)
 {
 	RigidBody* rbA = manifold.a->GetOwner()->GetComponent<RigidBody>();
 	RigidBody* rbB = manifold.b->GetOwner()->GetComponent<RigidBody>();
-	if (!rbA && !rbB) return; // óºï˚ê√ìIÇ»ÇÁÉXÉLÉbÉv
+	if (!rbA && !rbB) return; // ‰∏°ÊñπÈùôÁöÑ„Å™„Çâ„Çπ„Ç≠„ÉÉ„Éó
 
-	// è¨Ç≥Ç»åÑä‘ÅislopÅjÇécÇµÇƒâﬂèËï‚ê≥ÇñhÇÆ
+	// Â∞è„Åï„Å™ÈöôÈñìÔºàslopÔºâ„ÇíÊÆã„Åó„Å¶ÈÅéÂâ∞Ë£úÊ≠£„ÇíÈò≤„Åê
 	float slop = 0.05f;
-	float percent = 0.4f; // 0.2Å`0.8ÇÃîÕàÕÇ≈í≤êÆ
+	float percent = 0.4f; // 0.2ÔΩû0.8„ÅÆÁØÑÂõ≤„ÅßË™øÊï¥
 	float depth = (std::max)(0.0f, manifold.penetrationDepth - slop);
 
-	//óLå¯éøó ÇÃåvéZ
+	//ÊúâÂäπË≥™Èáè„ÅÆË®àÁÆó
 	float invMassA = (rbA) ? rbA->_invMass : 0.0f;
 	float invMassB = (rbB) ? rbB->_invMass : 0.0f;
 	float invMassSum = invMassA + invMassB;
 
 	if (invMassSum <= 0.0f) return;
 
-	// âüÇµñﬂÇµó 
+	// Êäº„ÅóÊàª„ÅóÈáè
 	KTVECTOR3 correction = KTVECTOR3(0.0f, 0.0f, 0.0f);
 	for (const auto& contact : manifold.contacts) {
 		correction += manifold.normal * (contact.penetration / invMassSum);
@@ -198,28 +211,28 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold)
 {
 	RigidBody* rbA = manifold.a->GetOwner()->GetComponent<RigidBody>();
 	RigidBody* rbB = manifold.b->GetOwner()->GetComponent<RigidBody>();
-	if (!rbA && !rbB) return; // óºï˚ê√ìIÇ»ÇÁÉXÉLÉbÉv
+	if (!rbA && !rbB) return; // ‰∏°ÊñπÈùôÁöÑ„Å™„Çâ„Çπ„Ç≠„ÉÉ„Éó
 
-	//óLå¯éøó ÇÃåvéZ
+	//ÊúâÂäπË≥™Èáè„ÅÆË®àÁÆó
 	float invMassA = (rbA) ? rbA->_invMass : 0.0f;
 	float invMassB = (rbB) ? rbB->_invMass : 0.0f;
 	float deltaImpulse = 0.0f;
 
-	for (auto& contact : manifold.contacts) {//ñ@ê¸ï˚å¸
+	for (auto& contact : manifold.contacts) {//Ê≥ïÁ∑öÊñπÂêë
 
 		KTVECTOR3 rA = contact.position - manifold.a->GetOwner()->_transform._position;
 		KTVECTOR3 rB = contact.position - manifold.b->GetOwner()->_transform._position;
 
-		//ë¨ìxèCê≥
+		//ÈÄüÂ∫¶‰øÆÊ≠£
 		KTVECTOR3 vA = rbA ? rbA->_velocity + Cross(rbA->_angularVelocity, rA) : KTVECTOR3(0.0f, 0.0f, 0.0f);
 		KTVECTOR3 vB = rbB ? rbB->_velocity + Cross(rbB->_angularVelocity, rB) : KTVECTOR3(0.0f, 0.0f, 0.0f);
-		//ëäëŒë¨ìx
-		KTVECTOR3 rV = vA - vB;//B->AÇÃëäëŒë¨ìx
-		float relVelAlongNormal = Dot(rV, manifold.normal);//manifold.normal => B->Aï˚å¸
-		// ó£ÇÍÇƒÇ¢Ç≠èÍçáÇÕÉXÉLÉbÉv(B->Aï˚å¸Ç≈àÍívÅ®ì‡êœÇ™ê≥ÇÃílÇÃèÍçáó£ÇÍÇƒÇ¢Ç≠) && ñ@ê¸ÉCÉìÉpÉãÉXÇ™0à»â∫ÇÃèÍçáÉXÉLÉbÉv
+		//Áõ∏ÂØæÈÄüÂ∫¶
+		KTVECTOR3 rV = vA - vB;//B->A„ÅÆÁõ∏ÂØæÈÄüÂ∫¶
+		float relVelAlongNormal = Dot(rV, manifold.normal);//manifold.normal => B->AÊñπÂêë
+		// Èõ¢„Çå„Å¶„ÅÑ„ÅèÂ†¥Âêà„ÅØ„Çπ„Ç≠„ÉÉ„Éó(B->AÊñπÂêë„Åß‰∏ÄËá¥‚ÜíÂÜÖÁ©ç„ÅåÊ≠£„ÅÆÂÄ§„ÅÆÂ†¥ÂêàÈõ¢„Çå„Å¶„ÅÑ„Åè) && Ê≥ïÁ∑ö„Ç§„É≥„Éë„É´„Çπ„Åå0‰ª•‰∏ã„ÅÆÂ†¥Âêà„Çπ„Ç≠„ÉÉ„Éó
 		if (relVelAlongNormal > 0.0f && contact.normalImpulseSum <= 0.0f)continue;
 
-		//óLå¯éøó 
+		//ÊúâÂäπË≥™Èáè
 		KTVECTOR3 rnA = rbA ? Cross(rA, manifold.normal) : KTVECTOR3(0.0f, 0.0f, 0.0f);
 		KTVECTOR3 rnB = rbB ? Cross(rB, manifold.normal) : KTVECTOR3(0.0f, 0.0f, 0.0f);
 
@@ -229,21 +242,21 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold)
 
 		if (normalMass <= 0.0f) continue;
 
-		// è’ìÀÉCÉìÉpÉãÉXÇÃåvéZÅió›êœèàóùÅj
-		//deltaImpulseÇÃåvéZ
+		// Ë°ùÁ™Å„Ç§„É≥„Éë„É´„Çπ„ÅÆË®àÁÆóÔºàÁ¥ØÁ©çÂá¶ÁêÜÔºâ
+		//deltaImpulse„ÅÆË®àÁÆó
 		float deltaImpulse = (contact.velocityBias - relVelAlongNormal) / normalMass;
 
 
-		//ó›êœílÇÃåvéZ
+		//Á¥ØÁ©çÂÄ§„ÅÆË®àÁÆó
 		float oldSum = contact.normalImpulseSum;
 		contact.normalImpulseSum += deltaImpulse;
 		if(contact.normalImpulseSum < 0.0f)
 			contact.normalImpulseSum = 0.0f;
 
-		//é¿ç€Ç…ìKópÇ∑ÇÈÇÃÇÕç∑ï™ÇæÇØ
+		//ÂÆüÈöõ„Å´ÈÅ©Áî®„Åô„Çã„ÅÆ„ÅØÂ∑ÆÂàÜ„Å†„Åë
 		deltaImpulse = contact.normalImpulseSum - oldSum;
 
-		//ë¨ìxçXêVÅiÉCÉìÉpÉãÉXÇÃìKópÅj
+		//ÈÄüÂ∫¶Êõ¥Êñ∞Ôºà„Ç§„É≥„Éë„É´„Çπ„ÅÆÈÅ©Áî®Ôºâ
 		KTVECTOR3 applyNormalImpule = deltaImpulse * manifold.normal;
 
 		if (rbA && !rbA->IsSleeping()) {
@@ -257,7 +270,7 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold)
 
 	}
 	
-	// ê√é~ñÄéCÇ∆ìÆñÄéCÇÃåàíË
+	// ÈùôÊ≠¢Êë©Êì¶„Å®ÂãïÊë©Êì¶„ÅÆÊ±∫ÂÆö
 	float mu_s = 0.0f;
 	float mu_d = 0.0f;
 	if (rbA && rbB) {
@@ -273,23 +286,23 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold)
 		mu_d = rbB->_dynamicFriction;
 	}
 
-	for (auto& contact : manifold.contacts) {//ê⁄ê¸ï˚å¸
-		//// çƒåvéZ
+	for (auto& contact : manifold.contacts) {//Êé•Á∑öÊñπÂêë
+		//// ÂÜçË®àÁÆó
 		KTVECTOR3 rA = contact.position - manifold.a->GetOwner()->_transform._position;
 		KTVECTOR3 rB = contact.position - manifold.b->GetOwner()->_transform._position;
 
-		//ë¨ìxèCê≥
+		//ÈÄüÂ∫¶‰øÆÊ≠£
 		KTVECTOR3 vA = rbA ? rbA->_velocity + Cross(rbA->_angularVelocity, rA) : KTVECTOR3(0.0f, 0.0f, 0.0f);
 		KTVECTOR3 vB = rbB ? rbB->_velocity + Cross(rbB->_angularVelocity, rB) : KTVECTOR3(0.0f, 0.0f, 0.0f);
-		//ëäëŒë¨ìx
+		//Áõ∏ÂØæÈÄüÂ∫¶
 		KTVECTOR3 rV = vA - vB;
 
-		// ñÄéCóÕÇÃåvéZÅiê⁄ê¸ï˚å¸Åj
+		// Êë©Êì¶Âäõ„ÅÆË®àÁÆóÔºàÊé•Á∑öÊñπÂêëÔºâ
 		KTVECTOR3 tangent = rV - Dot(rV, manifold.normal) * manifold.normal;
 		if (tangent.Magnitude() > 1e-3f) {
 			tangent = tangent.Normalize();
 
-			// ê⁄ê¸ï˚å¸ÇÃóLå¯éøó ÅiâÒì]äÒó^Çä‹ÇﬂÇÈÅj
+			// Êé•Á∑öÊñπÂêë„ÅÆÊúâÂäπË≥™ÈáèÔºàÂõûËª¢ÂØÑ‰∏é„ÇíÂê´„ÇÅ„ÇãÔºâ
 			KTVECTOR3 rtA = rbA ? Cross(rA, tangent) : KTVECTOR3(0, 0, 0);
 			KTVECTOR3 rtB = rbB ? Cross(rB, tangent) : KTVECTOR3(0, 0, 0);
 
@@ -303,19 +316,19 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold)
 			jt /= tangentMass;
 
 
-			//ñÄéCÇÃè„å¿ílåvéZ(F = É  * N)
+			//Êë©Êì¶„ÅÆ‰∏äÈôêÂÄ§Ë®àÁÆó(F = Œº * N)
 			float maxFriction = contact.normalImpulseSum * mu_s;
 
-			//ó›êœílÇÃåvéZ
+			//Á¥ØÁ©çÂÄ§„ÅÆË®àÁÆó
 			KTVECTOR3 oldTangentImpulse = contact.tangentImpulseSum;
 			KTVECTOR3 newTangentImpulse = oldTangentImpulse + jt * tangent;
-			//â~êçñÄéCêßñÒÇ≈ÉNÉâÉìÉv
+			//ÂÜÜÈåêÊë©Êì¶Âà∂Á¥Ñ„Åß„ÇØ„É©„É≥„Éó
 			float len = newTangentImpulse.Magnitude();
 			if (len > maxFriction) {
 				newTangentImpulse = (newTangentImpulse / len) * maxFriction;
 			}
 			contact.tangentImpulseSum = newTangentImpulse;
-			//é¿ç€Ç…ìKópÇ∑ÇÈÇÃÇÕç∑ï™ÇæÇØ
+			//ÂÆüÈöõ„Å´ÈÅ©Áî®„Åô„Çã„ÅÆ„ÅØÂ∑ÆÂàÜ„Å†„Åë
 			KTVECTOR3 applyTangentImpulse = contact.tangentImpulseSum - oldTangentImpulse;
 
 			if (rbA && !rbA->IsSleeping()) {
@@ -336,34 +349,34 @@ void PhysicsSystem::ApplyWarmStarting(){
 
 	static std::vector<ManifoldKey> searchList;
 	searchList.clear();
-	searchList.reserve(_prevManifolds.size());	//ëOÉtÉåÅ[ÉÄÇÃÉ}ÉjÉtÉHÅ[ÉãÉhÇ∆ìØÉTÉCÉYï™
+	searchList.reserve(_prevManifolds.size());	//Ââç„Éï„É¨„Éº„É†„ÅÆ„Éû„Éã„Éï„Ç©„Éº„É´„Éâ„Å®Âêå„Çµ„Ç§„Ç∫ÂàÜ
 
-	//ÉäÉXÉgçÏê¨
+	//„É™„Çπ„Éà‰ΩúÊàê
 	for(auto& old : _prevManifolds){
 		uint64_t key = MakePairKey(old.a, old.b);
 		searchList.push_back({ key, &old });
 	}
 
-	//É\Å[Ég
+	//„ÇΩ„Éº„Éà
 	std::sort(searchList.begin(), searchList.end());
 
 	for (auto& newManifold : _manifolds) {
-		//ëOÉtÉåÅ[ÉÄÇÃìØÇ∂ÉyÉAÇÃÉ}ÉjÉtÉHÅ[ÉãÉhÇíTÇ∑
+		//Ââç„Éï„É¨„Éº„É†„ÅÆÂêå„Åò„Éö„Ç¢„ÅÆ„Éû„Éã„Éï„Ç©„Éº„É´„Éâ„ÇíÊé¢„Åô
 		uint64_t key = MakePairKey(newManifold.a, newManifold.b);
 
-		//ìÒï™íTçı
+		//‰∫åÂàÜÊé¢Á¥¢
 		ManifoldKey target = { key, nullptr };
 		auto it = std::lower_bound(searchList.begin(), searchList.end(), target);
 
-		if (it != searchList.end() && it->key == key) {//å©Ç¬Ç©Ç¡ÇΩèÍçá
+		if (it != searchList.end() && it->key == key) {//Ë¶ã„Å§„Åã„Å£„ÅüÂ†¥Âêà
 			CollisionManifold* oldManifold = it->manifold;
 
-			//çÑëÃÇÃéÊìæ
+			//Ââõ‰Ωì„ÅÆÂèñÂæó
 			RigidBody* rbA = newManifold.a->GetOwner()->GetComponent<RigidBody>();
 			RigidBody* rbB = newManifold.b->GetOwner()->GetComponent<RigidBody>();
 			if (!rbA && !rbB) continue;
 
-			//ê⁄êGì_ÇÃÉ}ÉbÉ`ÉìÉO
+			//Êé•Ëß¶ÁÇπ„ÅÆ„Éû„ÉÉ„ÉÅ„É≥„Ç∞
 			for (auto& newContact : newManifold.contacts) {
 
 				float minDistSqr = FLT_MAX;
@@ -372,25 +385,25 @@ void PhysicsSystem::ApplyWarmStarting(){
 				for (auto& oldContact : oldManifold->contacts) {
 					float distSqr = (newContact.position - oldContact.position).MagnitudeSqr();
 
-					//ãóó£î‰är
+					//Ë∑ùÈõ¢ÊØîËºÉ
 					if (distSqr < 0.005f && distSqr < minDistSqr) {
 						minDistSqr = distSqr;
 						bestOldContact = &oldContact;
 					}
 				}
 
-				//É}ÉbÉ`Ç∑ÇÈå√Ç¢ì_Ç™å©Ç¬Ç©Ç¡ÇΩÇÁó›êœÉCÉìÉpÉãÉXÇà¯Ç´åpÇÆ
+				//„Éû„ÉÉ„ÉÅ„Åô„ÇãÂè§„ÅÑÁÇπ„ÅåË¶ã„Å§„Åã„Å£„Åü„ÇâÁ¥ØÁ©ç„Ç§„É≥„Éë„É´„Çπ„ÇíÂºï„ÅçÁ∂ô„Åê
 				if (bestOldContact) {
 					newContact.normalImpulseSum = bestOldContact->normalImpulseSum;
 					newContact.tangentImpulseSum = bestOldContact->tangentImpulseSum;
 
-					//à¯Ç´åpÇ¢ÇæÉCÉìÉpÉãÉXÇéñëOÇ…ë¨ìxÇ…ìKóp
+					//Âºï„ÅçÁ∂ô„ÅÑ„Å†„Ç§„É≥„Éë„É´„Çπ„Çí‰∫ãÂâç„Å´ÈÄüÂ∫¶„Å´ÈÅ©Áî®
 					KTVECTOR3 rA = newContact.position - newManifold.a->GetOwner()->_transform._position;
 					KTVECTOR3 rB = newContact.position - newManifold.b->GetOwner()->_transform._position;
 
-					//ñ@ê¸ï˚å¸ÇÃÉCÉìÉpÉãÉXïúå≥
+					//Ê≥ïÁ∑öÊñπÂêë„ÅÆ„Ç§„É≥„Éë„É´„ÇπÂæ©ÂÖÉ
 					KTVECTOR3 applyImpulse = newContact.normalImpulseSum * newManifold.normal;
-					//ê⁄ê¸ï˚å¸ÇÃÉCÉìÉpÉãÉXïúå≥
+					//Êé•Á∑öÊñπÂêë„ÅÆ„Ç§„É≥„Éë„É´„ÇπÂæ©ÂÖÉ
 					applyImpulse += newContact.tangentImpulseSum;
 
 					float invMassA = (rbA) ? rbA->_invMass : 0.0f;

@@ -5,6 +5,7 @@
 //=====================================================================================
 
 #include "Profiler.h"
+#include "Renderer.h"
 #include "imgui.h"
 #include <algorithm>
 #include <numeric>
@@ -25,6 +26,13 @@ namespace {
     std::unordered_map<std::string, float> s_lastFrameSamples;
     std::vector<std::string> s_stageOrder;
 
+    // Simulation & Rendering Metrics
+    PhysicsMetrics s_currentPhysicsMetrics;
+    PhysicsMetrics s_lastPhysicsMetrics;
+
+    RenderMetrics s_currentRenderMetrics;
+    RenderMetrics s_lastRenderMetrics;
+
     bool s_freeze = false; // Freeze graph updates
     float s_maxPlotScale = 35.0f; // Graph Y-max (33.3ms = 30fps)
 }
@@ -32,6 +40,7 @@ namespace {
 void Profiler::BeginFrame() {
     s_frameStartTime = std::chrono::high_resolution_clock::now();
     s_currentFrameSamples.clear();
+    s_currentRenderMetrics = RenderMetrics();
 }
 
 void Profiler::EndFrame() {
@@ -46,6 +55,8 @@ void Profiler::EndFrame() {
         s_historyOffset = (s_historyOffset + 1) % HISTORY_SIZE;
 
         s_lastFrameSamples = s_currentFrameSamples;
+        s_lastPhysicsMetrics = s_currentPhysicsMetrics;
+        s_lastRenderMetrics = s_currentRenderMetrics;
     }
 }
 
@@ -63,6 +74,24 @@ void Profiler::RecordCPUTime(const char* tag, float milliseconds) {
     }
 }
 
+void Profiler::RecordPhysicsMetrics(const PhysicsMetrics& metrics) {
+    if (s_freeze) return;
+    s_currentPhysicsMetrics = metrics;
+}
+
+void Profiler::RecordDrawCall(int vertexCount, int indexCount) {
+    if (s_freeze) return;
+    s_currentRenderMetrics.drawCalls++;
+    s_currentRenderMetrics.totalVertices += vertexCount;
+    s_currentRenderMetrics.totalTriangles += (indexCount > 0) ? (indexCount / 3) : (vertexCount / 3);
+}
+
+void Profiler::RecordSceneObjects(int totalObjs, int activeObjs) {
+    if (s_freeze) return;
+    s_currentRenderMetrics.totalGameObjects = totalObjs;
+    s_currentRenderMetrics.activeGameObjects = activeObjs;
+}
+
 float Profiler::GetLastFrameTime() {
     return s_lastFrameTime;
 }
@@ -71,10 +100,18 @@ float Profiler::GetFPS() {
     return s_fps;
 }
 
+const PhysicsMetrics& Profiler::GetLastPhysicsMetrics() {
+    return s_lastPhysicsMetrics;
+}
+
+const RenderMetrics& Profiler::GetLastRenderMetrics() {
+    return s_lastRenderMetrics;
+}
+
 void Profiler::RenderUI(bool* pOpen) {
     if (pOpen && !*pOpen) return;
 
-    ImGui::SetNextWindowSize(ImVec2(420, 480), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(440, 560), ImGuiCond_FirstUseEver);
     if (!ImGui::Begin("Profiler", pOpen)) {
         ImGui::End();
         return;
@@ -99,7 +136,9 @@ void Profiler::RenderUI(bool* pOpen) {
     }
     if (minTime > 9000.0f) minTime = 0.0f;
 
-    // --- 1. Frame Overview ---
+    // =========================================================================
+    // 1. Frame Overview
+    // =========================================================================
     ImGui::TextColored(ImVec4(0.2f, 0.8f, 1.0f, 1.0f), "Overview");
     ImGui::Separator();
 
@@ -126,11 +165,13 @@ void Profiler::RenderUI(bool* pOpen) {
     char overlayText[64];
     sprintf_s(overlayText, "%.2f ms (60fps=16.6ms)", s_lastFrameTime);
     ImGui::PlotLines("##FrameTimePlot", s_frameTimeHistory, HISTORY_SIZE, s_historyOffset,
-                     overlayText, 0.0f, s_maxPlotScale, ImVec2(-1, 90));
+                     overlayText, 0.0f, s_maxPlotScale, ImVec2(-1, 85));
 
     ImGui::Spacing();
 
-    // --- 2. CPU Time Breakdown ---
+    // =========================================================================
+    // 2. CPU Time Breakdown
+    // =========================================================================
     if (ImGui::CollapsingHeader("CPU Time Breakdown", ImGuiTreeNodeFlags_DefaultOpen)) {
         float recordedTotal = 0.0f;
         for (const auto& stage : s_stageOrder) {
@@ -168,8 +209,8 @@ void Profiler::RenderUI(bool* pOpen) {
             colorIdx++;
 
             // Stage name and duration
-            ImGui::TextColored(col, "%-14s", stage.c_str());
-            ImGui::SameLine(140);
+            ImGui::TextColored(col, "%-16s", stage.c_str());
+            ImGui::SameLine(160);
             ImGui::Text("%6.2f ms  (%4.1f%%)", stageMs, ratio * 100.0f);
 
             // Progress bar
@@ -180,15 +221,15 @@ void Profiler::RenderUI(bool* pOpen) {
             ImGui::PopStyleColor();
         }
 
-        // Unmeasured / Remaining frame time (e.g. VSync wait, OS driver overhead)
+        // Unmeasured / Remaining frame time
         float unmeasuredMs = s_lastFrameTime - recordedTotal;
         if (unmeasuredMs > 0.01f) {
             float unmeasuredRatio = (s_lastFrameTime > 0.001f) ? (unmeasuredMs / s_lastFrameTime) : 0.0f;
             if (unmeasuredRatio > 1.0f) unmeasuredRatio = 1.0f;
 
             ImVec4 otherCol = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
-            ImGui::TextColored(otherCol, "%-14s", "Other / Wait");
-            ImGui::SameLine(140);
+            ImGui::TextColored(otherCol, "%-16s", "Other / Wait");
+            ImGui::SameLine(160);
             ImGui::Text("%6.2f ms  (%4.1f%%)", unmeasuredMs, unmeasuredRatio * 100.0f);
 
             char barOverlay[32];
@@ -201,7 +242,100 @@ void Profiler::RenderUI(bool* pOpen) {
 
     ImGui::Spacing();
 
-    // --- 3. Budget Guide ---
+    // =========================================================================
+    // 3. Physics Metrics (Phase 2)
+    // =========================================================================
+    if (ImGui::CollapsingHeader("Physics Metrics", ImGuiTreeNodeFlags_DefaultOpen)) {
+        int inactiveRBs = s_lastPhysicsMetrics.totalRigidBodies - s_lastPhysicsMetrics.activeRigidBodies;
+        int inactiveCols = s_lastPhysicsMetrics.totalColliders - s_lastPhysicsMetrics.activeColliders;
+
+        ImGui::Columns(2, "PhysicsMetricsCol", false);
+        ImGui::SetColumnWidth(0, 180.0f);
+
+        ImGui::Text("RigidBodies:");
+        ImGui::NextColumn();
+        ImGui::Text("%d active / %d total (%d idle)",
+                    s_lastPhysicsMetrics.activeRigidBodies,
+                    s_lastPhysicsMetrics.totalRigidBodies,
+                    inactiveRBs);
+        ImGui::NextColumn();
+
+        ImGui::Text("Colliders:");
+        ImGui::NextColumn();
+        ImGui::Text("%d active / %d total (%d inactive)",
+                    s_lastPhysicsMetrics.activeColliders,
+                    s_lastPhysicsMetrics.totalColliders,
+                    inactiveCols);
+        ImGui::NextColumn();
+
+        ImGui::Text("Broadphase Pairs:");
+        ImGui::NextColumn();
+        ImGui::Text("%d tested pairs", s_lastPhysicsMetrics.broadphasePairs);
+        ImGui::NextColumn();
+
+        ImGui::Text("Narrowphase Tests:");
+        ImGui::NextColumn();
+        ImGui::Text("%d geometric tests", s_lastPhysicsMetrics.narrowphaseTests);
+        ImGui::NextColumn();
+
+        ImGui::Text("Contact Manifolds:");
+        ImGui::NextColumn();
+        ImGui::TextColored(ImVec4(0.2f, 0.9f, 0.4f, 1.0f), "%d collisions active", s_lastPhysicsMetrics.contactManifolds);
+        ImGui::NextColumn();
+
+        ImGui::Columns(1);
+    }
+
+    ImGui::Spacing();
+
+    // =========================================================================
+    // 4. Rendering Metrics (Phase 2)
+    // =========================================================================
+    if (ImGui::CollapsingHeader("Rendering Metrics", ImGuiTreeNodeFlags_DefaultOpen)) {
+        GraphicsAPI currentAPI = Renderer::GetGraphicsAPI();
+        const char* apiName = (currentAPI == GraphicsAPI::DirectX12) ? "DirectX 12" : "DirectX 11";
+
+        ImGui::Columns(2, "RenderMetricsCol", false);
+        ImGui::SetColumnWidth(0, 180.0f);
+
+        ImGui::Text("Graphics API:");
+        ImGui::NextColumn();
+        ImGui::TextColored(ImVec4(0.4f, 0.8f, 1.0f, 1.0f), "%s", apiName);
+        ImGui::NextColumn();
+
+        ImGui::Text("Draw Calls:");
+        ImGui::NextColumn();
+        ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "%d calls / frame", s_lastRenderMetrics.drawCalls);
+        ImGui::NextColumn();
+
+        ImGui::Text("Triangles (Polys):");
+        ImGui::NextColumn();
+        ImGui::Text("%'d triangles", s_lastRenderMetrics.totalTriangles);
+        ImGui::NextColumn();
+
+        ImGui::Text("Vertices:");
+        ImGui::NextColumn();
+        ImGui::Text("%'d vertices", s_lastRenderMetrics.totalVertices);
+        ImGui::NextColumn();
+
+        ImGui::Text("Scene GameObjects:");
+        ImGui::NextColumn();
+        ImGui::Text("%d active / %d total", s_lastRenderMetrics.activeGameObjects, s_lastRenderMetrics.totalGameObjects);
+        ImGui::NextColumn();
+
+        ImGui::Text("Scene Buffer Resolution:");
+        ImGui::NextColumn();
+        ImGui::Text("%.0f x %.0f", Renderer::GetSceneWidth(), Renderer::GetSceneHeight());
+        ImGui::NextColumn();
+
+        ImGui::Columns(1);
+    }
+
+    ImGui::Spacing();
+
+    // =========================================================================
+    // 5. Budget Guide
+    // =========================================================================
     if (ImGui::CollapsingHeader("Frame Budget Guide")) {
         float budget60 = 16.66f;
         float budget30 = 33.33f;

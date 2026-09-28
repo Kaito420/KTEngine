@@ -18,6 +18,7 @@
 #include "GameObject.h"
 #include "ShaderManager.h"
 #include "Shader.h"
+#include "Profiler.h"
 
 
 std::unordered_map<std::string, MODEL*> ModelRenderer::m_ModelPool;
@@ -66,6 +67,7 @@ void ModelRenderer::Render() const
 		Renderer::SetWorldMatrix(worldMatrix);
 		for (unsigned int i = 0; i < m_Model->SubsetNum; i++) {
 			cmdList->DrawIndexedInstanced(m_Model->SubsetArray[i].IndexNum, 1, m_Model->SubsetArray[i].StartIndex, 0, 0);
+			Profiler::RecordDrawCall(m_Model->VertexBuffer ? (int)m_Model->VertexBuffer->Size : 0, (int)m_Model->SubsetArray[i].IndexNum);
 		}
 		return;
 	}
@@ -166,6 +168,7 @@ void ModelRenderer::Render() const
 		}
 
 		cmdList->DrawIndexedInstanced(m_Model->SubsetArray[i].IndexNum, 1, m_Model->SubsetArray[i].StartIndex, 0, 0);
+		Profiler::RecordDrawCall(m_Model->VertexBuffer ? (int)m_Model->VertexBuffer->Size : 0, (int)m_Model->SubsetArray[i].IndexNum);
 	}
 }
 

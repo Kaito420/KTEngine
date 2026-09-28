@@ -4,6 +4,7 @@
 #include "Texture.h"
 #include "ShaderManager.h"
 #include "Shader.h"
+#include "Profiler.h"
 
 void Sphere::CreateSphereMesh(float radius, int sliceCount, int stackCount, std::vector<Vertex>& vertices, std::vector<UINT>& indices){
 	vertices.clear();
@@ -164,6 +165,7 @@ void Sphere::Render()const {
 		cmdList->SetPipelineState(Renderer::GetShadowPipelineState());
 		Renderer::SetWorldMatrix(worldMatrix);
 		cmdList->DrawIndexedInstanced(_indexBuffer->Size, 1, 0, 0, 0);
+		Profiler::RecordDrawCall(_vertexBuffer ? (int)_vertexBuffer->Size : 0, (int)_indexBuffer->Size);
 		return;
 	}
 
@@ -252,6 +254,7 @@ void Sphere::Render()const {
 	}
 
 	cmdList->DrawIndexedInstanced(_indexCount, 1, 0, 0, 0);
+	Profiler::RecordDrawCall(_vertexBuffer ? (int)_vertexBuffer->Size : 0, _indexCount);
 }
 
 void Sphere::ShowUI() {

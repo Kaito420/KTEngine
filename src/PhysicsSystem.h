@@ -11,6 +11,7 @@
 #include "GameObject.h"
 #include "Collider.h"
 #include "RigidBody.h"
+#include "Profiler.h"
 
 struct ManifoldKey {
 	uint64_t key;

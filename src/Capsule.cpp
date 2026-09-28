@@ -5,6 +5,7 @@
 #include <imgui.h>
 #include "ShaderManager.h"
 #include "Shader.h"
+#include "Profiler.h"
 
 void Capsule::CreateCapsuleMesh(float height, float radius, int latitudes, int longitudes, std::vector<Vertex>& vertices, std::vector<UINT>& indices){
 	float cylinderHeight = (std::max)(0.0f, height - 2.0f * radius);
@@ -129,6 +130,7 @@ void Capsule::Render() const {
 		cmdList->SetPipelineState(Renderer::GetShadowPipelineState());
 		Renderer::SetWorldMatrix(worldMatrix);
 		cmdList->DrawIndexedInstanced(_indexBuffer->Size, 1, 0, 0, 0);
+		Profiler::RecordDrawCall(_vertexBuffer ? (int)_vertexBuffer->Size : 0, (int)_indexBuffer->Size);
 		return;
 	}
 
@@ -217,6 +219,7 @@ void Capsule::Render() const {
 	}
 
 	cmdList->DrawIndexedInstanced(_indexCount, 1, 0, 0, 0);
+	Profiler::RecordDrawCall(_vertexBuffer ? (int)_vertexBuffer->Size : 0, _indexCount);
 }
 
 void Capsule::ShowUI(){

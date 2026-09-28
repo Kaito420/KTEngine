@@ -4,6 +4,7 @@
 #include "Texture.h"
 #include "ShaderManager.h"
 #include "Shader.h"
+#include "Profiler.h"
 
 void Square::Awake()
 {
@@ -54,6 +55,7 @@ void Square::Render()const{
 		cmdList->SetPipelineState(Renderer::GetShadowPipelineState());
 		Renderer::SetWorldMatrix(worldMatrix);
 		cmdList->DrawInstanced(4, 1, 0, 0);
+		Profiler::RecordDrawCall(4, 6);
 		return;
 	}
 
@@ -138,4 +140,5 @@ void Square::Render()const{
 
 	// `
 	cmdList->DrawInstanced(4, 1, 0, 0);
+	Profiler::RecordDrawCall(4, 6);
 }

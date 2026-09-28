@@ -14,6 +14,26 @@
 #include <vector>
 #include <unordered_map>
 
+// Physics Simulation Metrics
+struct PhysicsMetrics {
+    int totalRigidBodies = 0;
+    int activeRigidBodies = 0;
+    int totalColliders = 0;
+    int activeColliders = 0;
+    int broadphasePairs = 0;
+    int narrowphaseTests = 0;
+    int contactManifolds = 0;
+};
+
+// Rendering Pipeline Metrics
+struct RenderMetrics {
+    int drawCalls = 0;
+    int totalTriangles = 0;
+    int totalVertices = 0;
+    int totalGameObjects = 0;
+    int activeGameObjects = 0;
+};
+
 class Profiler {
 public:
     static void BeginFrame();
@@ -21,11 +41,18 @@ public:
 
     static void RecordCPUTime(const char* tag, float milliseconds);
 
+    // Metrics recording APIs
+    static void RecordPhysicsMetrics(const PhysicsMetrics& metrics);
+    static void RecordDrawCall(int vertexCount, int indexCount);
+    static void RecordSceneObjects(int totalObjs, int activeObjs);
+
     static void RenderUI(bool* pOpen);
 
     // Get profiling data
     static float GetLastFrameTime();
     static float GetFPS();
+    static const PhysicsMetrics& GetLastPhysicsMetrics();
+    static const RenderMetrics& GetLastRenderMetrics();
 };
 
 // RAII Scope Timer

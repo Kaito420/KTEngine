@@ -2,6 +2,7 @@
 #include "GameObject.h"
 #include "ShaderManager.h"
 #include "Shader.h"
+#include "Profiler.h"
 
 void Cube::Awake() {
 	if (_owner && !_owner->GetComponent<Shader>()) {
@@ -102,6 +103,7 @@ void Cube::Render()const {
 		cmdList->SetPipelineState(Renderer::GetShadowPipelineState());
 		Renderer::SetWorldMatrix(worldMatrix);
 		cmdList->DrawIndexedInstanced(36, 1, 0, 0, 0);
+		Profiler::RecordDrawCall(24, 36);
 		return;
 	}
 
@@ -192,6 +194,7 @@ void Cube::Render()const {
 	}
 
 	cmdList->DrawIndexedInstanced(36, 1, 0, 0, 0);
+	Profiler::RecordDrawCall(24, 36);
 }
 
 void Cube::ShowUI() {

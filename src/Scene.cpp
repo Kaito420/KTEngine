@@ -48,9 +48,11 @@ void Scene::Finalize() {
 }
 
 void Scene::Update(){
+	int activeCount = 0;
 	{
 		PROFILE_SCOPE("Game Logic");
 		for( auto& gameObject : _gameObjects ){
+			if (gameObject->GetActive()) activeCount++;
 			if(gameObject->GetActive() && gameObject->GetStarted() == false) {
 				gameObject->Start();
 				gameObject->Started();
@@ -61,6 +63,7 @@ void Scene::Update(){
 			}
 		}
 	}
+	Profiler::RecordSceneObjects((int)_gameObjects.size(), activeCount);
 
 	{
 		PROFILE_SCOPE("Physics");
@@ -87,13 +90,14 @@ void Scene::Update(){
 
 void Scene::UpdateEditor() {
 	PROFILE_SCOPE("Editor Logic");
-	//エディタモードでのみオブジェクトの更新
-	//(カスタムスクリプトなどは実行せず、システムのみ更新など)
+	int activeCount = 0;
 	for (auto& gameObject : _gameObjects) {
 		if (gameObject->GetActive()) {
+			activeCount++;
 			gameObject->UpdateEditor();
 		}
 	}
+	Profiler::RecordSceneObjects((int)_gameObjects.size(), activeCount);
 
 	//폜
 	_gameObjects.remove_if([](const std::shared_ptr<GameObject>& obj) {
