@@ -47,6 +47,7 @@ public:
 	float _angularDamping = 0.98f;
 
 	KTVECTOR3 _velocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
+	KTVECTOR3 _positionCorrection = KTVECTOR3(0.0f, 0.0f, 0.0f);
 
 	KTMATRIX3 InertiaTensorSphere(float mass, float radius);
 

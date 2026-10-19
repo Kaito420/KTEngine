@@ -61,13 +61,59 @@ void PhysicsSystem::Step(float fixedDt) {
 }
 
 void PhysicsSystem::StepSub(float subDt, PhysicsMetrics& metrics, bool isLastSubStep) {
+	struct RbTransformState {
+		RigidBody* rb;
+		GameObject* owner;
+		int depth;
+		KTVECTOR3 worldPos;
+		KTQUATERNION worldQuat;
+	};
+	std::vector<RbTransformState> dynamicStates;
+	dynamicStates.reserve(_rigidBodys.size());
+
 	// 1. Integrate
 	{
 		PROFILE_SCOPE("Physics: Integrate");
+		// 親の移動によって動的RigidBodyを持つ子のワールド座標が二重加算されるのを防ぐため、
+		// Integrate開始前のワールド座標・回転を退避する
 		for (auto* rb : _rigidBodys) {
 			if (rb && rb->GetActive() && rb->GetOwner() && rb->GetOwner()->GetActive()) {
-				rb->Integrate(subDt);
+				rb->_positionCorrection = KTVECTOR3(0.0f, 0.0f, 0.0f);
+				if (!rb->_isKinematic && rb->_invMass > 0.0f) {
+					GameObject* owner = rb->GetOwner();
+					dynamicStates.push_back({
+						rb,
+						owner,
+						owner->GetHierarchyDepth(),
+						owner->GetWorldPosition(),
+						owner->GetWorldQuaternion()
+					});
+				}
 			}
+		}
+
+		// 親→子の階層順（浅い順）にソート
+		std::sort(dynamicStates.begin(), dynamicStates.end(),
+			[](const RbTransformState& a, const RbTransformState& b) {
+				return a.depth < b.depth;
+			});
+
+		// Kinematic・静的剛体の慣性テンソル更新
+		for (auto* rb : _rigidBodys) {
+			if (rb && rb->GetActive() && rb->GetOwner() && rb->GetOwner()->GetActive()) {
+				if (rb->_isKinematic || rb->_invMass <= 0.0f) {
+					rb->Integrate(subDt);
+				}
+			}
+		}
+
+		// 動的剛体は移動前の自身のワールド座標・回転へ一旦戻してから親→子の順でIntegrateする
+		for (auto& state : dynamicStates) {
+			state.owner->SetWorldPosition(state.worldPos);
+			state.owner->SetWorldQuaternion(state.worldQuat);
+			state.rb->Integrate(subDt);
+			state.worldPos = state.owner->GetWorldPosition();
+			state.worldQuat = state.owner->GetWorldQuaternion();
 		}
 	}
 
@@ -201,6 +247,13 @@ void PhysicsSystem::StepSub(float subDt, PhysicsMetrics& metrics, bool isLastSub
 
 		for (auto& manifold : _manifolds) {
 			ResolveCollision(manifold);
+		}
+		// 親の位置補正によって動的RigidBodyを持つ子のワールド座標が引きずられないよう、親→子の階層順で位置補正を適用
+		for (auto& state : dynamicStates) {
+			state.worldPos += state.rb->_positionCorrection;
+			state.rb->_positionCorrection = KTVECTOR3(0.0f, 0.0f, 0.0f);
+			state.owner->SetWorldPosition(state.worldPos);
+			state.owner->SetWorldQuaternion(state.worldQuat);
 		}
 
 		for (auto* rb : _rigidBodys) {
@@ -336,13 +389,12 @@ void PhysicsSystem::ResolveCollision(CollisionManifold& manifold)
 	}
 	correction = correction / (float)manifold.contacts.size();
 	if (rbA && !rbA->IsSleeping()) {
-		manifold.a->GetOwner()->SetWorldPosition(manifold.a->GetOwner()->GetWorldPosition() + correction * invMassA * percent);
+		rbA->_positionCorrection += correction * invMassA * percent;
 	}
 	if (rbB && !rbB->IsSleeping()) {
-		manifold.b->GetOwner()->SetWorldPosition(manifold.b->GetOwner()->GetWorldPosition() - correction * invMassB * percent);
+		rbB->_positionCorrection -= correction * invMassB * percent;
 	}
 }
-
 void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold, float dt)
 {
 	RigidBody* rbA = manifold.a->GetOwner()->GetComponent<RigidBody>();
