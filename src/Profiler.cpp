@@ -257,6 +257,17 @@ void Profiler::RenderUI(bool* pOpen) {
     // =========================================================================
     if (ImGui::CollapsingHeader("Physics Metrics", ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::Checkbox("Show Collision Wireframes", &Manager::GetShowColliderWireframe());
+        if (Manager::GetCurrentScene() && Manager::GetCurrentScene()->GetPhysicsSystem()) {
+            PhysicsSystem* phys = Manager::GetCurrentScene()->GetPhysicsSystem();
+            int subSteps = phys->GetSubSteps();
+            if (ImGui::SliderInt("Sub-Steps", &subSteps, 1, 8)) {
+                phys->SetSubSteps(subSteps);
+            }
+            int solverIters = phys->GetSolverIterations();
+            if (ImGui::SliderInt("Solver Iterations", &solverIters, 1, 30)) {
+                phys->SetSolverIterations(solverIters);
+            }
+        }
         ImGui::Spacing();
 
         int inactiveRBs = s_lastPhysicsMetrics.totalRigidBodies - s_lastPhysicsMetrics.activeRigidBodies;

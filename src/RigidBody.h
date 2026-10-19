@@ -20,59 +20,62 @@ private:
 
 	bool _sleeping = false;
 	float _sleepTimer = 0.0f;
-	float _sleepEpsilon = 0.001f; // 睡眠判定用の微小値
+	float _sleepEpsilon = 0.001f;
 
-	KTVECTOR3 _forceAccum = KTVECTOR3(0.0f, 0.0f, 0.0f); // 力の蓄積
+	KTVECTOR3 _forceAccum = KTVECTOR3(0.0f, 0.0f, 0.0f);
 
 public:
 	bool _useGravity = true;
 	bool _isKinematic = false;
 	float _mass = 1.0f;
 	float _oldMass;
-	float _invMass = (_mass != 0.0f) ? 1.0f / _mass : 0.0f; // 逆質量
-	float _restitution = 0.0f; // 反発係数
+	float _invMass = (_mass != 0.0f) ? 1.0f / _mass : 0.0f;
+	float _restitution = 0.0f;
 
-	float _staticFriction = 0.6f;  // 静止摩擦係数
-	float _dynamicFriction = 0.4f; // 動摩擦係数
+	float _staticFriction = 0.6f;
+	float _dynamicFriction = 0.4f;
 
-	KTQUATERNION _orientation;	//姿勢
-	KTVECTOR3 _angularVelocity; //角速度
-	KTVECTOR3 _torqueAccum; //トルクの蓄積
-	KTMATRIX3 _inertiaTensorBody; // 慣性テンソル
-	KTMATRIX3 _inertiaTensorBodyInv; // 逆慣性テンソル
-	KTMATRIX3 _inertiaTensorWorld; // ワールド空間での慣性テンソル
-	KTMATRIX3 _inertiaTensorWorldInv; // ワールド空間での逆慣性テンソル
+	KTQUATERNION _orientation;
+	KTVECTOR3 _angularVelocity;
+	KTVECTOR3 _torqueAccum;
+	KTMATRIX3 _inertiaTensorBody;
+	KTMATRIX3 _inertiaTensorBodyInv;
+	KTMATRIX3 _inertiaTensorWorld;
+	KTMATRIX3 _inertiaTensorWorldInv;
 
-	float _linearDamping = 0.99f; // 線形減衰
-	float _angularDamping = 0.98f; // 角減衰
+	float _linearDamping = 0.99f;
+	float _angularDamping = 0.98f;
 
 	KTVECTOR3 _velocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
 
 	KTMATRIX3 InertiaTensorSphere(float mass, float radius);
 
-	/// <summary>
-	/// 
-	/// </summary>
-	/// <param name="mass"></param>
-	/// <param name="halfSize">col->extentsそのままでOK</param>
-	/// <returns></returns>
 	KTMATRIX3 InertiaTensorBox(float mass, const KTVECTOR3& halfSize);
+
+	void ApplyForce(const KTVECTOR3& force) {
+		_forceAccum += force;
+	}
 
 	void ApplyTorque(const KTVECTOR3& torque) {
 		_torqueAccum += torque;
+	}
+
+	void ClearForces() {
+		_forceAccum = KTVECTOR3(0.0f, 0.0f, 0.0f);
+		_torqueAccum = KTVECTOR3(0.0f, 0.0f, 0.0f);
 	}
 
 	void Sleep();
 
 	void WakeUp();
 
-	void CheckSleep();
+	void CheckSleep(float dt);
 
 	bool IsSleeping() const {
 		return _sleeping;
 	}
 
-	void Integrate();
+	void Integrate(float dt);
 
 	void Awake() override;
 	void Start() override;

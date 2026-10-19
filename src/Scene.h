@@ -32,6 +32,7 @@ protected:
 
 	std::list<std::shared_ptr<GameObject>> _gameObjects;
 	PhysicsSystem* _physicsSystem;
+	float _physicsAccumulator = 0.0f;
 
 public:
 	virtual void Initialize();
@@ -82,6 +83,14 @@ public:
 	void serialize(Archive& ar) {
 		ar(cereal::make_nvp("GameObjects", _gameObjects));
 		ar(cereal::make_nvp("PostProcessSettings", PostProcessSystem::GetSettings()));
+		try {
+			int subSteps = PhysicsSystem::GetSubSteps();
+			int solverIters = PhysicsSystem::GetSolverIterations();
+			ar(cereal::make_nvp("PhysicsSubSteps", subSteps));
+			ar(cereal::make_nvp("PhysicsSolverIterations", solverIters));
+			PhysicsSystem::SetSubSteps(subSteps);
+			PhysicsSystem::SetSolverIterations(solverIters);
+		} catch (...) {}
 	}
 
 };

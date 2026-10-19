@@ -7,6 +7,7 @@
 #include "RigidBody.h"
 #include "GameObject.h"
 #include <imgui.h>
+#include <cmath>
 #include "Collider.h"
 #include "Manager.h"
 #include "Scene.h"
@@ -43,11 +44,10 @@ void RigidBody::WakeUp() {
 	_sleepTimer = 0.0f;
 }
 
-void RigidBody::CheckSleep() {
-	//sleep判定
+void RigidBody::CheckSleep(float dt) {
 	if (_velocity.MagnitudeSqr() < _sleepEpsilon && _angularVelocity.MagnitudeSqr() < _sleepEpsilon) {
-		_sleepTimer += DT;
-		if (_sleepTimer >= 0.45f)//0.45秒以上静止していればスリープ
+		_sleepTimer += dt;
+		if (_sleepTimer >= 0.45f)
 			Sleep();
 	}
 	else {
@@ -56,60 +56,52 @@ void RigidBody::CheckSleep() {
 	}
 }
 
-void RigidBody::Integrate(){
+void RigidBody::Integrate(float dt){
+	if (!_owner || dt <= 0.0f) return;
 
-	//ワールド空間の慣性テンソルに変換（isKinematicがtrueでもこの計算は行う）
+	// ワールド空間の慣性テンソルに変換（isKinematic が true でもこの計算は行う）
 	_orientation = _owner->_transform._quaternion;
-	KTMATRIX3 R = _orientation.ToMatrix().ToMatrix3();//回転行列
+	KTMATRIX3 R = _orientation.ToMatrix().ToMatrix3();
 	_inertiaTensorWorldInv = R * _inertiaTensorBodyInv * R.Transpose();
 
 	if (_sleeping) {
-		_sleepTimer += DT;
+		_sleepTimer += dt;
 		return;
 	}
 
 	if (_isKinematic) return;
 
-	//平行移動の計算
-	if (_invMass <= 0.0f)return;//静的な場合は無視
+	if (_invMass <= 0.0f) return;
 
 	if (_useGravity)
-		_velocity.y += _gravity * _gravityScale * DT;
-	else
-		_velocity.y = 0.0f;
+		_velocity.y += _gravity * _gravityScale * dt;
 
-	//加速度の計算 = F/m
-	KTVECTOR3 acceleration = _forceAccum * _invMass; // F=ma → a=F/m
-	//速度の更新
-	_velocity += acceleration * DT;
-	//速度の減衰
-	_velocity *= _linearDamping;
+	// 加速度の計算 a = F/m
+	KTVECTOR3 acceleration = _forceAccum * _invMass;
+	_velocity += acceleration * dt;
 
-	//位置の更新
-	_owner->_transform._position += _velocity * DT;
+	// フレームレート・サブステップ数に非依存な減衰（60FPS基準の減衰率を指数変換）
+	float stepScale = dt * 60.0f;
+	_velocity *= powf(Clamp(_linearDamping, 0.0f, 1.0f), stepScale);
 
-	//角加速度の計算 = Inverse * トルク
+	// 位置の更新
+	_owner->_transform._position += _velocity * dt;
+
+	// 角加速度の計算 = Inverse * トルク
 	KTVECTOR3 angularAcceleration = _inertiaTensorWorldInv * _torqueAccum;
+	_angularVelocity += angularAcceleration * dt;
 
-	_angularVelocity += angularAcceleration * DT;
+	// 角速度の減衰
+	_angularVelocity *= powf(Clamp(_angularDamping, 0.0f, 1.0f), stepScale);
 
-	//角速度の減衰
-	_angularVelocity *= _angularDamping;
-
-	//姿勢の更新
+	// 姿勢の更新
 	KTQUATERNION omegaQuat(_angularVelocity.x, _angularVelocity.y, _angularVelocity.z, 0.0f);
 	KTQUATERNION dq = (omegaQuat * _orientation) * 0.5f;
-	_orientation = (_orientation + dq * DT).Normalize();
+	_orientation = (_orientation + dq * dt).Normalize();
 
-	//姿勢の反映
+	// 姿勢の反映
 	_owner->_transform._quaternion = _orientation;
 	_owner->_transform._rotation = _orientation.ToEulerAngles();
-
-	//トルクのリセット
-	_torqueAccum = KTVECTOR3(0.0f, 0.0f, 0.0f);
-	//力のリセット
-	_forceAccum = KTVECTOR3(0.0f, 0.0f, 0.0f);
-
 }
 
 void RigidBody::Awake(){
@@ -118,20 +110,24 @@ void RigidBody::Awake(){
 		_invMass = 0.0f;
 	}
 	else {
-		_invMass = (_mass != 0.0f) ? 1.0f / _mass : 0.0f; // 逆質量
+		_invMass = (_mass != 0.0f) ? 1.0f / _mass : 0.0f;
 	}
 
-	//慣性テンソルの初期化
 	_inertiaTensorBody = KTMATRIX3::Identity();
 	_inertiaTensorBodyInv = KTMATRIX3::Identity();
 
 }
 
 void RigidBody::Start(){
-	Manager::GetCurrentScene()->GetPhysicsSystem()->RegisterRigidBody(this);
+	if (Manager::GetCurrentScene() && Manager::GetCurrentScene()->GetPhysicsSystem()) {
+		Manager::GetCurrentScene()->GetPhysicsSystem()->RegisterRigidBody(this);
+	}
 }
 
 void RigidBody::Update() {
+	if (Manager::GetCurrentScene() && Manager::GetCurrentScene()->GetPhysicsSystem()) {
+		Manager::GetCurrentScene()->GetPhysicsSystem()->RegisterRigidBody(this);
+	}
 	if (_isKinematic) {
 		_invMass = 0.0f;
 		_velocity = KTVECTOR3(0.0f, 0.0f, 0.0f);
@@ -140,19 +136,19 @@ void RigidBody::Update() {
 		_torqueAccum = KTVECTOR3(0.0f, 0.0f, 0.0f);
 	}
 	else {
-		_invMass = (_mass != 0.0f) ? 1.0f / _mass : 0.0f; // 逆質量
+		_invMass = (_mass != 0.0f) ? 1.0f / _mass : 0.0f;
 	}
 
 }
 
 void RigidBody::OnDestroy(){
-	Manager::GetCurrentScene()->GetPhysicsSystem()->RemoveRigidBody(this);
-
+	if (Manager::GetCurrentScene() && Manager::GetCurrentScene()->GetPhysicsSystem()) {
+		Manager::GetCurrentScene()->GetPhysicsSystem()->RemoveRigidBody(this);
+	}
 }
 
 
 void RigidBody::ShowUI() {
-	//速度
 	if (ImGui::BeginTable("Transform", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg))
 	{
 
@@ -188,6 +184,8 @@ void RigidBody::ShowUI() {
 	}
 	ImGui::InputFloat("Mass", &_mass);
 	ImGui::SliderFloat("Restitution", &_restitution, 0.0f, 1.0f);
+	ImGui::SliderFloat("StaticFriction", &_staticFriction, 0.0f, 1.0f);
+	ImGui::SliderFloat("DynamicFriction", &_dynamicFriction, 0.0f, 1.0f);
 	ImGui::SliderFloat("LinearDamping", &_linearDamping, 0.0f, 1.0f);
 	ImGui::SliderFloat("AngularDamping", &_angularDamping, 0.0f, 1.0f);
 	ImGui::Checkbox("UseGravity", &_useGravity);

@@ -20,10 +20,10 @@ void BlockSpawner::Update()
 
 
 	if (Input::IsKeyDown('W')) {
-		_owner->_transform._position -= _owner->GetForward() * 0.1f;
+		_owner->_transform._position += _owner->GetForward() * 0.1f;
 	}
 	if (Input::IsKeyDown('S')) {
-		_owner->_transform._position -= _owner->GetBack() * 0.1f;
+		_owner->_transform._position += _owner->GetBack() * 0.1f;
 	}
 	if (Input::IsKeyDown('A')) {
 		_owner->_transform._position += _owner->GetLeft() * 0.1f;

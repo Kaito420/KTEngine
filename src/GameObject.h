@@ -72,8 +72,8 @@ public:
 
 
 	KTVECTOR3 GetRight() const {
-		XMMATRIX matrix;
-		matrix = XMMatrixRotationRollPitchYaw(XMConvertToRadians(_transform._rotation.x), XMConvertToRadians(_transform._rotation.y), XMConvertToRadians(_transform._rotation.z));
+		XMFLOAT4 q(_transform._quaternion.x, _transform._quaternion.y, _transform._quaternion.z, _transform._quaternion.w);
+		XMMATRIX matrix = XMMatrixRotationQuaternion(XMLoadFloat4(&q));
 		KTVECTOR3 right;
 		XMStoreFloat3((XMFLOAT3*)&right, matrix.r[0]);
 		return right.Normalize();
@@ -84,8 +84,8 @@ public:
 	}
 
 	KTVECTOR3 GetUp() const {
-		XMMATRIX matrix;
-		matrix = XMMatrixRotationRollPitchYaw(XMConvertToRadians(_transform._rotation.x), XMConvertToRadians(_transform._rotation.y), XMConvertToRadians(_transform._rotation.z));
+		XMFLOAT4 q(_transform._quaternion.x, _transform._quaternion.y, _transform._quaternion.z, _transform._quaternion.w);
+		XMMATRIX matrix = XMMatrixRotationQuaternion(XMLoadFloat4(&q));
 		KTVECTOR3 up;
 		XMStoreFloat3((XMFLOAT3*)&up, matrix.r[1]);
 		return up.Normalize();
@@ -96,8 +96,8 @@ public:
 	}
 
 	KTVECTOR3 GetForward() const {
-		XMMATRIX matrix;
-		matrix = XMMatrixRotationRollPitchYaw(XMConvertToRadians(_transform._rotation.x), XMConvertToRadians(_transform._rotation.y), XMConvertToRadians(_transform._rotation.z));
+		XMFLOAT4 q(_transform._quaternion.x, _transform._quaternion.y, _transform._quaternion.z, _transform._quaternion.w);
+		XMMATRIX matrix = XMMatrixRotationQuaternion(XMLoadFloat4(&q));
 		KTVECTOR3 forward;
 		XMStoreFloat3((XMFLOAT3*)&forward, matrix.r[2]);
 		return forward.Normalize();
@@ -121,6 +121,11 @@ public:
 	/// 毎フレーム実行（非アクティブの際は無視）
 	/// </summary>
 	virtual void Update() {}
+
+	/// <summary>
+	/// 固定時間ステップで実行（物理更新直前、非アクティブの際は無視）
+	/// </summary>
+	virtual void FixedUpdate() {}
 
 	/// <summary>
 	/// エディタ上で毎フレーム実行（非アクティブの際は無視）
@@ -191,6 +196,21 @@ public:
 					component->Started();
 				}
 				component->Update();
+			}
+		}
+	}
+
+	/// <summary>
+	/// コンポーネントのFixedUpdateを呼び出す
+	/// </summary>
+	void FixedUpdateComponents() {
+		for (const auto& component : _components) {
+			if (component->GetActive()) {
+				if (!component->GetStarted()) {
+					component->Start();
+					component->Started();
+				}
+				component->FixedUpdate();
 			}
 		}
 	}

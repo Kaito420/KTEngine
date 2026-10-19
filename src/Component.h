@@ -55,6 +55,8 @@ public:
 	/// </summary>
 	virtual void Update() {}
 
+	virtual void FixedUpdate() {}
+
 	/// <summary>
 	/// //Update後に実行（非アクティブの際は無視）
 	/// </summary>

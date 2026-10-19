@@ -138,6 +138,8 @@ public:
 	virtual bool CollideWith(ColliderSphere* other, CollisionManifold& outCollisionManifold) = 0;
 	virtual bool CollideWith(ColliderCapsule* other, CollisionManifold& outCollisionManifold) = 0;
 
+	virtual void SyncTransform() = 0;
+
 	virtual KTMATRIX3 ComputeLocalInertiaTensor(float mass) = 0;
 
 	std::string GetComponentName() { return "Collider"; }
@@ -164,6 +166,7 @@ public:
 
 	// GameObjectの情報で更新する
 	void Update() override;
+	void SyncTransform() override;
 
 	bool Collide(Collider* other, CollisionManifold& outCollisionManifold) {
 		return other->CollideWith(this, outCollisionManifold);	//ここで自身と相手が入れ替わる
@@ -214,6 +217,7 @@ public:
 
 	// GameObjectの情報で更新する
 	void Update() override;
+	void SyncTransform() override;
 
 
 	bool Collide(Collider* other, CollisionManifold& outCollisionManifold) {
@@ -265,6 +269,8 @@ class ColliderCapsule : public Collider {
 private:
 	float _height = 2.0f;
 	float _radius = 0.5f;
+	float _oldHeight = 0.0f;
+	float _oldRadius = 0.0f;
 public:
 	void Awake() override;
 	void Start() override;
@@ -273,6 +279,7 @@ public:
 
 	// GameObjectの情報で更新する
 	void Update() override;
+	void SyncTransform() override;
 
 	float GetRadius() const { return _radius; }
 	float GetHeight() const { return _height; }

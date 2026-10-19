@@ -24,7 +24,7 @@ std::string Scene::GenerateUniqueName(const std::string& baseName){
 	std::string uniqueName = baseName;
 	int index = 1;
 
-	//dĂ閼O胋[văCfbNXi߂
+	//dĂ閼O胋[văCfbNXi߁E
 	while (FindGameObjectByName<GameObject>(uniqueName) != nullptr) {
 		std::stringstream ss;
 		ss << baseName << "(" << index << ")";
@@ -36,6 +36,7 @@ std::string Scene::GenerateUniqueName(const std::string& baseName){
 
 void Scene::Initialize(){
 	_physicsSystem = new PhysicsSystem();
+	_physicsAccumulator = 0.0f;
 
 	AddGameObject<Camera>()->_name = "Camera";
 	AddGameObject<Sky>()->_name = "Sky";
@@ -66,9 +67,25 @@ void Scene::Update(){
 	}
 	Profiler::RecordSceneObjects((int)_gameObjects.size(), activeCount);
 
-	{
+	if (_physicsSystem) {
 		PROFILE_SCOPE("Physics");
-		_physicsSystem->Update();
+		float frameDt = Profiler::GetLastFrameTime() * 0.001f;
+		if (frameDt <= 0.0f) frameDt = 1.0f / 60.0f;
+		if (frameDt > 0.1f) frameDt = 0.1f;
+
+		_physicsAccumulator += frameDt;
+		float fixedDt = _physicsSystem->GetFixedDeltaTime();
+
+		while (_physicsAccumulator >= fixedDt) {
+			for (auto& gameObject : _gameObjects) {
+				if (gameObject->GetActive()) {
+					gameObject->FixedUpdate();
+					gameObject->FixedUpdateComponents();
+				}
+			}
+			_physicsSystem->Step(fixedDt);
+			_physicsAccumulator -= fixedDt;
+		}
 	}
 
 	{
@@ -105,7 +122,7 @@ void Scene::UpdateEditor() {
 		_physicsSystem->UpdateEditor();
 	}
 
-	//폜
+	//���E
 	_gameObjects.remove_if([](const std::shared_ptr<GameObject>& obj) {
 		if (obj->IsDestroy())
 			obj->ProcessDestroyComponents();
@@ -123,10 +140,11 @@ void Scene::Render()const{
 }
 
 void Scene::OnLoaded() {
-	//PhysicsSystem̍Đ
+	//PhysicsSystem̍āE
 	if(_physicsSystem)
 		delete _physicsSystem;
 	_physicsSystem = new PhysicsSystem();
+	_physicsAccumulator = 0.0f;
 	uint32_t maxId = 0;
 	for(auto& gameObject: _gameObjects) {
 		gameObject->OnLoaded();
@@ -140,7 +158,7 @@ void Scene::OnLoaded() {
 			}
 		}
 	}
-	GameObject::_nextId = maxId + 1; //IDől+1ɐݒ
+	GameObject::_nextId = maxId + 1; //IDől+1ɐ݁E
 }
 
 void Scene::RenderHierarchy()
@@ -152,7 +170,7 @@ void Scene::RenderHierarchy()
 
 			auto& gameObject = *it;
 
-			ImGui::PushID(gameObject->_id); //ӂIDݒ
+			ImGui::PushID(gameObject->_id); //ӁED݁E
 			//I
 			bool isSelected = (_selectedObjId == gameObject->_id);
 			if (ImGui::Selectable(gameObject->_name.c_str(), isSelected))
@@ -184,9 +202,9 @@ void Scene::RenderHierarchy()
 							}
 						}
 
-						// }ʒu߂iOȂ target ̎ɁAȂ target ̑OɁj
+						// }ʒu߂iOȁEtarget ̎ɁAȁEtarget ̑OɁj
 						auto insertPos = it;
-						if (srcBeforeTarget) ++insertPos; // target ̌ɓ
+						if (srcBeforeTarget) ++insertPos; // target ̌ɁE
 
 						// m[hړiO(1)j
 						_gameObjects.splice(insertPos, _gameObjects, srcIt);
@@ -217,7 +235,7 @@ void Scene::RenderHierarchy()
 			if(ImGui::MenuItem("Create Empty")){
 				GameObject* newObj = AddGameObject<GameObject>();
 				newObj->_name = GenerateUniqueName("GameObject");
-				_selectedObjId = newObj->_id; //VK쐬IuWFNgI
+				_selectedObjId = newObj->_id; //VK�E�IuWFNgI
 			}
 			if (ImGui::MenuItem("Cube")) {
 				GameObject* newObj = AddGameObject<CubeObject>();
@@ -237,7 +255,7 @@ void Scene::RenderHierarchy()
 			ImGui::EndPopup();
 		}
 
-		//l[p[_EBhȄ
+		//l[p[_EBhÉE
 		if(_openPopup) {
 			ImGui::OpenPopup("Rename Object");
 			_openPopup = false; //}Zbg
@@ -354,7 +372,7 @@ void Scene::RenderInspector()
 
 					if (ImGui::BeginPopupContextItem()) {
 						if (ImGui::MenuItem("Remove Component")) {
-							componentToRemove = component.get(); //폜\
+							componentToRemove = component.get(); //���\
 						}
 						ImGui::EndPopup();
 					}

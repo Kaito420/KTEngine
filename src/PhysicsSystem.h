@@ -28,7 +28,23 @@ class PhysicsSystem {
 	std::vector<CollisionManifold> _manifolds;
 	std::vector<CollisionManifold> _prevManifolds;
 	uint64_t MakePairKey(Collider* a, Collider* b);
+
+	static float _fixedDeltaTime; // 60Hz Fixed Update
+	static int _subSteps;         // Sub-stepping count per FixedUpdate
+	static int _solverIterations; // Sequential Impulse iterations per substep
+
+	void StepSub(float subDt, PhysicsMetrics& metrics, bool isLastSubStep);
+
 public:
+	static float GetFixedDeltaTime() { return _fixedDeltaTime; }
+	static void SetFixedDeltaTime(float dt) { if (dt > 0.001f) _fixedDeltaTime = dt; }
+
+	static int GetSubSteps() { return _subSteps; }
+	static void SetSubSteps(int steps) { _subSteps = (steps < 1) ? 1 : steps; }
+
+	static int GetSolverIterations() { return _solverIterations; }
+	static void SetSolverIterations(int iters) { _solverIterations = (iters < 1) ? 1 : iters; }
+
 	void RegisterCollider(Collider* collider) {
 		if (!collider) return;
 		if (std::find(_colliders.begin(), _colliders.end(), collider) == _colliders.end()) {
@@ -57,14 +73,17 @@ public:
 		}
 	}
 
-	void Update();
+	void Step(float fixedDt);
+	void Update() { Step(_fixedDeltaTime); }
 	void UpdateEditor();
+
+	void SyncColliders();
 
 	void SetLocalInertiaTensor();
 
 	void ResolveCollision(CollisionManifold& manifold);
 
-	void ResolveInpulse(CollisionManifold& manifold);
+	void ResolveInpulse(CollisionManifold& manifold, float dt);
 
 	void ClearManifold() { _manifolds.clear(); }
 

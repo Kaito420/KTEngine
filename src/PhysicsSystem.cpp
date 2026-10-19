@@ -13,42 +13,80 @@
 #include "ShaderManager.h"
 #include "Renderer.h"
 
-void PhysicsSystem::Update() {
+float PhysicsSystem::_fixedDeltaTime = 1.0f / 60.0f;
+int PhysicsSystem::_subSteps = 2;
+int PhysicsSystem::_solverIterations = 12;
+
+void PhysicsSystem::SyncColliders() {
+	for (auto* col : _colliders) {
+		if (col && col->GetActive() && col->GetOwner() && col->GetOwner()->GetActive()) {
+			col->SyncTransform();
+		}
+	}
+}
+
+void PhysicsSystem::Step(float fixedDt) {
+	if (fixedDt <= 0.0f) return;
+
 	PhysicsMetrics metrics;
 	metrics.totalRigidBodies = (int)_rigidBodys.size();
 	metrics.totalColliders = (int)_colliders.size();
 
-	// 1. Integrate
-	{
-		PROFILE_SCOPE("Physics: Integrate");
-		for (auto* rb : _rigidBodys) {
-			if (rb->GetActive()) {
-				metrics.activeRigidBodies++;
-				rb->Integrate();
-			}
+	for (auto* rb : _rigidBodys) {
+		if (rb && rb->GetActive() && rb->GetOwner() && rb->GetOwner()->GetActive()) {
+			metrics.activeRigidBodies++;
 		}
 	}
 
 	for (auto* col : _colliders) {
-		if (col->GetActive()) {
+		if (col && col->GetActive() && col->GetOwner() && col->GetOwner()->GetActive()) {
 			metrics.activeColliders++;
 		}
 	}
 
-	if (_colliders.size() < 2) {
-		Profiler::RecordPhysicsMetrics(metrics);
-		return;
+	int subSteps = (_subSteps > 0) ? _subSteps : 1;
+	float subDt = fixedDt / (float)subSteps;
+
+	for (int s = 0; s < subSteps; ++s) {
+		bool isLastSubStep = (s == subSteps - 1);
+		StepSub(subDt, metrics, isLastSubStep);
 	}
 
-	// 2. Broadphase & Sort
+	// FixedUpdate1回分の全サブステップ終了後に蓄積力をクリア
+	for (auto* rb : _rigidBodys) {
+		if (rb) rb->ClearForces();
+	}
+
+	Profiler::RecordPhysicsMetrics(metrics);
+}
+
+void PhysicsSystem::StepSub(float subDt, PhysicsMetrics& metrics, bool isLastSubStep) {
+	// 1. Integrate
+	{
+		PROFILE_SCOPE("Physics: Integrate");
+		for (auto* rb : _rigidBodys) {
+			if (rb && rb->GetActive() && rb->GetOwner() && rb->GetOwner()->GetActive()) {
+				rb->Integrate(subDt);
+			}
+		}
+	}
+
+	// 2. Sync Colliders (Integrate後の最新TransformでAABBとOBB軸を更新)
 	{
 		PROFILE_SCOPE("Physics: Broadphase");
+		SyncColliders();
+
+		if (_colliders.size() < 2) {
+			return;
+		}
+
 		for (auto* col : _colliders) {
-			col->BeginFrame();
+			if (col) col->BeginFrame();
 		}
 
 		std::sort(_colliders.begin(), _colliders.end(),
 			[](Collider* a, Collider* b) {
+				if (!a || !b) return a < b;
 				return a->_aabb.min.x < b->_aabb.min.x;
 			});
 
@@ -62,9 +100,13 @@ void PhysicsSystem::Update() {
 		PROFILE_SCOPE("Physics: Narrowphase");
 		for (size_t i = 0; i < _colliders.size() - 1; i++) {
 			for (size_t j = i + 1; j < _colliders.size(); j++) {
-				metrics.broadphasePairs++;
 				auto* colA = _colliders[i];
 				auto* colB = _colliders[j];
+				if (!colA || !colB) continue;
+				if (!colA->GetActive() || !colB->GetActive()) continue;
+				if (!colA->GetOwner() || !colB->GetOwner() || !colA->GetOwner()->GetActive() || !colB->GetOwner()->GetActive()) continue;
+
+				metrics.broadphasePairs++;
 
 				if (colA->_aabb.max.x < colB->_aabb.min.x) {
 					break;
@@ -85,17 +127,19 @@ void PhysicsSystem::Update() {
 						if (colA->GetOwner()->GetComponent<RigidBody>())
 							colA->GetOwner()->GetComponent<RigidBody>()->WakeUp();
 					}
-					else
+					else if (isLastSubStep) {
 						colA->GetOwner()->DispatchOnCollisionStay(colB);
+					}
 
 					if (colB->_previousOverlaps.find(colA) == colB->_previousOverlaps.end()) {
 						colB->GetOwner()->DispatchOnCollisionEnter(colA);
 						if (colB->GetOwner()->GetComponent<RigidBody>())
 							colB->GetOwner()->GetComponent<RigidBody>()->WakeUp();
 					}
-					else
+					else if (isLastSubStep) {
 						colB->GetOwner()->DispatchOnCollisionStay(colA);
-				
+					}
+
 					_manifolds.push_back(manifold);
 				}
 			}
@@ -103,10 +147,11 @@ void PhysicsSystem::Update() {
 
 		// Exit events
 		for (auto* col : _colliders) {
+			if (!col || !col->GetOwner()) continue;
 			for (auto* prevCol : col->_previousOverlaps) {
 				if (col->_currentOverlaps.find(prevCol) == col->_currentOverlaps.end()) {
 					col->GetOwner()->DispatchOnCollisionExit(prevCol);
-					if(col->GetOwner()->GetComponent<RigidBody>())
+					if (col->GetOwner()->GetComponent<RigidBody>())
 						col->GetOwner()->GetComponent<RigidBody>()->WakeUp();
 				}
 			}
@@ -147,19 +192,30 @@ void PhysicsSystem::Update() {
 
 		ApplyWarmStarting();
 
-		for (auto& manifold : _manifolds) {
-			for (int iter = 0; iter < 20; iter++) {
-				ResolveInpulse(manifold);
+		int iterations = (_solverIterations > 0) ? _solverIterations : 10;
+		for (int iter = 0; iter < iterations; iter++) {
+			for (auto& manifold : _manifolds) {
+				ResolveInpulse(manifold, subDt);
 			}
+		}
+
+		for (auto& manifold : _manifolds) {
 			ResolveCollision(manifold);
 		}
 
+		for (auto* rb : _rigidBodys) {
+			if (rb && rb->GetActive() && rb->GetOwner() && rb->GetOwner()->GetActive() && !rb->_isKinematic) {
+				rb->CheckSleep(subDt);
+			}
+		}
+
+		// 位置補正後の座標をコライダーのAABB・軸へ再同期
+		SyncColliders();
+
 		for (auto* col : _colliders) {
-			col->EndFrame();
+			if (col) col->EndFrame();
 		}
 	}
-
-	Profiler::RecordPhysicsMetrics(metrics);
 }
 
 void PhysicsSystem::UpdateEditor() {
@@ -170,6 +226,7 @@ void PhysicsSystem::UpdateEditor() {
 	for (auto* col : _colliders) {
 		if (col && col->GetActive() && col->GetOwner() && col->GetOwner()->GetActive()) {
 			metrics.activeColliders++;
+			col->SyncTransform();
 		}
 	}
 
@@ -236,6 +293,7 @@ void PhysicsSystem::UpdateEditor() {
 
 void PhysicsSystem::SetLocalInertiaTensor(){
 	for (auto& col : _colliders) {
+		if (!col || !col->GetOwner()) continue;
 		RigidBody* rb = col->GetOwner()->GetComponent<RigidBody>();
 		if (rb == nullptr)continue;
 		bool massChanged = ((rb->_oldMass - rb->_mass) * (rb->_oldMass - rb->_mass) > 1e-6f);
@@ -249,6 +307,7 @@ void PhysicsSystem::SetLocalInertiaTensor(){
 			rb->_inertiaTensorBodyInv = KTMATRIX3::Zero();
 		}
 		rb->_oldMass = rb->_mass;
+		col->_hasChangedScale = false;
 	}
 }
 
@@ -259,32 +318,32 @@ void PhysicsSystem::ResolveCollision(CollisionManifold& manifold)
 	if (!rbA && !rbB) return; // 両方静的ならスキップ
 
 	// 小さな隙間（slop）を残して過剰補正を防ぐ
-	float slop = 0.05f;
+	float slop = 0.02f;
 	float percent = 0.4f; // 0.2～0.8の範囲で調整
-	float depth = (std::max)(0.0f, manifold.penetrationDepth - slop);
 
 	//有効質量の計算
-	float invMassA = (rbA) ? rbA->_invMass : 0.0f;
-	float invMassB = (rbB) ? rbB->_invMass : 0.0f;
+	float invMassA = (rbA && !rbA->IsSleeping()) ? rbA->_invMass : 0.0f;
+	float invMassB = (rbB && !rbB->IsSleeping()) ? rbB->_invMass : 0.0f;
 	float invMassSum = invMassA + invMassB;
 
-	if (invMassSum <= 0.0f) return;
+	if (invMassSum <= 0.0f || manifold.contacts.empty()) return;
 
-	// 押し戻し量
+	// 押し戻し量（slop を差し引いためり込み量で補正）
 	KTVECTOR3 correction = KTVECTOR3(0.0f, 0.0f, 0.0f);
 	for (const auto& contact : manifold.contacts) {
-		correction += manifold.normal * (contact.penetration / invMassSum);
+		float pen = (std::max)(0.0f, contact.penetration - slop);
+		correction += manifold.normal * (pen / invMassSum);
 	}
 	correction = correction / (float)manifold.contacts.size();
-	if (rbA) {
+	if (rbA && !rbA->IsSleeping()) {
 		manifold.a->GetOwner()->_transform._position += correction * invMassA * percent;
 	}
-	if (rbB) {
+	if (rbB && !rbB->IsSleeping()) {
 		manifold.b->GetOwner()->_transform._position -= correction * invMassB * percent;
 	}
 }
 
-void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold)
+void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold, float dt)
 {
 	RigidBody* rbA = manifold.a->GetOwner()->GetComponent<RigidBody>();
 	RigidBody* rbB = manifold.b->GetOwner()->GetComponent<RigidBody>();
@@ -293,7 +352,6 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold)
 	//有効質量の計算
 	float invMassA = (rbA) ? rbA->_invMass : 0.0f;
 	float invMassB = (rbB) ? rbB->_invMass : 0.0f;
-	float deltaImpulse = 0.0f;
 
 	for (auto& contact : manifold.contacts) {//法線方向
 
@@ -320,9 +378,7 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold)
 		if (normalMass <= 0.0f) continue;
 
 		// 衝突インパルスの計算（累積処理）
-		//deltaImpulseの計算
 		float deltaImpulse = (contact.velocityBias - relVelAlongNormal) / normalMass;
-
 
 		//累積値の計算
 		float oldSum = contact.normalImpulseSum;
@@ -364,7 +420,6 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold)
 	}
 
 	for (auto& contact : manifold.contacts) {//接線方向
-		//// 再計算
 		KTVECTOR3 rA = contact.position - manifold.a->GetOwner()->_transform._position;
 		KTVECTOR3 rB = contact.position - manifold.b->GetOwner()->_transform._position;
 
@@ -392,20 +447,20 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold)
 			float jt = -Dot(rV, tangent);
 			jt /= tangentMass;
 
+			// 静止摩擦・動摩擦の上限値計算 (F_s = μ_s * N, F_d = μ_d * N)
+			float maxStaticFriction = contact.normalImpulseSum * mu_s;
+			float maxDynamicFriction = contact.normalImpulseSum * mu_d;
 
-			//摩擦の上限値計算(F = μ * N)
-			float maxFriction = contact.normalImpulseSum * mu_s;
-
-			//累積値の計算
+			// 累積値の計算
 			KTVECTOR3 oldTangentImpulse = contact.tangentImpulseSum;
 			KTVECTOR3 newTangentImpulse = oldTangentImpulse + jt * tangent;
-			//円錐摩擦制約でクランプ
+			// 円錐摩擦制約：静止摩擦上限を超えたら動摩擦係数でクランプ
 			float len = newTangentImpulse.Magnitude();
-			if (len > maxFriction) {
-				newTangentImpulse = (newTangentImpulse / len) * maxFriction;
+			if (len > maxStaticFriction && len > 1e-6f) {
+				newTangentImpulse = (newTangentImpulse / len) * maxDynamicFriction;
 			}
 			contact.tangentImpulseSum = newTangentImpulse;
-			//実際に適用するのは差分だけ
+			// 実際に適用するのは差分だけ
 			KTVECTOR3 applyTangentImpulse = contact.tangentImpulseSum - oldTangentImpulse;
 
 			if (rbA && !rbA->IsSleeping()) {
@@ -418,8 +473,6 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold)
 			}
 		}
 	}
-	if(rbA)rbA->CheckSleep();
-	if(rbB)rbB->CheckSleep();
 }
 
 void PhysicsSystem::ApplyWarmStarting(){
@@ -436,6 +489,8 @@ void PhysicsSystem::ApplyWarmStarting(){
 
 	//ソート
 	std::sort(searchList.begin(), searchList.end());
+
+	constexpr float WARM_START_FACTOR = 0.8f;
 
 	for (auto& newManifold : _manifolds) {
 		//前フレームの同じペアのマニフォールドを探す
@@ -469,10 +524,10 @@ void PhysicsSystem::ApplyWarmStarting(){
 					}
 				}
 
-				//マッチする古い点が見つかったら累積インパルスを引き継ぐ
+				//マッチする古い点が見つかったら累積インパルスを引き継ぐ（過剰蓄積防止のため減衰係数を掛ける）
 				if (bestOldContact) {
-					newContact.normalImpulseSum = bestOldContact->normalImpulseSum;
-					newContact.tangentImpulseSum = bestOldContact->tangentImpulseSum;
+					newContact.normalImpulseSum = bestOldContact->normalImpulseSum * WARM_START_FACTOR;
+					newContact.tangentImpulseSum = bestOldContact->tangentImpulseSum * WARM_START_FACTOR;
 
 					//引き継いだインパルスを事前に速度に適用
 					KTVECTOR3 rA = newContact.position - newManifold.a->GetOwner()->_transform._position;
