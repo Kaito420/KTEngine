@@ -58,7 +58,7 @@ void Particle::Update()
 		if (_particle[i].enable == false) {
 			_particle[i].enable = true;
 			_particle[i].Life = 20;
-			_particle[i].Position = _owner->_transform._position;
+			_particle[i].Position = _owner->GetWorldPosition();
 			_particle[i].Velocity = KTVECTOR3((rand() % 100 - 50) / 500.0f
 				, (rand() % 100 + 50) / 500.0f
 				, (rand() % 100 - 50) / 5000.0f);
@@ -98,7 +98,7 @@ void Particle::Render() const
 	}
 
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-	// PSOバインド
+	// PSOバインチE
 	{
 		std::string vsId = "UnlitTextureVS";
 		std::string psId = "UnlitTexturePS";

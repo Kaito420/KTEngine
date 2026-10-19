@@ -126,7 +126,7 @@ void Wave::Render() const{
 	cmdList->IASetIndexBuffer(&ibView);
 
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-	// PSOバインド
+	// PSOバインチE
 	{
 		std::string vsId = "UnlitTextureVS";
 		std::string psId = "UnlitTexturePS";
@@ -141,12 +141,7 @@ void Wave::Render() const{
 	}
 
 
-	XMMATRIX world, scale, rot, trans;
-	scale = XMMatrixScaling(_owner->_transform._scale.x, _owner->_transform._scale.y, _owner->_transform._scale.z);
-	XMFLOAT4 q = XMFLOAT4(_owner->_transform._quaternion.x, _owner->_transform._quaternion.y, _owner->_transform._quaternion.z, _owner->_transform._quaternion.w);
-	rot = XMMatrixRotationQuaternion(XMLoadFloat4(&q));
-	trans = XMMatrixTranslation(_owner->_transform._position.x, _owner->_transform._position.y, _owner->_transform._position.z);
-	world = scale * rot * trans;
+	XMMATRIX world = _owner->GetWorldMatrix();
 
 	Renderer::SetWorldMatrix(world);
 

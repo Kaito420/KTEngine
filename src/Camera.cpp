@@ -42,7 +42,8 @@ void Camera::Update() {
 	KTVECTOR3 rightKTVec(rightTemp.x, rightTemp.y, rightTemp.z);
 	KTVECTOR3 upKTVec(upTemp.x, upTemp.y, upTemp.z);
 
-	XMVECTOR position = XMVectorSet(_transform._position.x, _transform._position.y, _transform._position.z, 1.0f);
+	KTVECTOR3 worldPos = GetWorldPosition();
+	XMVECTOR position = XMVectorSet(worldPos.x, worldPos.y, worldPos.z, 1.0f);
 
 	XMMATRIX view = XMMatrixLookAtLH(
 		position, // ÉJÉÅÉâà íu

@@ -104,11 +104,7 @@ void Capsule::Awake(){
 }
 
 void Capsule::Render() const {
-	XMMATRIX translation = XMMatrixTranslation(_owner->_transform._position.x, _owner->_transform._position.y, _owner->_transform._position.z);
-	XMFLOAT4 q = XMFLOAT4(_owner->_transform._quaternion.x, _owner->_transform._quaternion.y, _owner->_transform._quaternion.z, _owner->_transform._quaternion.w);
-	XMMATRIX rotation = XMMatrixRotationQuaternion(XMLoadFloat4(&q));
-	XMMATRIX scaling = XMMatrixScaling(_owner->_transform._scale.x, _owner->_transform._scale.y, _owner->_transform._scale.z);
-	XMMATRIX worldMatrix = scaling * rotation * translation;
+	XMMATRIX worldMatrix = _owner->GetWorldMatrix();
 
 	auto cmdList = Renderer::GetCommandListDX12();
 	if (!cmdList) return;
@@ -151,7 +147,7 @@ void Capsule::Render() const {
 	cmdList->IASetIndexBuffer(&ibView);
 
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	// PSOバインド
+	// PSOバインチE
 	{
 		std::string vsId = "VertexDirectionalLightingVS";
 		std::string psId = "VertexDirectionalLightingPS";

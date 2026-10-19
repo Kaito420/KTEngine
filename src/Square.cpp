@@ -34,17 +34,13 @@ void Square::Update(){
 }
 
 void Square::Render()const{
-	XMMATRIX translation = XMMatrixTranslation(_owner->_transform._position.x, _owner->_transform._position.y, _owner->_transform._position.z);
-	XMFLOAT4 q = XMFLOAT4(_owner->_transform._quaternion.x, _owner->_transform._quaternion.y, _owner->_transform._quaternion.z, _owner->_transform._quaternion.w);
-	XMMATRIX rotation = XMMatrixRotationQuaternion(XMLoadFloat4(&q));
-	XMMATRIX scale = XMMatrixScaling(_owner->_transform._scale.x, _owner->_transform._scale.y, _owner->_transform._scale.z);
-	XMMATRIX worldMatrix = scale * rotation * translation;
+	XMMATRIX worldMatrix = _owner->GetWorldMatrix();
 
 	auto cmdList = Renderer::GetCommandListDX12();
 	if (!cmdList) return;
 
 	if (Renderer::IsShadowPass()) {
-		// _obt@r[ݒ
+		// _obt@r[݁E
 		D3D12_VERTEX_BUFFER_VIEW vbView = {};
 		vbView.BufferLocation = _vertexBuffer->Resource->GetGPUVirtualAddress();
 		vbView.StrideInBytes = _vertexBuffer->Stride;
@@ -63,7 +59,7 @@ void Square::Render()const{
 	if (Renderer::IsGeometryPass() && blendMode != 0) return;
 	if (!Renderer::IsGeometryPass() && blendMode == 0) return;
 
-	// _obt@r[ݒ
+	// _obt@r[݁E
 	D3D12_VERTEX_BUFFER_VIEW vbView = {};
 	vbView.BufferLocation = _vertexBuffer->Resource->GetGPUVirtualAddress();
 	vbView.StrideInBytes = _vertexBuffer->Stride;
@@ -72,7 +68,7 @@ void Square::Render()const{
 
 	// g|W
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-	// PSOバインド
+	// PSOバインチE
 	{
 		std::string vsId = "UnlitTextureVS";
 		std::string psId = "UnlitTexturePS";

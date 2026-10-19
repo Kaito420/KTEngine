@@ -8,7 +8,7 @@
 #include "imgui.h"
 
 void Light::Awake(){
-	_executeInEditor = true;	// エディターで実行
+	_executeInEditor = true;	// エチE��ターで実衁E
 	_lightData.Enable = true;
 	_lightData.Direction = XMFLOAT4(0.0f, -1.0f, -1.0f, 0.0f);
 	_lightData.Ambient = XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f);
@@ -29,9 +29,10 @@ void Light::Awake(){
 }
 
 void Light::Update(){
-	_lightData.Position.x = _transform._position.x;
-	_lightData.Position.y = _transform._position.y;
-	_lightData.Position.z = _transform._position.z;
+	KTVECTOR3 worldPos = GetWorldPosition();
+	_lightData.Position.x = worldPos.x;
+	_lightData.Position.y = worldPos.y;
+	_lightData.Position.z = worldPos.z;
 	Renderer::SetLight(_lightData);
 }
 

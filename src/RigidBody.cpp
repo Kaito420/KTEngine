@@ -60,7 +60,7 @@ void RigidBody::Integrate(float dt){
 	if (!_owner || dt <= 0.0f) return;
 
 	// ワールド空間の慣性テンソルに変換（isKinematic が true でもこの計算は行う）
-	_orientation = _owner->_transform._quaternion;
+	_orientation = _owner->GetWorldQuaternion();
 	KTMATRIX3 R = _orientation.ToMatrix().ToMatrix3();
 	_inertiaTensorWorldInv = R * _inertiaTensorBodyInv * R.Transpose();
 
@@ -85,7 +85,7 @@ void RigidBody::Integrate(float dt){
 	_velocity *= powf(Clamp(_linearDamping, 0.0f, 1.0f), stepScale);
 
 	// 位置の更新
-	_owner->_transform._position += _velocity * dt;
+	_owner->SetWorldPosition(_owner->GetWorldPosition() + _velocity * dt);
 
 	// 角加速度の計算 = Inverse * トルク
 	KTVECTOR3 angularAcceleration = _inertiaTensorWorldInv * _torqueAccum;
@@ -100,8 +100,7 @@ void RigidBody::Integrate(float dt){
 	_orientation = (_orientation + dq * dt).Normalize();
 
 	// 姿勢の反映
-	_owner->_transform._quaternion = _orientation;
-	_owner->_transform._rotation = _orientation.ToEulerAngles();
+	_owner->SetWorldQuaternion(_orientation);
 }
 
 void RigidBody::Awake(){

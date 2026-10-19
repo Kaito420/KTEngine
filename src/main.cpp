@@ -113,7 +113,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
                 if (mainCamera) {
                     Renderer::SetViewMatrix(mainCamera->GetViewMatrix());
                     Renderer::SetProjectionMatrix(mainCamera->GetProjectionMatrix());
-                    Renderer::SetCameraPosition(XMFLOAT4(mainCamera->_transform._position.x, mainCamera->_transform._position.y, mainCamera->_transform._position.z, 1.0f));
+                    KTVECTOR3 camWorldPos = mainCamera->GetWorldPosition();
+                    Renderer::SetCameraPosition(XMFLOAT4(camWorldPos.x, camWorldPos.y, camWorldPos.z, 1.0f));
                 }
                 Renderer::BindShaderConstantsDX12();
                 Manager::Render();
@@ -210,12 +211,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
                             DirectX::XMStoreFloat4x4((DirectX::XMFLOAT4X4*)viewMat, view);
                             DirectX::XMStoreFloat4x4((DirectX::XMFLOAT4X4*)projMat, proj);
                             
-                            float pos[3] = { selectedObj->_transform._position.x, selectedObj->_transform._position.y, selectedObj->_transform._position.z };
-                            float rot[3] = { selectedObj->_transform._rotation.x, selectedObj->_transform._rotation.y, selectedObj->_transform._rotation.z };
-                            float sca[3] = { selectedObj->_transform._scale.x, selectedObj->_transform._scale.y, selectedObj->_transform._scale.z };
-                            
                             float matrix[16];
-                            ImGuizmo::RecomposeMatrixFromComponents(pos, rot, sca, matrix);
+                            DirectX::XMMATRIX worldMat = selectedObj->GetWorldMatrix();
+                            DirectX::XMStoreFloat4x4((DirectX::XMFLOAT4X4*)matrix, worldMat);
                             
                             static ImGuizmo::OPERATION mCurrentGizmoOperation(ImGuizmo::TRANSLATE);
                             static ImGuizmo::MODE mCurrentGizmoMode(ImGuizmo::LOCAL);
@@ -227,11 +225,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
                             ImGuizmo::Manipulate(viewMat, projMat, mCurrentGizmoOperation, mCurrentGizmoMode, matrix, NULL, NULL);
                             
                             if (ImGuizmo::IsUsing()) {
-                                ImGuizmo::DecomposeMatrixToComponents(matrix, pos, rot, sca);
-                                selectedObj->_transform._position = { pos[0], pos[1], pos[2] };
-                                selectedObj->_transform._rotation = { rot[0], rot[1], rot[2] };
-								selectedObj->_transform._quaternion = KTQUATERNION::FromEulerAngles(rot[0], rot[1], rot[2]);
-                                selectedObj->_transform._scale = { sca[0], sca[1], sca[2] };
+                                DirectX::XMMATRIX newWorldMat = DirectX::XMLoadFloat4x4((const DirectX::XMFLOAT4X4*)matrix);
+                                selectedObj->SetWorldMatrix(newWorldMat);
                             }
                         }
                     }

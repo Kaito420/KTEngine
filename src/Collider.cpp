@@ -105,13 +105,13 @@ void ColliderSphere::Update(){
 
 void ColliderSphere::SyncTransform(){
 	if (!_owner) return;
-	//_owner->_transform._scalëԑ傫l𔽉f
-	float tempScale = _owner->_transform._scale.x;
-	if (tempScale < _owner->_transform._scale.y) {
-		tempScale = _owner->_transform._scale.y;
+	//_owner->GetWorldScale()̈ԑ傫l𔽉f
+	float tempScale = _owner->GetWorldScale().x;
+	if (tempScale < _owner->GetWorldScale().y) {
+		tempScale = _owner->GetWorldScale().y;
 	}
-	if (tempScale < _owner->_transform._scale.z) {
-		tempScale = _owner->_transform._scale.z;
+	if (tempScale < _owner->GetWorldScale().z) {
+		tempScale = _owner->GetWorldScale().z;
 	}
 	//ځiSphereMesh甼a𔽉fj
 	Sphere* sp;
@@ -122,8 +122,8 @@ void ColliderSphere::SyncTransform(){
 		_radius = tempScale * 0.5f;
 
 	//AABBXV
-	_aabb.min = _owner->_transform._position - KTVECTOR3(_radius, _radius, _radius);
-	_aabb.max = _owner->_transform._position + KTVECTOR3(_radius, _radius, _radius);
+	_aabb.min = _owner->GetWorldPosition() - KTVECTOR3(_radius, _radius, _radius);
+	_aabb.max = _owner->GetWorldPosition() + KTVECTOR3(_radius, _radius, _radius);
 
 	if ((_oldRadius - _radius) * (_oldRadius - _radius) > 1e-6f)
 		_hasChangedScale = true;
@@ -143,22 +143,22 @@ bool ColliderSphere::CheckVSSphere(const ColliderSphere* other, CollisionManifol
 	outCollisionManifold.b = const_cast<ColliderSphere*>(this);
 
 	//SԂ́E
-	float distanceSqr = (this->_owner->_transform._position -
-		other->_owner->_transform._position).MagnitudeSqr();
+	float distanceSqr = (this->_owner->GetWorldPosition() -
+		other->_owner->GetWorldPosition()).MagnitudeSqr();
 
 	//a̘áE
 	float radiusSumSqr = (this->_radius + other->_radius) * (this->_radius + other->_radius);
 
 	if (distanceSqr <= radiusSumSqr) {//āE
 		outCollisionManifold.penetrationDepth = sqrtf(radiusSumSqr) - sqrtf(distanceSqr);
-		outCollisionManifold.normal = (other->_owner->_transform._position -
-			this->_owner->_transform._position).Normalize();
+		outCollisionManifold.normal = (other->_owner->GetWorldPosition() -
+			this->_owner->GetWorldPosition()).Normalize();
 		KTVECTOR3 cpa;//A̐ڐG_
-		cpa = other->_owner->_transform._position -
+		cpa = other->_owner->GetWorldPosition() -
 			_radius * outCollisionManifold.normal;
 
 		KTVECTOR3 cpb;//B̐ڐG_
-		cpb = this->_owner->_transform._position +
+		cpb = this->_owner->GetWorldPosition() +
 			_radius * outCollisionManifold.normal;
 
 		ContactPoint cp;//ڐG_m̒_Փˉɗp
@@ -180,8 +180,8 @@ bool ColliderSphere::CheckVSOBB(const ColliderBox* other, CollisionManifold& out
 	outCollisionManifold.a = const_cast<ColliderBox*>(other);
 	outCollisionManifold.b = const_cast<ColliderSphere*>(this);
 
-	KTVECTOR3 bPos = other->GetOwner()->_transform._position;	//OBB̍W
-	KTVECTOR3 cPos = this->_owner->_transform._position;		//Sphere̍W
+	KTVECTOR3 bPos = other->GetOwner()->GetWorldPosition();	//OBB̍W
+	KTVECTOR3 cPos = this->_owner->GetWorldPosition();		//Sphere̍W
 
 	KTVECTOR3 BToC = cPos - bPos;
 	float q[3];
@@ -266,12 +266,12 @@ void ColliderSphere::ShowUI(){
 void ColliderBox::Awake() {
 	_executeInEditor = true;
 
-	_center = _owner->_transform._position;
+	_center = _owner->GetWorldPosition();
 	_axis[0] = _owner->GetRight();
 	_axis[1] = _owner->GetUp();
 	_axis[2] = _owner->GetForward();
 
-	_extents = _owner->_transform._scale * 0.5f;
+	_extents = _owner->GetWorldScale() * 0.5f;
 
 	if (Manager::GetCurrentScene() && Manager::GetCurrentScene()->GetPhysicsSystem()) {
 		Manager::GetCurrentScene()->GetPhysicsSystem()->RegisterCollider(this);
@@ -306,12 +306,12 @@ void ColliderBox::Update() {
 void ColliderBox::SyncTransform() {
 	if (!_owner) return;
 	//[JXV
-	_center = _owner->_transform._position;
+	_center = _owner->GetWorldPosition();
 	_axis[0] = _owner->GetRight();
 	_axis[1] = _owner->GetUp();
 	_axis[2] = _owner->GetForward();
 
-	_extents = _owner->_transform._scale * 0.5f;
+	_extents = _owner->GetWorldScale() * 0.5f;
 
 	//AABBXV
 	KTVECTOR3 r;
@@ -319,8 +319,8 @@ void ColliderBox::SyncTransform() {
 	r.y = fabsf(_axis[0].y) * _extents.x + fabsf(_axis[1].y) * _extents.y + fabsf(_axis[2].y) * _extents.z;
 	r.z = fabsf(_axis[0].z) * _extents.x + fabsf(_axis[1].z) * _extents.y + fabsf(_axis[2].z) * _extents.z;
 
-	_aabb.min = _owner->_transform._position - r;
-	_aabb.max = _owner->_transform._position + r;
+	_aabb.min = _owner->GetWorldPosition() - r;
+	_aabb.max = _owner->GetWorldPosition() + r;
 
 	if ((_oldExtents - _extents).MagnitudeSqr() > 1e-6f)
 		_hasChangedScale = true;
@@ -659,10 +659,10 @@ void ColliderCapsule::Update() {
 void ColliderCapsule::SyncTransform() {
 	if (!_owner) return;
 	//GameObject̏ōXV
-	// _owner->_transform._scale ̈ԑ傫l𔽉fic݂h߂̋ϓXP[j
-	float tempScaleRad = _owner->_transform._scale.x;
-	float tempScaleHeight = _owner->_transform._scale.y;
-	if (tempScaleRad < _owner->_transform._scale.z) tempScaleRad = _owner->_transform._scale.z;
+	// _owner->GetWorldScale() ̈ԑ傫l𔽉fic݂h߂̋ϓXP[j
+	float tempScaleRad = _owner->GetWorldScale().x;
+	float tempScaleHeight = _owner->GetWorldScale().y;
+	if (tempScaleRad < _owner->GetWorldScale().z) tempScaleRad = _owner->GetWorldScale().z;
 
 	// ځiCapsuleR|[lgjp[^𔽉f
 	Capsule* cap = _owner->GetComponent<Capsule>();
@@ -688,8 +688,8 @@ void ColliderCapsule::SyncTransform() {
 	extents.z = std::abs(up.z) * halfCylHeight + _radius;
 
 	//AABB̍ŏlƍőlXV
-	_aabb.min = _owner->_transform._position - extents;
-	_aabb.max = _owner->_transform._position + extents;
+	_aabb.min = _owner->GetWorldPosition() - extents;
+	_aabb.max = _owner->GetWorldPosition() + extents;
 
 	if ((_oldRadius - _radius) * (_oldRadius - _radius) > 1e-6f || (_oldHeight - _height) * (_oldHeight - _height) > 1e-6f)
 		_hasChangedScale = true;
@@ -711,11 +711,11 @@ bool ColliderCapsule::CheckVSCapsule(const ColliderCapsule* other, CollisionMani
 	KTVECTOR3 upA = capsuleA->GetUp();
 	KTVECTOR3 upB = capsuleB->GetUp();
 
-	KTVECTOR3 s1 = capsuleA->_transform._position - upA * (cylinderHeightA * 0.5f);
-	KTVECTOR3 e1 = capsuleA->_transform._position + upA * (cylinderHeightA * 0.5f);
+	KTVECTOR3 s1 = capsuleA->GetWorldPosition() - upA * (cylinderHeightA * 0.5f);
+	KTVECTOR3 e1 = capsuleA->GetWorldPosition() + upA * (cylinderHeightA * 0.5f);
 
-	KTVECTOR3 s2 = capsuleB->_transform._position - upB * (cylinderHeightB * 0.5f);
-	KTVECTOR3 e2 = capsuleB->_transform._position + upB * (cylinderHeightB * 0.5f);
+	KTVECTOR3 s2 = capsuleB->GetWorldPosition() - upB * (cylinderHeightB * 0.5f);
+	KTVECTOR3 e2 = capsuleB->GetWorldPosition() + upB * (cylinderHeightB * 0.5f);
 
 	//ŋߖT_2_߁E
 	KTVECTOR3 closestPointA, closestPointB;
@@ -757,11 +757,11 @@ bool ColliderCapsule::CheckVSSphere(const ColliderSphere* other, CollisionManifo
 	GameObject* capsuleObj = this->GetOwner();
 	KTVECTOR3 up = capsuleObj->GetUp();
 
-	KTVECTOR3 A = capsuleObj->_transform._position - up * (cylinderHeight * 0.5f);
-	KTVECTOR3 B = capsuleObj->_transform._position + up * (cylinderHeight * 0.5f);
+	KTVECTOR3 A = capsuleObj->GetWorldPosition() - up * (cylinderHeight * 0.5f);
+	KTVECTOR3 B = capsuleObj->GetWorldPosition() + up * (cylinderHeight * 0.5f);
 
 	//̒S_(C)
-	KTVECTOR3 C = other->GetOwner()->_transform._position;
+	KTVECTOR3 C = other->GetOwner()->GetWorldPosition();
 
 	//_CAB̍ŋߐړ_(P)vZ
 	KTVECTOR3 AB = B - A;
@@ -820,11 +820,11 @@ bool ColliderCapsule::CheckVSOBB(const ColliderBox* other, CollisionManifold& ou
 	//JvZ̓̎n_(A)ƏI_(B)[hԂŌvZ
 	float cylinderHeight = (std::max)(0.0f, this->_height - 2.0f * this->_radius);
 	KTVECTOR3 up = this->GetOwner()->GetUp();
-	KTVECTOR3 A = this->GetOwner()->_transform._position - up * (cylinderHeight * 0.5f);
-	KTVECTOR3 B = this->GetOwner()->_transform._position + up * (cylinderHeight * 0.5f);
+	KTVECTOR3 A = this->GetOwner()->GetWorldPosition() - up * (cylinderHeight * 0.5f);
+	KTVECTOR3 B = this->GetOwner()->GetWorldPosition() + up * (cylinderHeight * 0.5f);
 
 	//OBB̃[JԁiAABBƂĈԁjABρE
-	KTVECTOR3 boxPos = other->GetOwner()->_transform._position;
+	KTVECTOR3 boxPos = other->GetOwner()->GetWorldPosition();
 	KTVECTOR3 dA = A - boxPos;
 	KTVECTOR3 dB = B - boxPos;
 

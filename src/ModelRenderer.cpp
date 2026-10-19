@@ -35,27 +35,21 @@ void ModelRenderer::Render() const
 {
 	if (!m_Model || !m_Model->VertexBuffer || !m_Model->IndexBuffer) return;
 
-	// Transform 行列計算
-	XMMATRIX translation = XMMatrixTranslation(_owner->_transform._position.x, _owner->_transform._position.y, _owner->_transform._position.z);
-	KTVECTOR3 radians = { XMConvertToRadians(_owner->_transform._rotation.x),
-						  XMConvertToRadians(_owner->_transform._rotation.y),
-						  XMConvertToRadians(_owner->_transform._rotation.z) };
-	XMMATRIX rotation = XMMatrixRotationRollPitchYaw(radians.x, radians.y, radians.z);
-	XMMATRIX scaling = XMMatrixScaling(_owner->_transform._scale.x, _owner->_transform._scale.y, _owner->_transform._scale.z);
-	XMMATRIX worldMatrix = scaling * rotation * translation;
+	// Transform 行�E計箁E
+	XMMATRIX worldMatrix = _owner->GetWorldMatrix();
 
 	auto cmdList = Renderer::GetCommandListDX12();
 	if (!cmdList) return;
 
 	if (Renderer::IsShadowPass()) {
-		// 頂点バッファビュー設定
+		// 頂点バッファビュー設宁E
 		D3D12_VERTEX_BUFFER_VIEW vbView = {};
 		vbView.BufferLocation = m_Model->VertexBuffer->Resource->GetGPUVirtualAddress();
 		vbView.StrideInBytes = m_Model->VertexBuffer->Stride;
 		vbView.SizeInBytes = m_Model->VertexBuffer->Stride * m_Model->VertexBuffer->Size;
 		cmdList->IASetVertexBuffers(0, 1, &vbView);
 
-		// インデックスバッファビュー設定
+		// インチE��クスバッファビュー設宁E
 		D3D12_INDEX_BUFFER_VIEW ibView = {};
 		ibView.BufferLocation = m_Model->IndexBuffer->Resource->GetGPUVirtualAddress();
 		ibView.SizeInBytes = sizeof(unsigned int) * m_Model->IndexBuffer->Size;
@@ -76,14 +70,14 @@ void ModelRenderer::Render() const
 	if (Renderer::IsGeometryPass() && blendMode != 0) return;
 	if (!Renderer::IsGeometryPass() && blendMode == 0) return;
 
-	// 頂点バッファビュー設定
+	// 頂点バッファビュー設宁E
 	D3D12_VERTEX_BUFFER_VIEW vbView = {};
 	vbView.BufferLocation = m_Model->VertexBuffer->Resource->GetGPUVirtualAddress();
 	vbView.StrideInBytes = m_Model->VertexBuffer->Stride;
 	vbView.SizeInBytes = m_Model->VertexBuffer->Stride * m_Model->VertexBuffer->Size;
 	cmdList->IASetVertexBuffers(0, 1, &vbView);
 
-	// インデックスバッファビュー設定
+	// インチE��クスバッファビュー設宁E
 	D3D12_INDEX_BUFFER_VIEW ibView = {};
 	ibView.BufferLocation = m_Model->IndexBuffer->Resource->GetGPUVirtualAddress();
 	ibView.SizeInBytes = sizeof(unsigned int) * m_Model->IndexBuffer->Size;
@@ -92,7 +86,7 @@ void ModelRenderer::Render() const
 
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	// PSOバインド
+	// PSOバインチE
 	{
 		std::string vsId = "Geometry";
 		std::string psId = "Geometry";
@@ -196,7 +190,7 @@ void ModelRenderer::UnloadAll()
 
 		for (unsigned int i = 0; i < pair.second->SubsetNum; i++)
 		{
-			// eNX`͎ŃfXgN^Ȃ(̃|C^̂)߁A蓮ŃZbg(ۂɂ_texturePoolŊǗĂ̂łł͉̕Kv͂ȂAQƂnullptrɂĂ)
+			// eNX`͎ŃfXgN^ȁẼ|C^́E߁A蓮ŃZbg(ۂɁEtexturePoolŊǗĂ̂łł͉̕Kv͂ȁEQƂnullptrɂāE
 			pair.second->SubsetArray[i].Material.Texture = nullptr;
 		}
 
@@ -241,7 +235,7 @@ void ModelRenderer::LoadModel(const char* FileName, MODEL* Model)
 	MODEL_OBJ modelObj;
 	LoadObj(FileName, &modelObj);
 
-	// _obt@쐬
+	// _obt@�E�
 	Model->VertexBuffer = Renderer::CreateVertexBuffer(sizeof(Vertex), modelObj.VertexNum);
 	void* data = nullptr;
 	HRESULT hr = Model->VertexBuffer->Resource->Map(0, nullptr, &data);
@@ -250,7 +244,7 @@ void ModelRenderer::LoadModel(const char* FileName, MODEL* Model)
 		Model->VertexBuffer->Resource->Unmap(0, nullptr);
 	}
 
-	// CfbNXobt@쐬
+	// CfbNXobt@�E�
 	Model->IndexBuffer = Renderer::CreateIndexBuffer(modelObj.IndexNum);
 	hr = Model->IndexBuffer->Resource->Map(0, nullptr, &data);
 	if (SUCCEEDED(hr)) {
@@ -258,7 +252,7 @@ void ModelRenderer::LoadModel(const char* FileName, MODEL* Model)
 		Model->IndexBuffer->Resource->Unmap(0, nullptr);
 	}
 
-	// TuZbgݒ
+	// TuZbg݁E
 	{
 		Model->SubsetArray = new SUBSET[modelObj.SubsetNum];
 		Model->SubsetNum = modelObj.SubsetNum;
@@ -548,7 +542,7 @@ void ModelRenderer::LoadObj(const char* FileName, MODEL_OBJ* ModelObj)
 
 
 
-//}eAǂ///////////////////////////////////////////////////////////////////
+//}eAǁE//////////////////////////////////////////////////////////////////
 void ModelRenderer::LoadMaterial(const char* FileName, MODEL_MATERIAL** MaterialArray, unsigned int* MaterialNum)
 {
 

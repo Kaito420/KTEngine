@@ -41,6 +41,7 @@ public:
 	virtual void UpdateEditor();
 	virtual void Render()const;
 	virtual void RenderHierarchy();
+	void RenderHierarchyNode(const std::shared_ptr<GameObject>& gameObject);
 	virtual void RenderInspector();
 	virtual void RenderButton();
 

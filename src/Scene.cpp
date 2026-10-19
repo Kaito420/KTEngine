@@ -46,6 +46,8 @@ void Scene::Initialize(){
 void Scene::Finalize() {
 	for (auto& gameObject : _gameObjects) {
 		gameObject->OnDestroy();
+		gameObject->_parent.reset();
+		gameObject->_children.clear();
 	}
 }
 
@@ -140,15 +142,20 @@ void Scene::Render()const{
 }
 
 void Scene::OnLoaded() {
-	//PhysicsSystemﾌ再・
 	if(_physicsSystem)
 		delete _physicsSystem;
 	_physicsSystem = new PhysicsSystem();
 	_physicsAccumulator = 0.0f;
 	uint32_t maxId = 0;
+
+	// 親子関係のキャッシュを一旦クリア
+	for (auto& gameObject : _gameObjects) {
+		gameObject->_parent.reset();
+		gameObject->_children.clear();
+	}
+
 	for(auto& gameObject: _gameObjects) {
 		gameObject->OnLoaded();
-		//idﾌ最鼠XV
 		if(maxId < gameObject->_id)
 			maxId = gameObject->_id;
 
@@ -158,84 +165,123 @@ void Scene::OnLoaded() {
 			}
 		}
 	}
-	GameObject::_nextId = maxId + 1; //IDﾅ鼠+1ﾉ設・
+
+	// _parentId から親子リンク（_parent と _children）を復元
+	for (auto& gameObject : _gameObjects) {
+		if (gameObject->_parentId != -1) {
+			for (auto& candidate : _gameObjects) {
+				if ((int)candidate->_id == gameObject->_parentId && candidate.get() != gameObject.get()) {
+					gameObject->_parent = candidate;
+					candidate->_children.push_back(gameObject);
+					break;
+				}
+			}
+			if (!gameObject->_parent) {
+				gameObject->_parentId = -1;
+			}
+		}
+	}
+
+	GameObject::_nextId = maxId + 1;
+}
+
+void Scene::RenderHierarchyNode(const std::shared_ptr<GameObject>& gameObject) {
+	if (!gameObject || gameObject->IsDestroy()) return;
+
+	ImGui::PushID(gameObject->_id);
+
+	bool hasChildren = !gameObject->GetChildren().empty();
+	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_DefaultOpen;
+	if (_selectedObjId == (int)gameObject->_id) {
+		flags |= ImGuiTreeNodeFlags_Selected;
+	}
+	if (!hasChildren) {
+		flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
+	}
+
+	// 非アクティブ（自身または親が非アクティブ）の場合は文字色を半透明にする
+	bool isEffectiveActive = gameObject->GetActive();
+	if (!isEffectiveActive) {
+		ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
+	}
+
+	bool nodeOpen = ImGui::TreeNodeEx(gameObject->_name.c_str(), flags);
+
+	if (!isEffectiveActive) {
+		ImGui::PopStyleColor();
+	}
+
+	if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
+		_selectedObjId = gameObject->_id;
+	}
+
+	// Drag Source
+	if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None)) {
+		GameObject* srcPtr = gameObject.get();
+		ImGui::SetDragDropPayload("DND_GAMEOBJECT", &srcPtr, sizeof(GameObject*));
+		ImGui::Text("%s", gameObject->_name.c_str());
+		ImGui::EndDragDropSource();
+	}
+
+	// Drag & Drop Target (オブジェクトに重ねてドロップすると親子化)
+	if (ImGui::BeginDragDropTarget()) {
+		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_GAMEOBJECT")) {
+			GameObject* srcPtr = *(GameObject**)payload->Data;
+			if (srcPtr && srcPtr != gameObject.get() && !srcPtr->IsAncestorOf(gameObject)) {
+				srcPtr->SetParent(gameObject, true);
+			}
+		}
+		ImGui::EndDragDropTarget();
+	}
+
+	// 右クリックでコンテキストメニュー
+	if (ImGui::BeginPopupContextItem()) {
+		if (gameObject->GetParent() != nullptr) {
+			if (ImGui::MenuItem("Unparent")) {
+				gameObject->SetParent(nullptr, true);
+			}
+			ImGui::Separator();
+		}
+		if (ImGui::MenuItem("Create Child Empty")) {
+			GameObject* newObj = AddGameObject<GameObject>();
+			newObj->_name = GenerateUniqueName("GameObject");
+			newObj->SetParent(gameObject, false);
+			_selectedObjId = newObj->_id;
+		}
+		ImGui::Separator();
+		if (ImGui::MenuItem("Rename")) {
+			_renameTargetId = gameObject->_id;
+			strcpy_s(_renameBuffer, sizeof(_renameBuffer), gameObject->_name.c_str());
+			_openPopup = true;
+		}
+		if (ImGui::MenuItem("Delete")) {
+			gameObject->Destroy();
+		}
+		ImGui::EndPopup();
+	}
+
+	// 子ノードの再帰描画
+	if (hasChildren && nodeOpen) {
+		// ループ中に親子変更が起きても安全なようにコピーで走査
+		std::vector<std::shared_ptr<GameObject>> childrenCopy = gameObject->GetChildren();
+		for (const auto& child : childrenCopy) {
+			RenderHierarchyNode(child);
+		}
+		ImGui::TreePop();
+	}
+
+	ImGui::PopID();
 }
 
 void Scene::RenderHierarchy()
 {
 	ImGui::Begin("Hierarchy View"); 
 	{
-		int index = 0;
-		for (auto it = _gameObjects.begin(); it != _gameObjects.end(); it++, index++) {
-
-			auto& gameObject = *it;
-
-			ImGui::PushID(gameObject->_id); //ﾓ・Dﾝ・
-			//I
-			bool isSelected = (_selectedObjId == gameObject->_id);
-			if (ImGui::Selectable(gameObject->_name.c_str(), isSelected))
-				_selectedObjId = gameObject->_id;
-			//Drag Source
-			if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None)) {
-				GameObject* srcPtr = gameObject.get(); // shared_ptrﾌ暖ﾌ酢C^
-				ImGui::SetDragDropPayload("DND_GAMEOBJECT", &srcPtr, sizeof(GameObject*));
-				ImGui::Text("%s", gameObject->_name.c_str());
-				ImGui::EndDragDropSource();
-			}
-
-			//Drag & Drop Target
-			if (ImGui::BeginDragDropTarget()) {
-				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_GAMEOBJECT")) {
-					GameObject* srcPtr = *(GameObject**)payload->Data;
-
-					// find source iterator by matching pointer (safe & robust)
-					auto srcIt = std::find_if(_gameObjects.begin(), _gameObjects.end(),
-						[&](const std::shared_ptr<GameObject>& p) { return p.get() == srcPtr; });
-
-					if (srcIt != _gameObjects.end() && srcIt != it) {
-						//src  target ﾌ前ﾉるかｲべＪsrcBeforeTarget  true ﾈ０j
-						bool srcBeforeTarget = false;
-						for (auto t = srcIt; t != _gameObjects.end(); ++t) {
-							if (t == it) { 
-								srcBeforeTarget = true;
-								break;
-							}
-						}
-
-						// }ﾊ置ﾟＪOﾈ・target ﾌ舎、ﾈ・target ﾌ前ﾉ）
-						auto insertPos = it;
-						if (srcBeforeTarget) ++insertPos; // target ﾌ庫・
-
-						// m[hﾚ妬O(1)j
-						_gameObjects.splice(insertPos, _gameObjects, srcIt);
-					}
-				}
-				ImGui::EndDragDropTarget();
-			}
-
-			//ENbNﾅポbvAbv
-			if (ImGui::BeginPopupContextItem()) {
-				//l[
-				if (ImGui::MenuItem("Rename")) {
-					_renameTargetId = gameObject->_id;
-					//l[ﾎ象の飽obt@ﾉコs[
-					strcpy_s(_renameBuffer, sizeof(_renameBuffer), gameObject->_name.c_str());
-					_openPopup = true;	//|bvAbvJ}
-				}
-				if (ImGui::MenuItem("Delete")) {
-					gameObject->Destroy();
-				}
-				ImGui::EndPopup();
-			}
-			ImGui::PopID();
-		}
-		//ﾈれ所ﾅの右NbNj[
-		if (ImGui::BeginPopupContextWindow(nullptr, 
-			ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems)) {
-			if(ImGui::MenuItem("Create Empty")){
+		auto drawCreateObjectMenu = [this]() {
+			if (ImGui::MenuItem("Create Empty")) {
 				GameObject* newObj = AddGameObject<GameObject>();
 				newObj->_name = GenerateUniqueName("GameObject");
-				_selectedObjId = newObj->_id; //VK・ｬIuWFNgI
+				_selectedObjId = newObj->_id;
 			}
 			if (ImGui::MenuItem("Cube")) {
 				GameObject* newObj = AddGameObject<CubeObject>();
@@ -252,22 +298,84 @@ void Scene::RenderHierarchy()
 				newObj->_name = GenerateUniqueName("Capsule");
 				_selectedObjId = newObj->_id;
 			}
+		};
+
+		auto acceptRootUnparentDrop = []() {
+			if (ImGui::BeginDragDropTarget()) {
+				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_GAMEOBJECT")) {
+					GameObject* srcPtr = *(GameObject**)payload->Data;
+					if (srcPtr && srcPtr->GetParent() != nullptr) {
+						srcPtr->SetParent(nullptr, true);
+					}
+				}
+				ImGui::EndDragDropTarget();
+			}
+		};
+
+		// 上部固定ヘッダー領域：「+」ボタンと上部ドロップ＆右クリック領域
+		if (ImGui::Button("+")) {
+			ImGui::OpenPopup("HierarchyCreateObjectPopup");
+		}
+		if (ImGui::BeginPopup("HierarchyCreateObjectPopup")) {
+			drawCreateObjectMenu();
 			ImGui::EndPopup();
 		}
 
-		//l[p[_EBhEﾌ・
+		ImGui::SameLine();
+		ImVec2 headerAvail = ImGui::GetContentRegionAvail();
+		float headerWidth = headerAvail.x > 1.0f ? headerAvail.x : 1.0f;
+		ImGui::InvisibleButton("##HierarchyHeaderDropZone", ImVec2(headerWidth, ImGui::GetFrameHeight()));
+		acceptRootUnparentDrop();
+		if (ImGui::BeginPopupContextItem("HierarchyHeaderContextPopup")) {
+			drawCreateObjectMenu();
+			ImGui::EndPopup();
+		}
+
+		ImGui::Separator();
+
+		// 下部スクロール領域（+ボタンを上部に固定したままツリーのみをスクロールさせる）
+		if (ImGui::BeginChild("HierarchyScrollRegion", ImVec2(0, 0), false)) {
+			// ルートオブジェクト（親を持たないオブジェクト）のみをトップレベルに描画
+			for (auto it = _gameObjects.begin(); it != _gameObjects.end(); ++it) {
+				auto& gameObject = *it;
+				if (gameObject->GetParent() == nullptr) {
+					RenderHierarchyNode(gameObject);
+				}
+			}
+
+			// 下部の余白エリア（子オブジェクトをD&Dすると親子関係を解除してルートへ戻す）
+			ImVec2 avail = ImGui::GetContentRegionAvail();
+			if (avail.x < 1.0f) avail.x = 1.0f;
+			if (avail.y < 40.0f) avail.y = 40.0f;
+			ImGui::InvisibleButton("##HierarchyRootDropZone", avail);
+			acceptRootUnparentDrop();
+
+			// 余白エリア（InvisibleButton）上での右クリックメニュー
+			if (ImGui::BeginPopupContextItem("HierarchyEmptyItemContextPopup")) {
+				drawCreateObjectMenu();
+				ImGui::EndPopup();
+			}
+
+			// その他の何もない場所での右クリックメニュー
+			if (ImGui::BeginPopupContextWindow("HierarchyEmptyWindowContextPopup",
+				ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems)) {
+				drawCreateObjectMenu();
+				ImGui::EndPopup();
+			}
+		}
+		ImGui::EndChild();
+
+		// リネーム用モーダルウィンドウの処理
 		if(_openPopup) {
 			ImGui::OpenPopup("Rename Object");
-			_openPopup = false; //}Zbg
+			_openPopup = false;
 		}
 		ImVec2 center = ImGui::GetMainViewport()->GetCenter();
 		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
 		if (ImGui::BeginPopupModal("Rename Object", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
 			bool enterPressed = ImGui::InputText("Name", _renameBuffer, sizeof(_renameBuffer), ImGuiInputTextFlags_EnterReturnsTrue);
-			//{^GA
 			if (ImGui::Button("OK", ImVec2(120, 0)) || enterPressed) {
-				//IDIuWFNgTﾄ飽XV
 				for (auto& obj : _gameObjects) {
 					if (obj->_id == _renameTargetId) {
 						obj->_name = GenerateUniqueName(_renameBuffer);
@@ -289,7 +397,6 @@ void Scene::RenderHierarchy()
 	ImGui::End();
 
 }
-
 void Scene::RenderInspector()
 {
 	ImGui::Begin("Inspector");
@@ -306,7 +413,19 @@ void Scene::RenderInspector()
 
 			if (selectedObj) {
 				ImGui::Text("%s", selectedObj->_name.c_str());
+				if (selectedObj->GetParent() != nullptr) {
+					ImGui::SameLine();
+					ImGui::TextDisabled("(Parent: %s)", selectedObj->GetParent()->_name.c_str());
+					ImGui::SameLine();
+					if (ImGui::SmallButton("Unparent")) {
+						selectedObj->SetParent(nullptr, true);
+					}
+				}
 				ImGui::Checkbox("Active", &selectedObj->_active);
+				if (selectedObj->GetParent() != nullptr && !selectedObj->GetParent()->GetActive()) {
+					ImGui::SameLine();
+					ImGui::TextDisabled("(Inactive in hierarchy)");
+				}
 				//Transform
 				if (ImGui::BeginTable("Transform", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg))
 				{

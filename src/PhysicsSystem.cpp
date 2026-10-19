@@ -52,7 +52,7 @@ void PhysicsSystem::Step(float fixedDt) {
 		StepSub(subDt, metrics, isLastSubStep);
 	}
 
-	// FixedUpdate1回分の全サブステップ終了後に蓄積力をクリア
+	// FixedUpdate1回�Eの全サブスチE��プ終亁E��に蓁E��力をクリア
 	for (auto* rb : _rigidBodys) {
 		if (rb) rb->ClearForces();
 	}
@@ -71,7 +71,7 @@ void PhysicsSystem::StepSub(float subDt, PhysicsMetrics& metrics, bool isLastSub
 		}
 	}
 
-	// 2. Sync Colliders (Integrate後の最新TransformでAABBとOBB軸を更新)
+	// 2. Sync Colliders (Integrate後�E最新TransformでAABBとOBB軸を更新)
 	{
 		PROFILE_SCOPE("Physics: Broadphase");
 		SyncColliders();
@@ -173,8 +173,8 @@ void PhysicsSystem::StepSub(float subDt, PhysicsMetrics& metrics, bool isLastSub
 			else if (rbB) e = rbB->_restitution;
 
 			for (auto& cp : manifold.contacts) {
-				KTVECTOR3 rA = cp.position - manifold.a->GetOwner()->_transform._position;
-				KTVECTOR3 rB = cp.position - manifold.b->GetOwner()->_transform._position;
+				KTVECTOR3 rA = cp.position - manifold.a->GetOwner()->GetWorldPosition();
+				KTVECTOR3 rB = cp.position - manifold.b->GetOwner()->GetWorldPosition();
 
 				KTVECTOR3 vA = rbA ? rbA->_velocity + Cross(rbA->_angularVelocity, rA) : KTVECTOR3(0, 0, 0);
 				KTVECTOR3 vB = rbB ? rbB->_velocity + Cross(rbB->_angularVelocity, rB) : KTVECTOR3(0, 0, 0);
@@ -209,7 +209,7 @@ void PhysicsSystem::StepSub(float subDt, PhysicsMetrics& metrics, bool isLastSub
 			}
 		}
 
-		// 位置補正後の座標をコライダーのAABB・軸へ再同期
+		// 位置補正後�E座標をコライダーのAABB・軸へ再同朁E
 		SyncColliders();
 
 		for (auto* col : _colliders) {
@@ -297,7 +297,7 @@ void PhysicsSystem::SetLocalInertiaTensor(){
 		RigidBody* rb = col->GetOwner()->GetComponent<RigidBody>();
 		if (rb == nullptr)continue;
 		bool massChanged = ((rb->_oldMass - rb->_mass) * (rb->_oldMass - rb->_mass) > 1e-6f);
-		if (!col->_hasChangedScale && !massChanged) continue; //スケールか質量が変化していなければスキップ
+		if (!col->_hasChangedScale && !massChanged) continue; //スケールか質量が変化してぁE��ければスキチE�E
 		if (rb->_mass > 0.0f && !rb->_isKinematic) {
 			rb->_inertiaTensorBody = col->ComputeLocalInertiaTensor(rb->_mass);
 			rb->_inertiaTensorBodyInv = rb->_inertiaTensorBody.Inverse();
@@ -315,20 +315,20 @@ void PhysicsSystem::ResolveCollision(CollisionManifold& manifold)
 {
 	RigidBody* rbA = manifold.a->GetOwner()->GetComponent<RigidBody>();
 	RigidBody* rbB = manifold.b->GetOwner()->GetComponent<RigidBody>();
-	if (!rbA && !rbB) return; // 両方静的ならスキップ
+	if (!rbA && !rbB) return; // 両方静的ならスキチE�E
 
-	// 小さな隙間（slop）を残して過剰補正を防ぐ
+	// 小さな隙間�E�Elop�E�を残して過剰補正を防ぁE
 	float slop = 0.02f;
-	float percent = 0.4f; // 0.2～0.8の範囲で調整
+	float percent = 0.4f; // 0.2�E�E.8の篁E��で調整
 
-	//有効質量の計算
+	//有効質量�E計箁E
 	float invMassA = (rbA && !rbA->IsSleeping()) ? rbA->_invMass : 0.0f;
 	float invMassB = (rbB && !rbB->IsSleeping()) ? rbB->_invMass : 0.0f;
 	float invMassSum = invMassA + invMassB;
 
 	if (invMassSum <= 0.0f || manifold.contacts.empty()) return;
 
-	// 押し戻し量（slop を差し引いためり込み量で補正）
+	// 押し戻し量�E�Elop を差し引いためり込み量で補正�E�E
 	KTVECTOR3 correction = KTVECTOR3(0.0f, 0.0f, 0.0f);
 	for (const auto& contact : manifold.contacts) {
 		float pen = (std::max)(0.0f, contact.penetration - slop);
@@ -336,10 +336,10 @@ void PhysicsSystem::ResolveCollision(CollisionManifold& manifold)
 	}
 	correction = correction / (float)manifold.contacts.size();
 	if (rbA && !rbA->IsSleeping()) {
-		manifold.a->GetOwner()->_transform._position += correction * invMassA * percent;
+		manifold.a->GetOwner()->SetWorldPosition(manifold.a->GetOwner()->GetWorldPosition() + correction * invMassA * percent);
 	}
 	if (rbB && !rbB->IsSleeping()) {
-		manifold.b->GetOwner()->_transform._position -= correction * invMassB * percent;
+		manifold.b->GetOwner()->SetWorldPosition(manifold.b->GetOwner()->GetWorldPosition() - correction * invMassB * percent);
 	}
 }
 
@@ -347,27 +347,27 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold, float dt)
 {
 	RigidBody* rbA = manifold.a->GetOwner()->GetComponent<RigidBody>();
 	RigidBody* rbB = manifold.b->GetOwner()->GetComponent<RigidBody>();
-	if (!rbA && !rbB) return; // 両方静的ならスキップ
+	if (!rbA && !rbB) return; // 両方静的ならスキチE�E
 
-	//有効質量の計算
+	//有効質量�E計箁E
 	float invMassA = (rbA) ? rbA->_invMass : 0.0f;
 	float invMassB = (rbB) ? rbB->_invMass : 0.0f;
 
-	for (auto& contact : manifold.contacts) {//法線方向
+	for (auto& contact : manifold.contacts) {//法線方吁E
 
-		KTVECTOR3 rA = contact.position - manifold.a->GetOwner()->_transform._position;
-		KTVECTOR3 rB = contact.position - manifold.b->GetOwner()->_transform._position;
+		KTVECTOR3 rA = contact.position - manifold.a->GetOwner()->GetWorldPosition();
+		KTVECTOR3 rB = contact.position - manifold.b->GetOwner()->GetWorldPosition();
 
 		//速度修正
 		KTVECTOR3 vA = rbA ? rbA->_velocity + Cross(rbA->_angularVelocity, rA) : KTVECTOR3(0.0f, 0.0f, 0.0f);
 		KTVECTOR3 vB = rbB ? rbB->_velocity + Cross(rbB->_angularVelocity, rB) : KTVECTOR3(0.0f, 0.0f, 0.0f);
 		//相対速度
 		KTVECTOR3 rV = vA - vB;//B->Aの相対速度
-		float relVelAlongNormal = Dot(rV, manifold.normal);//manifold.normal => B->A方向
-		// 離れていく場合はスキップ(B->A方向で一致→内積が正の値の場合離れていく) && 法線インパルスが0以下の場合スキップ
+		float relVelAlongNormal = Dot(rV, manifold.normal);//manifold.normal => B->A方吁E
+		// 離れてぁE��場合�EスキチE�E(B->A方向で一致→�E積が正の値の場合離れてぁE��) && 法線インパルスぁE以下�E場合スキチE�E
 		if (relVelAlongNormal > 0.0f && contact.normalImpulseSum <= 0.0f)continue;
 
-		//有効質量
+		//有効質釁E
 		KTVECTOR3 rnA = rbA ? Cross(rA, manifold.normal) : KTVECTOR3(0.0f, 0.0f, 0.0f);
 		KTVECTOR3 rnB = rbB ? Cross(rB, manifold.normal) : KTVECTOR3(0.0f, 0.0f, 0.0f);
 
@@ -377,19 +377,19 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold, float dt)
 
 		if (normalMass <= 0.0f) continue;
 
-		// 衝突インパルスの計算（累積処理）
+		// 衝突インパルスの計算（累積�E琁E��E
 		float deltaImpulse = (contact.velocityBias - relVelAlongNormal) / normalMass;
 
-		//累積値の計算
+		//累積値の計箁E
 		float oldSum = contact.normalImpulseSum;
 		contact.normalImpulseSum += deltaImpulse;
 		if(contact.normalImpulseSum < 0.0f)
 			contact.normalImpulseSum = 0.0f;
 
-		//実際に適用するのは差分だけ
+		//実際に適用するのは差刁E��ぁE
 		deltaImpulse = contact.normalImpulseSum - oldSum;
 
-		//速度更新（インパルスの適用）
+		//速度更新�E�インパルスの適用�E�E
 		KTVECTOR3 applyNormalImpule = deltaImpulse * manifold.normal;
 
 		if (rbA && !rbA->IsSleeping()) {
@@ -403,7 +403,7 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold, float dt)
 
 	}
 	
-	// 静止摩擦と動摩擦の決定
+	// 静止摩擦と動摩擦の決宁E
 	float mu_s = 0.0f;
 	float mu_d = 0.0f;
 	if (rbA && rbB) {
@@ -419,9 +419,9 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold, float dt)
 		mu_d = rbB->_dynamicFriction;
 	}
 
-	for (auto& contact : manifold.contacts) {//接線方向
-		KTVECTOR3 rA = contact.position - manifold.a->GetOwner()->_transform._position;
-		KTVECTOR3 rB = contact.position - manifold.b->GetOwner()->_transform._position;
+	for (auto& contact : manifold.contacts) {//接線方吁E
+		KTVECTOR3 rA = contact.position - manifold.a->GetOwner()->GetWorldPosition();
+		KTVECTOR3 rB = contact.position - manifold.b->GetOwner()->GetWorldPosition();
 
 		//速度修正
 		KTVECTOR3 vA = rbA ? rbA->_velocity + Cross(rbA->_angularVelocity, rA) : KTVECTOR3(0.0f, 0.0f, 0.0f);
@@ -429,12 +429,12 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold, float dt)
 		//相対速度
 		KTVECTOR3 rV = vA - vB;
 
-		// 摩擦力の計算（接線方向）
+		// 摩擦力�E計算（接線方向！E
 		KTVECTOR3 tangent = rV - Dot(rV, manifold.normal) * manifold.normal;
 		if (tangent.Magnitude() > 1e-3f) {
 			tangent = tangent.Normalize();
 
-			// 接線方向の有効質量（回転寄与を含める）
+			// 接線方向�E有効質量（回転寁E��を含める�E�E
 			KTVECTOR3 rtA = rbA ? Cross(rA, tangent) : KTVECTOR3(0, 0, 0);
 			KTVECTOR3 rtB = rbB ? Cross(rB, tangent) : KTVECTOR3(0, 0, 0);
 
@@ -447,20 +447,20 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold, float dt)
 			float jt = -Dot(rV, tangent);
 			jt /= tangentMass;
 
-			// 静止摩擦・動摩擦の上限値計算 (F_s = μ_s * N, F_d = μ_d * N)
+			// 静止摩擦・動摩擦の上限値計箁E(F_s = μ_s * N, F_d = μ_d * N)
 			float maxStaticFriction = contact.normalImpulseSum * mu_s;
 			float maxDynamicFriction = contact.normalImpulseSum * mu_d;
 
-			// 累積値の計算
+			// 累積値の計箁E
 			KTVECTOR3 oldTangentImpulse = contact.tangentImpulseSum;
 			KTVECTOR3 newTangentImpulse = oldTangentImpulse + jt * tangent;
-			// 円錐摩擦制約：静止摩擦上限を超えたら動摩擦係数でクランプ
+			// 冁E��摩擦制紁E��静止摩擦上限を趁E��たら動摩擦係数でクランチE
 			float len = newTangentImpulse.Magnitude();
 			if (len > maxStaticFriction && len > 1e-6f) {
 				newTangentImpulse = (newTangentImpulse / len) * maxDynamicFriction;
 			}
 			contact.tangentImpulseSum = newTangentImpulse;
-			// 実際に適用するのは差分だけ
+			// 実際に適用するのは差刁E��ぁE
 			KTVECTOR3 applyTangentImpulse = contact.tangentImpulseSum - oldTangentImpulse;
 
 			if (rbA && !rbA->IsSleeping()) {
@@ -479,31 +479,31 @@ void PhysicsSystem::ApplyWarmStarting(){
 
 	static std::vector<ManifoldKey> searchList;
 	searchList.clear();
-	searchList.reserve(_prevManifolds.size());	//前フレームのマニフォールドと同サイズ分
+	searchList.reserve(_prevManifolds.size());	//前フレームのマニフォールドと同サイズ刁E
 
-	//リスト作成
+	//リスト作�E
 	for(auto& old : _prevManifolds){
 		uint64_t key = MakePairKey(old.a, old.b);
 		searchList.push_back({ key, &old });
 	}
 
-	//ソート
+	//ソーチE
 	std::sort(searchList.begin(), searchList.end());
 
 	constexpr float WARM_START_FACTOR = 0.8f;
 
 	for (auto& newManifold : _manifolds) {
-		//前フレームの同じペアのマニフォールドを探す
+		//前フレームの同じペアのマニフォールドを探ぁE
 		uint64_t key = MakePairKey(newManifold.a, newManifold.b);
 
-		//二分探索
+		//二�E探索
 		ManifoldKey target = { key, nullptr };
 		auto it = std::lower_bound(searchList.begin(), searchList.end(), target);
 
-		if (it != searchList.end() && it->key == key) {//見つかった場合
+		if (it != searchList.end() && it->key == key) {//見つかった場吁E
 			CollisionManifold* oldManifold = it->manifold;
 
-			//剛体の取得
+			//剛体�E取征E
 			RigidBody* rbA = newManifold.a->GetOwner()->GetComponent<RigidBody>();
 			RigidBody* rbB = newManifold.b->GetOwner()->GetComponent<RigidBody>();
 			if (!rbA && !rbB) continue;
@@ -517,25 +517,25 @@ void PhysicsSystem::ApplyWarmStarting(){
 				for (auto& oldContact : oldManifold->contacts) {
 					float distSqr = (newContact.position - oldContact.position).MagnitudeSqr();
 
-					//距離比較
+					//距離比輁E
 					if (distSqr < 0.005f && distSqr < minDistSqr) {
 						minDistSqr = distSqr;
 						bestOldContact = &oldContact;
 					}
 				}
 
-				//マッチする古い点が見つかったら累積インパルスを引き継ぐ（過剰蓄積防止のため減衰係数を掛ける）
+				//マッチする古ぁE��が見つかったら累積インパルスを引き継ぐ�E�過剰蓁E��防止のため減衰係数を掛ける�E�E
 				if (bestOldContact) {
 					newContact.normalImpulseSum = bestOldContact->normalImpulseSum * WARM_START_FACTOR;
 					newContact.tangentImpulseSum = bestOldContact->tangentImpulseSum * WARM_START_FACTOR;
 
 					//引き継いだインパルスを事前に速度に適用
-					KTVECTOR3 rA = newContact.position - newManifold.a->GetOwner()->_transform._position;
-					KTVECTOR3 rB = newContact.position - newManifold.b->GetOwner()->_transform._position;
+					KTVECTOR3 rA = newContact.position - newManifold.a->GetOwner()->GetWorldPosition();
+					KTVECTOR3 rB = newContact.position - newManifold.b->GetOwner()->GetWorldPosition();
 
-					//法線方向のインパルス復元
+					//法線方向�Eインパルス復允E
 					KTVECTOR3 applyImpulse = newContact.normalImpulseSum * newManifold.normal;
-					//接線方向のインパルス復元
+					//接線方向�Eインパルス復允E
 					applyImpulse += newContact.tangentImpulseSum;
 
 					float invMassA = (rbA) ? rbA->_invMass : 0.0f;
@@ -690,8 +690,8 @@ void PhysicsSystem::RenderDebug() {
 		Renderer::SetConstant(3, &material, sizeof(material));
 
 		auto owner = col->GetOwner();
-		XMMATRIX translation = XMMatrixTranslation(owner->_transform._position.x, owner->_transform._position.y, owner->_transform._position.z);
-		XMFLOAT4 q = XMFLOAT4(owner->_transform._quaternion.x, owner->_transform._quaternion.y, owner->_transform._quaternion.z, owner->_transform._quaternion.w);
+		XMMATRIX translation = XMMatrixTranslation(owner->GetWorldPosition().x, owner->GetWorldPosition().y, owner->GetWorldPosition().z);
+		XMFLOAT4 q = XMFLOAT4(owner->GetWorldQuaternion().x, owner->GetWorldQuaternion().y, owner->GetWorldQuaternion().z, owner->GetWorldQuaternion().w);
 		XMMATRIX rotation = XMMatrixRotationQuaternion(XMLoadFloat4(&q));
 
 		if (auto* box = dynamic_cast<ColliderBox*>(col)) {

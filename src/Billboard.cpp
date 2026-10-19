@@ -42,7 +42,7 @@ void Billboard::Render() const
 	cmdList->IASetVertexBuffers(0, 1, &vbView);
 
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-	// PSOバインド
+	// PSOバインチE
 	{
 		std::string vsId = "UnlitTextureVS";
 		std::string psId = "UnlitTexturePS";
@@ -57,12 +57,11 @@ void Billboard::Render() const
 	}
 
 
-	XMMATRIX translation = XMMatrixTranslation(_owner->_transform._position.x, _owner->_transform._position.y, _owner->_transform._position.z);
-	KTVECTOR3 radians = { XMConvertToRadians(_owner->_transform._rotation.x),
-						  XMConvertToRadians(_owner->_transform._rotation.y),
-						  XMConvertToRadians(_owner->_transform._rotation.z) };
-	XMMATRIX rotation = XMMatrixRotationRollPitchYaw(radians.x, radians.y, radians.z);
-	XMMATRIX scale = XMMatrixScaling(_owner->_transform._scale.x, _owner->_transform._scale.y, _owner->_transform._scale.z);
+	KTVECTOR3 wPos = _owner->GetWorldPosition(); KTVECTOR3 wScale = _owner->GetWorldScale(); KTQUATERNION wQuat = _owner->GetWorldQuaternion();
+	XMMATRIX translation = XMMatrixTranslation(wPos.x, wPos.y, wPos.z);
+	XMFLOAT4 q(wQuat.x, wQuat.y, wQuat.z, wQuat.w);
+	XMMATRIX rotation = XMMatrixRotationQuaternion(XMLoadFloat4(&q));
+	XMMATRIX scale = XMMatrixScaling(wScale.x, wScale.y, wScale.z);
 	XMMATRIX worldMatrix = rotation * scale * g_billboardMatrix * translation;
 
 	Renderer::SetWorldMatrix(worldMatrix);
