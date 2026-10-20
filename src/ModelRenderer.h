@@ -42,10 +42,17 @@ struct MODEL_OBJ
 	unsigned int	SubsetNum;
 };
 
+#include <vector>
+
 struct MODEL
 {
 	std::unique_ptr<VERTEX_BUFFER> VertexBuffer;
 	std::unique_ptr<INDEX_BUFFER> IndexBuffer;
+
+	std::vector<Vertex> BaseVertices;
+	std::vector<unsigned int> BaseIndices;
+	bool AppliedFlipWinding = false;
+	bool AppliedFlipNormals = false;
 
 	SUBSET* SubsetArray;
 	unsigned int	SubsetNum;
@@ -67,9 +74,15 @@ private:
 
 	static void LoadModel(const char* FileName, MODEL* Model);
 	static void LoadObj(const char* FileName, MODEL_OBJ* ModelObj);
+	static void LoadFbx(const char* FileName, MODEL_OBJ* ModelObj);
 	static void LoadMaterial(const char* FileName, MODEL_MATERIAL** MaterialArray, unsigned int* MaterialNum);
 
 	MODEL* m_Model{};
+	bool m_FlipWinding = false;
+	bool m_FlipNormals = false;
+	int m_CullMode = 0; // 0: Back (Default), 1: Front, 2: None (Double-Sided)
+
+	void ApplyFlipSettings();
 
 public:
 
@@ -96,6 +109,11 @@ public:
 			}
 		}
 		ar(cereal::make_nvp("FileName", filename));
+		try {
+			ar(cereal::make_nvp("FlipWinding", m_FlipWinding));
+			ar(cereal::make_nvp("FlipNormals", m_FlipNormals));
+			ar(cereal::make_nvp("CullMode", m_CullMode));
+		} catch (...) {}
 
 		if (!filename.empty()) {
 			Load(filename.c_str());

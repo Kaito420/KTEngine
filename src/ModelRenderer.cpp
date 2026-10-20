@@ -9,7 +9,11 @@
 #include <shlwapi.h>
 #pragma comment(lib, "shlwapi.lib")
 #include <filesystem>
+#include <vector>
+#include <algorithm>
+#include <cmath>
 #include <imgui.h>
+#include "ufbx.h"
 
 
 #include "Renderer.h"
@@ -95,7 +99,10 @@ void ModelRenderer::Render() const
 			vsId = shaderComp->GetVertexShaderID();
 			psId = shaderComp->GetPixelShaderID();
 		}
-		ID3D12PipelineState* pso = ShaderManager::Instance().GetPipelineState(vsId, psId, 0, Renderer::GetCullModeDX12(), Renderer::GetDepthEnableDX12(), Renderer::GetDepthWriteDX12(), D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
+		D3D12_CULL_MODE cullMode = Renderer::GetCullModeDX12();
+		if (m_CullMode == 1) cullMode = D3D12_CULL_MODE_FRONT;
+		else if (m_CullMode == 2) cullMode = D3D12_CULL_MODE_NONE;
+		ID3D12PipelineState* pso = ShaderManager::Instance().GetPipelineState(vsId, psId, 0, cullMode, Renderer::GetDepthEnableDX12(), Renderer::GetDepthWriteDX12(), D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
 		if (pso == nullptr) return;
 		cmdList->SetPipelineState(pso);
 	}
@@ -121,6 +128,10 @@ void ModelRenderer::Render() const
 			tex = m_Model->SubsetArray[i].Material.Texture;
 		}
 		material.TextureEnable = (tex != nullptr);
+		XMFLOAT4 subColor = material.Diffuse;
+		if (subColor.x == 0.0f && subColor.y == 0.0f && subColor.z == 0.0f) {
+			subColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+		}
 		if (shaderComp) {
 			XMFLOAT4 scColor = shaderComp->GetBaseColor();
 			if (tex && scColor.x == 0.0f && scColor.y == 0.0f && scColor.z == 0.0f) {
@@ -128,7 +139,12 @@ void ModelRenderer::Render() const
 				scColor.y = 1.0f;
 				scColor.z = 1.0f;
 			}
-			material.BaseColor = scColor;
+			material.BaseColor = {
+				scColor.x * subColor.x,
+				scColor.y * subColor.y,
+				scColor.z * subColor.z,
+				scColor.w * (subColor.w > 0.0f ? subColor.w : 1.0f)
+			};
 			material.EmissionColor = shaderComp->GetEmissionColor();
 			material.Metallic = shaderComp->GetMetallic();
 			material.SpecularPbr = shaderComp->GetSpecular();
@@ -212,6 +228,7 @@ void ModelRenderer::Load(const char* FileName)
 	if(m_ModelPool.find(FileName) != m_ModelPool.end())
 	{
 		m_Model = m_ModelPool[FileName];
+		ApplyFlipSettings();
 		return;
 	}
 
@@ -221,6 +238,7 @@ void ModelRenderer::Load(const char* FileName)
 	if (newModel->VertexBuffer != nullptr) {
 		m_ModelPool[FileName] = newModel;
 		m_Model = newModel;
+		ApplyFlipSettings();
 	}
 	else {
 		delete newModel;
@@ -232,8 +250,24 @@ void ModelRenderer::Load(const char* FileName)
 
 void ModelRenderer::LoadModel(const char* FileName, MODEL* Model)
 {
-	MODEL_OBJ modelObj;
-	LoadObj(FileName, &modelObj);
+	MODEL_OBJ modelObj = {};
+
+	std::filesystem::path filePath(FileName);
+	std::string ext = filePath.extension().string();
+	std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+
+	if (ext == ".fbx") {
+		LoadFbx(FileName, &modelObj);
+	} else {
+		LoadObj(FileName, &modelObj);
+	}
+
+	if (modelObj.VertexNum == 0 || modelObj.IndexNum == 0) {
+		delete[] modelObj.VertexArray;
+		delete[] modelObj.IndexArray;
+		delete[] modelObj.SubsetArray;
+		return;
+	}
 
 	// _obt@E¬
 	Model->VertexBuffer = Renderer::CreateVertexBuffer(sizeof(Vertex), modelObj.VertexNum);
@@ -265,9 +299,14 @@ void ModelRenderer::LoadModel(const char* FileName, MODEL* Model)
 			Model->SubsetArray[i].StartIndex = modelObj.SubsetArray[i].StartIndex;
 			Model->SubsetArray[i].IndexNum = modelObj.SubsetArray[i].IndexNum;
 			Model->SubsetArray[i].Material.Material = modelObj.SubsetArray[i].Material.Material;
+			strncpy(Model->SubsetArray[i].Material.Name, modelObj.SubsetArray[i].Material.Name, 255);
+			strncpy(Model->SubsetArray[i].Material.TextureName, modelObj.SubsetArray[i].Material.TextureName, 255);
 
-			// eNX`[h
-			Model->SubsetArray[i].Material.Texture = Texture::Load(modelObj.SubsetArray[i].Material.TextureName);
+			if (modelObj.SubsetArray[i].Material.Texture != nullptr) {
+				Model->SubsetArray[i].Material.Texture = modelObj.SubsetArray[i].Material.Texture;
+			} else if (modelObj.SubsetArray[i].Material.TextureName[0] != '\0') {
+				Model->SubsetArray[i].Material.Texture = Texture::Load(modelObj.SubsetArray[i].Material.TextureName);
+			}
 
 			if (Model->SubsetArray[i].Material.Texture)
 				Model->SubsetArray[i].Material.Material.TextureEnable = true;
@@ -276,9 +315,52 @@ void ModelRenderer::LoadModel(const char* FileName, MODEL* Model)
 		}
 	}
 
+	Model->BaseVertices.assign(modelObj.VertexArray, modelObj.VertexArray + modelObj.VertexNum);
+	Model->BaseIndices.assign(modelObj.IndexArray, modelObj.IndexArray + modelObj.IndexNum);
+	Model->AppliedFlipWinding = false;
+	Model->AppliedFlipNormals = false;
+
 	delete[] modelObj.VertexArray;
 	delete[] modelObj.IndexArray;
 	delete[] modelObj.SubsetArray;
+}
+
+void ModelRenderer::ApplyFlipSettings()
+{
+	if (!m_Model || !m_Model->VertexBuffer || !m_Model->IndexBuffer) return;
+	if (m_Model->BaseVertices.empty() || m_Model->BaseIndices.empty()) return;
+
+	if (m_Model->AppliedFlipNormals != m_FlipNormals) {
+		std::vector<Vertex> verts = m_Model->BaseVertices;
+		if (m_FlipNormals) {
+			for (auto& v : verts) {
+				v.normal.x = -v.normal.x;
+				v.normal.y = -v.normal.y;
+				v.normal.z = -v.normal.z;
+			}
+		}
+		void* data = nullptr;
+		if (SUCCEEDED(m_Model->VertexBuffer->Resource->Map(0, nullptr, &data))) {
+			memcpy(data, verts.data(), sizeof(Vertex) * verts.size());
+			m_Model->VertexBuffer->Resource->Unmap(0, nullptr);
+		}
+		m_Model->AppliedFlipNormals = m_FlipNormals;
+	}
+
+	if (m_Model->AppliedFlipWinding != m_FlipWinding) {
+		std::vector<unsigned int> idxs = m_Model->BaseIndices;
+		if (m_FlipWinding) {
+			for (size_t i = 0; i + 2 < idxs.size(); i += 3) {
+				std::swap(idxs[i + 1], idxs[i + 2]);
+			}
+		}
+		void* data = nullptr;
+		if (SUCCEEDED(m_Model->IndexBuffer->Resource->Map(0, nullptr, &data))) {
+			memcpy(data, idxs.data(), sizeof(unsigned int) * idxs.size());
+			m_Model->IndexBuffer->Resource->Unmap(0, nullptr);
+		}
+		m_Model->AppliedFlipWinding = m_FlipWinding;
+	}
 }
 
 
@@ -674,6 +756,312 @@ void ModelRenderer::LoadMaterial(const char* FileName, MODEL_MATERIAL** Material
 	*MaterialNum = materialNum;
 }
 
+
+void ModelRenderer::LoadFbx(const char* FileName, MODEL_OBJ* ModelObj)
+{
+	ModelObj->VertexArray = nullptr;
+	ModelObj->VertexNum = 0;
+	ModelObj->IndexArray = nullptr;
+	ModelObj->IndexNum = 0;
+	ModelObj->SubsetArray = nullptr;
+	ModelObj->SubsetNum = 0;
+
+	if (!FileName || strlen(FileName) == 0) return;
+
+	ufbx_load_opts opts = {};
+	opts.target_axes = ufbx_axes_left_handed_y_up;
+	opts.target_unit_meters = 1.0f;
+	opts.space_conversion = UFBX_SPACE_CONVERSION_MODIFY_GEOMETRY;
+	opts.handedness_conversion_axis = UFBX_MIRROR_AXIS_Z;
+	opts.generate_missing_normals = true;
+	opts.normalize_normals = true;
+	opts.reverse_winding = true;
+	opts.use_blender_pbr_material = true;
+	opts.ignore_missing_external_files = true;
+
+	ufbx_error error;
+	ufbx_scene* scene = ufbx_load_file(FileName, &opts, &error);
+	if (!scene) {
+		OutputDebugStringA("Failed to load FBX file: ");
+		OutputDebugStringA(FileName);
+		OutputDebugStringA(" - ");
+		OutputDebugStringA(error.description.data);
+		OutputDebugStringA("\n");
+		return;
+	}
+
+	std::filesystem::path fbxPath(FileName);
+	std::filesystem::path fbxDir = fbxPath.parent_path();
+
+	std::vector<Vertex> vertices;
+	std::vector<unsigned int> indices;
+	std::vector<SUBSET> subsets;
+
+	for (size_t nodeIdx = 0; nodeIdx < scene->nodes.count; nodeIdx++) {
+		ufbx_node* node = scene->nodes.data[nodeIdx];
+		if (!node || !node->mesh || node->is_geometry_transform_helper) continue;
+
+		ufbx_mesh* mesh = node->mesh;
+		ufbx_matrix geomToWorld = node->geometry_to_world;
+		ufbx_matrix normalMatrix = ufbx_matrix_for_normals(&geomToWorld);
+
+		// Compute bounding box center of this mesh in world space to auto-detect inward vs outward normals
+		XMFLOAT3 minPos = { 1e30f, 1e30f, 1e30f };
+		XMFLOAT3 maxPos = { -1e30f, -1e30f, -1e30f };
+		for (size_t vi = 0; vi < mesh->num_vertices; vi++) {
+			ufbx_vec3 wp = ufbx_transform_position(&geomToWorld, mesh->vertices.data[vi]);
+			if ((float)wp.x < minPos.x) minPos.x = (float)wp.x;
+			if ((float)wp.y < minPos.y) minPos.y = (float)wp.y;
+			if ((float)wp.z < minPos.z) minPos.z = (float)wp.z;
+			if ((float)wp.x > maxPos.x) maxPos.x = (float)wp.x;
+			if ((float)wp.y > maxPos.y) maxPos.y = (float)wp.y;
+			if ((float)wp.z > maxPos.z) maxPos.z = (float)wp.z;
+		}
+		XMFLOAT3 meshCenter = {
+			0.5f * (minPos.x + maxPos.x),
+			0.5f * (minPos.y + maxPos.y),
+			0.5f * (minPos.z + maxPos.z)
+		};
+
+		// Check whether mesh normals point outward or inward relative to meshCenter
+		double normalOutwardSum = 0.0;
+		if (mesh->vertex_normal.exists) {
+			for (size_t idx = 0; idx < mesh->num_indices; idx++) {
+				ufbx_vec3 p = ufbx_transform_position(&geomToWorld, ufbx_get_vertex_vec3(&mesh->vertex_position, idx));
+				ufbx_vec3 n = ufbx_transform_direction(&normalMatrix, ufbx_get_vertex_vec3(&mesh->vertex_normal, idx));
+				double nl = std::sqrt(n.x * n.x + n.y * n.y + n.z * n.z);
+				if (nl > 1e-6) {
+					n.x /= nl; n.y /= nl; n.z /= nl;
+				}
+				normalOutwardSum += (p.x - meshCenter.x) * n.x + (p.y - meshCenter.y) * n.y + (p.z - meshCenter.z) * n.z;
+			}
+		}
+		float normalSign = (normalOutwardSum < 0.0) ? -1.0f : 1.0f;
+
+		size_t maxTriIndices = mesh->max_face_triangles * 3;
+		if (maxTriIndices < 3) maxTriIndices = 3;
+		std::vector<uint32_t> triIndices(maxTriIndices);
+
+		for (size_t partIdx = 0; partIdx < mesh->material_parts.count; partIdx++) {
+			const ufbx_mesh_part& part = mesh->material_parts.data[partIdx];
+			if (part.num_triangles == 0) continue;
+
+			SUBSET subset = {};
+			subset.StartIndex = (unsigned int)indices.size();
+			subset.Material.Material.Diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
+			subset.Material.Material.BaseColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+			subset.Material.Material.Ambient = { 1.0f, 1.0f, 1.0f, 1.0f };
+			subset.Material.Material.Specular = { 0.5f, 0.5f, 0.5f, 1.0f };
+			subset.Material.Material.Emission = { 0.0f, 0.0f, 0.0f, 0.0f };
+			subset.Material.Material.Shininess = 1.0f;
+			subset.Material.Material.Roughness = 0.5f;
+			subset.Material.Material.SpecularPbr = 0.5f;
+			subset.Material.Texture = nullptr;
+			subset.Material.TextureName[0] = '\0';
+			subset.Material.Name[0] = '\0';
+
+			const ufbx_material* mat = nullptr;
+			if (part.index < node->materials.count) {
+				mat = node->materials.data[part.index];
+			} else if (part.index < mesh->materials.count) {
+				mat = mesh->materials.data[part.index];
+			}
+
+			if (mat) {
+				if (mat->name.length > 0) {
+					strncpy(subset.Material.Name, mat->name.data, 255);
+					subset.Material.Name[255] = '\0';
+				}
+
+				// Extract BaseColor / Diffuse
+				if (mat->pbr.base_color.has_value) {
+					ufbx_vec4 c = mat->pbr.base_color.value_vec4;
+					float factor = mat->pbr.base_factor.has_value ? (float)mat->pbr.base_factor.value_real : 1.0f;
+					float alpha = (mat->pbr.base_color.value_components >= 4) ? (float)c.w : 1.0f;
+					subset.Material.Material.Diffuse = { (float)c.x * factor, (float)c.y * factor, (float)c.z * factor, alpha };
+					subset.Material.Material.BaseColor = subset.Material.Material.Diffuse;
+				} else if (mat->fbx.diffuse_color.has_value) {
+					ufbx_vec3 c = mat->fbx.diffuse_color.value_vec3;
+					float factor = mat->fbx.diffuse_factor.has_value ? (float)mat->fbx.diffuse_factor.value_real : 1.0f;
+					subset.Material.Material.Diffuse = { (float)c.x * factor, (float)c.y * factor, (float)c.z * factor, 1.0f };
+					subset.Material.Material.BaseColor = subset.Material.Material.Diffuse;
+				}
+
+				// Extract Texture (BaseColor or Diffuse)
+				const ufbx_texture* ufbxTex = mat->pbr.base_color.texture;
+				if (!ufbxTex) {
+					ufbxTex = mat->fbx.diffuse_color.texture;
+				}
+				if (!ufbxTex && mat->textures.count > 0) {
+					for (size_t ti = 0; ti < mat->textures.count; ti++) {
+						const ufbx_material_texture& mt = mat->textures.data[ti];
+						std::string propName(mt.material_prop.data, mt.material_prop.length);
+						if (propName.find("Diffuse") != std::string::npos || propName.find("BaseColor") != std::string::npos || propName.find("base_color") != std::string::npos) {
+							ufbxTex = mt.texture;
+							break;
+						}
+					}
+				}
+				if (ufbxTex && ufbxTex->type != UFBX_TEXTURE_FILE && ufbxTex->file_textures.count > 0) {
+					ufbxTex = ufbxTex->file_textures.data[0];
+				}
+
+				if (ufbxTex) {
+					ufbx_blob embeddedContent = ufbxTex->content;
+					if ((embeddedContent.size == 0 || !embeddedContent.data) && ufbxTex->has_file && ufbxTex->file_index < scene->texture_files.count) {
+						embeddedContent = scene->texture_files.data[ufbxTex->file_index].content;
+					}
+
+					if (embeddedContent.size > 0 && embeddedContent.data != nullptr) {
+						std::string memKey = std::string(FileName) + "#tex_" + std::to_string(ufbxTex->typed_id);
+						subset.Material.Texture = Texture::LoadFromMemory(memKey, embeddedContent.data, embeddedContent.size);
+						strncpy(subset.Material.TextureName, memKey.c_str(), 255);
+						subset.Material.TextureName[255] = '\0';
+					} else {
+						std::string resolvedTexPath = "";
+						std::vector<std::filesystem::path> candidates;
+						if (ufbxTex->filename.length > 0) {
+							std::filesystem::path p(std::string(ufbxTex->filename.data, ufbxTex->filename.length));
+							candidates.push_back(p);
+							candidates.push_back(fbxDir / p.filename());
+						}
+						if (ufbxTex->relative_filename.length > 0) {
+							std::filesystem::path p(std::string(ufbxTex->relative_filename.data, ufbxTex->relative_filename.length));
+							candidates.push_back(fbxDir / p);
+							candidates.push_back(fbxDir / p.filename());
+						}
+						if (ufbxTex->absolute_filename.length > 0) {
+							std::filesystem::path p(std::string(ufbxTex->absolute_filename.data, ufbxTex->absolute_filename.length));
+							candidates.push_back(fbxDir / p.filename());
+							candidates.push_back(p);
+						}
+
+						for (const auto& cand : candidates) {
+							std::error_code ec;
+							if (std::filesystem::is_regular_file(cand, ec)) {
+								resolvedTexPath = cand.generic_string();
+								break;
+							}
+						}
+						if (resolvedTexPath.empty() && !candidates.empty()) {
+							resolvedTexPath = candidates[0].generic_string();
+						}
+						if (!resolvedTexPath.empty()) {
+							strncpy(subset.Material.TextureName, resolvedTexPath.c_str(), 255);
+							subset.Material.TextureName[255] = '\0';
+						}
+					}
+				}
+			}
+
+			for (size_t f = 0; f < part.num_faces; f++) {
+				ufbx_face face = mesh->faces.data[part.face_indices.data[f]];
+				if (face.num_indices < 3) continue;
+
+				uint32_t numTris = ufbx_triangulate_face(triIndices.data(), triIndices.size(), mesh, face);
+				for (uint32_t t = 0; t < numTris; t++) {
+					Vertex triVerts[3];
+					for (int corner = 0; corner < 3; corner++) {
+						uint32_t idx = triIndices[t * 3 + corner];
+
+						ufbx_vec3 pos = ufbx_get_vertex_vec3(&mesh->vertex_position, idx);
+						pos = ufbx_transform_position(&geomToWorld, pos);
+
+						ufbx_vec3 norm = { 0.0f, 1.0f, 0.0f };
+						if (mesh->vertex_normal.exists) {
+							norm = ufbx_get_vertex_vec3(&mesh->vertex_normal, idx);
+							norm = ufbx_transform_direction(&normalMatrix, norm);
+							float len = std::sqrt((float)(norm.x * norm.x + norm.y * norm.y + norm.z * norm.z));
+							if (len > 1e-6f) {
+								norm.x = (norm.x / len) * normalSign;
+								norm.y = (norm.y / len) * normalSign;
+								norm.z = (norm.z / len) * normalSign;
+							}
+						}
+
+						ufbx_vec2 uv = { 0.0f, 0.0f };
+						if (mesh->vertex_uv.exists) {
+							uv = ufbx_get_vertex_vec2(&mesh->vertex_uv, idx);
+							uv.y = 1.0f - (float)uv.y;
+						}
+
+						ufbx_vec4 col = { 1.0f, 1.0f, 1.0f, 1.0f };
+						if (mesh->vertex_color.exists) {
+							col = ufbx_get_vertex_vec4(&mesh->vertex_color, idx);
+						}
+
+						triVerts[corner].position = XMFLOAT3((float)pos.x, (float)pos.y, (float)pos.z);
+						triVerts[corner].normal = XMFLOAT3((float)norm.x, (float)norm.y, (float)norm.z);
+						triVerts[corner].uv = XMFLOAT2((float)uv.x, (float)uv.y);
+						triVerts[corner].color = XMFLOAT4((float)col.x, (float)col.y, (float)col.z, (float)col.w);
+					}
+
+					// Auto-align triangle winding to CW (FrontCounterClockwise = FALSE) relative to outward normal
+					XMFLOAT3 e1 = {
+						triVerts[1].position.x - triVerts[0].position.x,
+						triVerts[1].position.y - triVerts[0].position.y,
+						triVerts[1].position.z - triVerts[0].position.z
+					};
+					XMFLOAT3 e2 = {
+						triVerts[2].position.x - triVerts[0].position.x,
+						triVerts[2].position.y - triVerts[0].position.y,
+						triVerts[2].position.z - triVerts[0].position.z
+					};
+					XMFLOAT3 faceCross = {
+						e1.y * e2.z - e1.z * e2.y,
+						e1.z * e2.x - e1.x * e2.z,
+						e1.x * e2.y - e1.y * e2.x
+					};
+					XMFLOAT3 avgNorm = {
+						triVerts[0].normal.x + triVerts[1].normal.x + triVerts[2].normal.x,
+						triVerts[0].normal.y + triVerts[1].normal.y + triVerts[2].normal.y,
+						triVerts[0].normal.z + triVerts[1].normal.z + triVerts[2].normal.z
+					};
+					float windingDot = faceCross.x * avgNorm.x + faceCross.y * avgNorm.y + faceCross.z * avgNorm.z;
+
+					unsigned int baseVertIdx = (unsigned int)vertices.size();
+					vertices.push_back(triVerts[0]);
+					vertices.push_back(triVerts[1]);
+					vertices.push_back(triVerts[2]);
+
+					if (windingDot < 0.0f) {
+						indices.push_back(baseVertIdx + 0);
+						indices.push_back(baseVertIdx + 2);
+						indices.push_back(baseVertIdx + 1);
+					} else {
+						indices.push_back(baseVertIdx + 0);
+						indices.push_back(baseVertIdx + 1);
+						indices.push_back(baseVertIdx + 2);
+					}
+				}
+			}
+
+			subset.IndexNum = (unsigned int)indices.size() - subset.StartIndex;
+			if (subset.IndexNum > 0) {
+				subsets.push_back(subset);
+			}
+		}
+	}
+
+	ufbx_free_scene(scene);
+
+	if (vertices.empty() || indices.empty()) {
+		return;
+	}
+
+	ModelObj->VertexNum = (unsigned int)vertices.size();
+	ModelObj->VertexArray = new Vertex[ModelObj->VertexNum];
+	memcpy(ModelObj->VertexArray, vertices.data(), sizeof(Vertex) * ModelObj->VertexNum);
+
+	ModelObj->IndexNum = (unsigned int)indices.size();
+	ModelObj->IndexArray = new unsigned int[ModelObj->IndexNum];
+	memcpy(ModelObj->IndexArray, indices.data(), sizeof(unsigned int) * ModelObj->IndexNum);
+
+	ModelObj->SubsetNum = (unsigned int)subsets.size();
+	ModelObj->SubsetArray = new SUBSET[ModelObj->SubsetNum];
+	memcpy(ModelObj->SubsetArray, subsets.data(), sizeof(SUBSET) * ModelObj->SubsetNum);
+}
+
 std::string ModelRenderer::GetLoadedFileName() const {
 	if (!m_Model) return "";
 	for (const auto& pair : m_ModelPool) {
@@ -698,7 +1086,7 @@ void ModelRenderer::ShowUI() {
 	if (ImGui::BeginCombo("Select Model", currentFileName.c_str())) {
 		std::string modelDir = "asset/model";
 		if (std::filesystem::exists(modelDir) && std::filesystem::is_directory(modelDir)) {
-			for (const auto& entry : std::filesystem::directory_iterator(modelDir)) {
+			for (const auto& entry : std::filesystem::recursive_directory_iterator(modelDir)) {
 				if (entry.is_regular_file()) {
 					std::filesystem::path filePath = entry.path();
 					std::string ext = filePath.extension().string();
@@ -722,6 +1110,23 @@ void ModelRenderer::ShowUI() {
 		ImGui::EndCombo();
 	}
 
+	ImGui::Spacing();
+	ImGui::Text("Culling & Winding Options:");
+	const char* cullItems[] = { "Back (Default)", "Front (Inverted)", "None (Double-Sided)" };
+	ImGui::Combo("Cull Mode", &m_CullMode, cullItems, IM_ARRAYSIZE(cullItems));
+
+	if (ImGui::Checkbox("Flip Winding (Indices)", &m_FlipWinding)) {
+		ApplyFlipSettings();
+	}
+	if (ImGui::Checkbox("Flip Normals", &m_FlipNormals)) {
+		ApplyFlipSettings();
+	}
+	if (ImGui::Button("Invert Both (Winding & Normals)")) {
+		m_FlipWinding = !m_FlipWinding;
+		m_FlipNormals = !m_FlipNormals;
+		ApplyFlipSettings();
+	}
+
 	if (m_Model) {
 		ImGui::Spacing();
 		ImGui::Text("Loaded Model Info:");
@@ -735,4 +1140,3 @@ void ModelRenderer::ShowUI() {
 		}
 	}
 }
-

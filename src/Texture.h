@@ -21,6 +21,7 @@ private:
 
 public:
 	static const TEXTURE* Load(const char* FileName);
+	static const TEXTURE* LoadFromMemory(const std::string& key, const void* data, size_t size);
 };
 
 #endif // !_TEXTURE_H_

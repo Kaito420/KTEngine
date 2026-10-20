@@ -36,6 +36,7 @@
     <ClCompile Include="libs\imgui\imgui_draw.cpp" />
     <ClCompile Include="libs\imgui\imgui_tables.cpp" />
     <ClCompile Include="libs\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="libs\ufbx\ufbx.c" />
     <ClCompile Include="src\Billboard.cpp" />
     <ClCompile Include="src\BillboardEffect.cpp" />
     <ClCompile Include="src\Block.cpp" />
@@ -105,6 +106,7 @@
     <ClInclude Include="libs\imgui\imstb_rectpack.h" />
     <ClInclude Include="libs\imgui\imstb_textedit.h" />
     <ClInclude Include="libs\imgui\imstb_truetype.h" />
+    <ClInclude Include="libs\ufbx\ufbx.h" />
     <ClInclude Include="src\Billboard.h" />
     <ClInclude Include="src\BillboardEffect.h" />
     <ClInclude Include="src\Block.h" />
@@ -446,7 +448,7 @@
       <PreprocessorDefinitions>
       </PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)libs\cereal;$(ProjectDir)libs\imgui\backends;$(ProjectDir)libs\imgui;$(ProjectDir)libs;$(ProjectDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)libs\ufbx;$(ProjectDir)libs\cereal;$(ProjectDir)libs\imgui\backends;$(ProjectDir)libs\imgui;$(ProjectDir)libs;$(ProjectDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <LanguageStandard>stdcpp17</LanguageStandard>
@@ -475,7 +477,7 @@
       <PreprocessorDefinitions>
       </PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)libs\cereal;$(ProjectDir)libs\imgui\backends;$(ProjectDir)libs\imgui;$(ProjectDir)libs;$(ProjectDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)libs\ufbx;$(ProjectDir)libs\cereal;$(ProjectDir)libs\imgui\backends;$(ProjectDir)libs\imgui;$(ProjectDir)libs;$(ProjectDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <LanguageStandard>stdcpp17</LanguageStandard>
@@ -504,7 +506,7 @@
       <SDLCheck>false</SDLCheck>
       <PreprocessorDefinitions>DEVELOPMENT;_DEVELOPMENT;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)libs\cereal;$(ProjectDir)libs\imgui\backends;$(ProjectDir)libs\imgui;$(ProjectDir)libs;$(ProjectDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)libs\ufbx;$(ProjectDir)libs\cereal;$(ProjectDir)libs\imgui\backends;$(ProjectDir)libs\imgui;$(ProjectDir)libs;$(ProjectDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <LanguageStandard>stdcpp17</LanguageStandard>

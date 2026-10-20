@@ -35,8 +35,9 @@ void Capsule::CreateCapsuleMesh(float height, float radius, int latitudes, int l
 
 			Vertex vertex;
 			vertex.position = { x, y + currentYOffset, z };
-			KTVECTOR3 normal = KTVECTOR3(x, y, z);
-			normal = normal.Normalize();
+			KTVECTOR3 normal = (i == latitudes / 2 || i == latitudes / 2 + 1)
+				? KTVECTOR3(x, 0.0f, z).Normalize()
+				: KTVECTOR3(x, y, z).Normalize();
 			vertex.normal = { normal.x, normal.y, normal.z };
 			vertex.uv = XMFLOAT2(u, v);
 			vertex.color = { 1.0f, 1.0f, 1.0f, 1.0f };
@@ -50,12 +51,12 @@ void Capsule::CreateCapsuleMesh(float height, float radius, int latitudes, int l
 			int second = first + longitudes + 1;
 
 			indices.push_back(first);
-			indices.push_back(second);
 			indices.push_back(first + 1);
+			indices.push_back(second);
 
 			indices.push_back(second);
-			indices.push_back(second + 1);
 			indices.push_back(first + 1);
+			indices.push_back(second + 1);
 		}
 	}
 }
