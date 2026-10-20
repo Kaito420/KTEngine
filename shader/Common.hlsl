@@ -80,12 +80,37 @@ cbuffer CameraBuffer : register(b5)
     float4 CameraPosition;
 }
 
+#define MAX_BONES 128
+cbuffer BoneBuffer : register(b6)
+{
+    matrix BoneMatrices[MAX_BONES];
+    int    HasSkinning;
+    float3 PaddingBone;
+}
+
 struct VS_IN{
-    float3 Position : POSITION0;
-    float3 Normal : NORMAL0;
-    float4 Diffuse : COLOR0;
-    float2 TexCoord : TEXCOORD0;
+    float3 Position    : POSITION0;
+    float3 Normal      : NORMAL0;
+    float4 Diffuse     : COLOR0;
+    float2 TexCoord    : TEXCOORD0;
+    uint4  BoneIndices : BLENDINDICES0;
+    float4 BoneWeights : BLENDWEIGHT0;
 };
+
+void ApplySkinning(inout float4 pos, inout float4 norm, uint4 indices, float4 weights)
+{
+    float weightSum = weights.x + weights.y + weights.z + weights.w;
+    if (HasSkinning != 0 && weightSum > 0.0001f)
+    {
+        matrix skinMat =
+            BoneMatrices[indices.x] * weights.x +
+            BoneMatrices[indices.y] * weights.y +
+            BoneMatrices[indices.z] * weights.z +
+            BoneMatrices[indices.w] * weights.w;
+        pos = mul(pos, skinMat);
+        norm = float4(mul(norm.xyz, (float3x3)skinMat), 0.0f);
+    }
+}
 
 struct PS_IN{
     float4 Position : SV_POSITION;

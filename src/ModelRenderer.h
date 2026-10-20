@@ -29,6 +29,18 @@ struct SUBSET
 };
 
 
+#include <vector>
+#include <string>
+
+// ボーン階層・逆バインド行列情報
+struct BoneInfo
+{
+	std::string Name;
+	int ParentIndex = -1;
+	XMFLOAT4X4 InverseBindMatrix;
+	XMFLOAT4X4 DefaultLocalTransform;
+};
+
 // オブジェクトデータ構造体
 struct MODEL_OBJ
 {
@@ -40,9 +52,10 @@ struct MODEL_OBJ
 
 	SUBSET* SubsetArray;
 	unsigned int	SubsetNum;
-};
 
-#include <vector>
+	std::vector<BoneInfo> Bones;
+	bool HasSkinning = false;
+};
 
 struct MODEL
 {
@@ -56,6 +69,9 @@ struct MODEL
 
 	SUBSET* SubsetArray;
 	unsigned int	SubsetNum;
+
+	std::vector<BoneInfo> Bones;
+	bool HasSkinning = false;
 };
 
 
@@ -82,7 +98,12 @@ private:
 	bool m_FlipNormals = false;
 	int m_CullMode = 0; // 0: Back (Default), 1: Front, 2: None (Double-Sided)
 
+	mutable BONE_BUFFER m_BoneBuffer{};
+	int m_TestBoneIndex = 0;
+	XMFLOAT3 m_TestBoneRotation = { 0.0f, 0.0f, 0.0f };
+
 	void ApplyFlipSettings();
+	void UpdateBoneMatrices() const;
 
 public:
 

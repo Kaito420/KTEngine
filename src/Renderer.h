@@ -39,12 +39,23 @@ struct ID3D12CommandQueue;
 #define SCREEN_WIDTH (1920)
 #define SCREEN_HEIGHT (1080)
 
+#include <cstdint>
+
 // 頂点構造体
 struct Vertex {
-    XMFLOAT3 position;
-    XMFLOAT3 normal;
-    XMFLOAT4 color;
-    XMFLOAT2 uv;
+    XMFLOAT3 position = { 0.0f, 0.0f, 0.0f };
+    XMFLOAT3 normal = { 0.0f, 1.0f, 0.0f };
+    XMFLOAT4 color = { 1.0f, 1.0f, 1.0f, 1.0f };
+    XMFLOAT2 uv = { 0.0f, 0.0f };
+    uint32_t boneIndices[4] = { 0, 0, 0, 0 };
+    float    boneWeights[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+};
+
+static constexpr int MAX_BONES = 128;
+struct BONE_BUFFER {
+    XMFLOAT4X4 BoneMatrices[MAX_BONES];
+    int        HasSkinning = 0;
+    float      PaddingBone[3] = { 0.0f, 0.0f, 0.0f };
 };
 
 // マテリアル構造体
@@ -153,6 +164,7 @@ namespace RendererDX12 {
     unsigned int CreateShaderResourceView(ID3D12Resource* resource);
     void ReleaseShaderResourceView(unsigned int index);
     void SetConstant(int slot, const void* data, unsigned int size);
+    void SetBoneBuffer(const BONE_BUFFER* boneBuffer);
     void SetTexture(int slot, const TEXTURE* texture);
     void DrawFullScreenQuad();
     bool IsGeometryPass();
@@ -271,6 +283,7 @@ namespace Renderer {
     std::unique_ptr<INDEX_BUFFER> CreateIndexBuffer(unsigned int size);
     void ReleaseTextureSrv(unsigned int index);
     void SetConstant(int slot, const void* data, unsigned int size);
+    void SetBoneBuffer(const BONE_BUFFER* boneBuffer);
     void SetTexture(int slot, const TEXTURE* texture);
     void DrawFullScreenQuad();
     bool IsGeometryPass();

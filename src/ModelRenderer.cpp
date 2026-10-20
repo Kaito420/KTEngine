@@ -63,10 +63,17 @@ void ModelRenderer::Render() const
 		cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		cmdList->SetPipelineState(Renderer::GetShadowPipelineState());
 		Renderer::SetWorldMatrix(worldMatrix);
+		if (m_Model->HasSkinning) {
+			UpdateBoneMatrices();
+			Renderer::SetBoneBuffer(&m_BoneBuffer);
+		} else {
+			Renderer::SetBoneBuffer(nullptr);
+		}
 		for (unsigned int i = 0; i < m_Model->SubsetNum; i++) {
 			cmdList->DrawIndexedInstanced(m_Model->SubsetArray[i].IndexNum, 1, m_Model->SubsetArray[i].StartIndex, 0, 0);
 			Profiler::RecordDrawCall(m_Model->VertexBuffer ? (int)m_Model->VertexBuffer->Size : 0, (int)m_Model->SubsetArray[i].IndexNum);
 		}
+		Renderer::SetBoneBuffer(nullptr);
 		return;
 	}
 
@@ -108,6 +115,12 @@ void ModelRenderer::Render() const
 	}
 
 	Renderer::SetWorldMatrix(worldMatrix);
+	if (m_Model->HasSkinning) {
+		UpdateBoneMatrices();
+		Renderer::SetBoneBuffer(&m_BoneBuffer);
+	} else {
+		Renderer::SetBoneBuffer(nullptr);
+	}
 
 	for (unsigned int i = 0; i < m_Model->SubsetNum; i++)
 	{
@@ -180,6 +193,7 @@ void ModelRenderer::Render() const
 		cmdList->DrawIndexedInstanced(m_Model->SubsetArray[i].IndexNum, 1, m_Model->SubsetArray[i].StartIndex, 0, 0);
 		Profiler::RecordDrawCall(m_Model->VertexBuffer ? (int)m_Model->VertexBuffer->Size : 0, (int)m_Model->SubsetArray[i].IndexNum);
 	}
+	Renderer::SetBoneBuffer(nullptr);
 }
 
 void ModelRenderer::Preload(const char* FileName)
@@ -317,6 +331,8 @@ void ModelRenderer::LoadModel(const char* FileName, MODEL* Model)
 
 	Model->BaseVertices.assign(modelObj.VertexArray, modelObj.VertexArray + modelObj.VertexNum);
 	Model->BaseIndices.assign(modelObj.IndexArray, modelObj.IndexArray + modelObj.IndexNum);
+	Model->Bones = std::move(modelObj.Bones);
+	Model->HasSkinning = modelObj.HasSkinning;
 	Model->AppliedFlipWinding = false;
 	Model->AppliedFlipNormals = false;
 
@@ -757,6 +773,56 @@ void ModelRenderer::LoadMaterial(const char* FileName, MODEL_MATERIAL** Material
 }
 
 
+static XMMATRIX UfbxMatrixToXMMatrix(const ufbx_matrix& m)
+{
+	return XMMATRIX(
+		(float)m.m00, (float)m.m10, (float)m.m20, 0.0f,
+		(float)m.m01, (float)m.m11, (float)m.m21, 0.0f,
+		(float)m.m02, (float)m.m12, (float)m.m22, 0.0f,
+		(float)m.m03, (float)m.m13, (float)m.m23, 1.0f
+	);
+}
+
+void ModelRenderer::UpdateBoneMatrices() const
+{
+	if (!m_Model || !m_Model->HasSkinning || m_Model->Bones.empty()) {
+		m_BoneBuffer.HasSkinning = 0;
+		return;
+	}
+
+	m_BoneBuffer.HasSkinning = 1;
+	size_t numBones = m_Model->Bones.size();
+	if (numBones > MAX_BONES) numBones = MAX_BONES;
+
+	std::vector<XMMATRIX> globalMatrices(numBones, XMMatrixIdentity());
+	for (size_t i = 0; i < numBones; i++) {
+		XMMATRIX localMat = XMLoadFloat4x4(&m_Model->Bones[i].DefaultLocalTransform);
+		if ((int)i == m_TestBoneIndex && (m_TestBoneRotation.x != 0.0f || m_TestBoneRotation.y != 0.0f || m_TestBoneRotation.z != 0.0f)) {
+			XMMATRIX rotMat = XMMatrixRotationRollPitchYaw(
+				XMConvertToRadians(m_TestBoneRotation.x),
+				XMConvertToRadians(m_TestBoneRotation.y),
+				XMConvertToRadians(m_TestBoneRotation.z)
+			);
+			localMat = rotMat * localMat;
+		}
+
+		int parentIdx = m_Model->Bones[i].ParentIndex;
+		if (parentIdx >= 0 && parentIdx < (int)i) {
+			globalMatrices[i] = localMat * globalMatrices[parentIdx];
+		} else {
+			globalMatrices[i] = localMat;
+		}
+
+		XMMATRIX invBind = XMLoadFloat4x4(&m_Model->Bones[i].InverseBindMatrix);
+		XMMATRIX finalMat = invBind * globalMatrices[i];
+		XMStoreFloat4x4(&m_BoneBuffer.BoneMatrices[i], XMMatrixTranspose(finalMat));
+	}
+
+	for (size_t i = numBones; i < MAX_BONES; i++) {
+		XMStoreFloat4x4(&m_BoneBuffer.BoneMatrices[i], XMMatrixIdentity());
+	}
+}
+
 void ModelRenderer::LoadFbx(const char* FileName, MODEL_OBJ* ModelObj)
 {
 	ModelObj->VertexArray = nullptr;
@@ -765,6 +831,8 @@ void ModelRenderer::LoadFbx(const char* FileName, MODEL_OBJ* ModelObj)
 	ModelObj->IndexNum = 0;
 	ModelObj->SubsetArray = nullptr;
 	ModelObj->SubsetNum = 0;
+	ModelObj->Bones.clear();
+	ModelObj->HasSkinning = false;
 
 	if (!FileName || strlen(FileName) == 0) return;
 
@@ -776,6 +844,7 @@ void ModelRenderer::LoadFbx(const char* FileName, MODEL_OBJ* ModelObj)
 	opts.generate_missing_normals = true;
 	opts.normalize_normals = true;
 	opts.reverse_winding = true;
+	opts.clean_skin_weights = true;
 	opts.use_blender_pbr_material = true;
 	opts.ignore_missing_external_files = true;
 
@@ -788,6 +857,38 @@ void ModelRenderer::LoadFbx(const char* FileName, MODEL_OBJ* ModelObj)
 		OutputDebugStringA(error.description.data);
 		OutputDebugStringA("\n");
 		return;
+	}
+
+	// Build bone hierarchy (parent-first topological order via DFS from root_node)
+	std::vector<int> nodeToBoneIndex(scene->nodes.count, -1);
+	if (scene->skin_deformers.count > 0 && scene->root_node) {
+		std::vector<ufbx_node*> stack;
+		stack.push_back(scene->root_node);
+		while (!stack.empty() && ModelObj->Bones.size() < MAX_BONES) {
+			ufbx_node* cur = stack.back();
+			stack.pop_back();
+
+			int boneIdx = (int)ModelObj->Bones.size();
+			nodeToBoneIndex[cur->typed_id] = boneIdx;
+
+			BoneInfo bi;
+			if (cur->name.length > 0) {
+				bi.Name = std::string(cur->name.data, cur->name.length);
+			} else {
+				bi.Name = cur->is_root ? "Root" : ("Node_" + std::to_string(cur->typed_id));
+			}
+			bi.ParentIndex = (cur->parent && cur->parent->typed_id < nodeToBoneIndex.size())
+				? nodeToBoneIndex[cur->parent->typed_id]
+				: -1;
+			XMStoreFloat4x4(&bi.DefaultLocalTransform, UfbxMatrixToXMMatrix(cur->node_to_parent));
+			XMStoreFloat4x4(&bi.InverseBindMatrix, XMMatrixIdentity());
+			ModelObj->Bones.push_back(bi);
+
+			// Push children in reverse order so they are popped in forward order
+			for (size_t ci = cur->children.count; ci > 0; ci--) {
+				stack.push_back(cur->children.data[ci - 1]);
+			}
+		}
 	}
 
 	std::filesystem::path fbxPath(FileName);
@@ -804,6 +905,26 @@ void ModelRenderer::LoadFbx(const char* FileName, MODEL_OBJ* ModelObj)
 		ufbx_mesh* mesh = node->mesh;
 		ufbx_matrix geomToWorld = node->geometry_to_world;
 		ufbx_matrix normalMatrix = ufbx_matrix_for_normals(&geomToWorld);
+
+		// Extract skinning cluster mappings and inverse bind matrices for this mesh
+		ufbx_skin_deformer* skin = (mesh->skin_deformers.count > 0) ? mesh->skin_deformers.data[0] : nullptr;
+		std::vector<int> clusterToBoneIndex;
+		if (skin && !ModelObj->Bones.empty()) {
+			ufbx_matrix invGeomToWorld = ufbx_matrix_invert(&geomToWorld);
+			clusterToBoneIndex.assign(skin->clusters.count, -1);
+			for (size_t ci = 0; ci < skin->clusters.count; ci++) {
+				ufbx_skin_cluster* cluster = skin->clusters.data[ci];
+				if (cluster && cluster->bone_node && cluster->bone_node->typed_id < nodeToBoneIndex.size()) {
+					int bIdx = nodeToBoneIndex[cluster->bone_node->typed_id];
+					if (bIdx >= 0 && bIdx < (int)ModelObj->Bones.size()) {
+						clusterToBoneIndex[ci] = bIdx;
+						ufbx_matrix invBind = ufbx_matrix_mul(&cluster->geometry_to_bone, &invGeomToWorld);
+						XMStoreFloat4x4(&ModelObj->Bones[bIdx].InverseBindMatrix, UfbxMatrixToXMMatrix(invBind));
+						ModelObj->HasSkinning = true;
+					}
+				}
+			}
+		}
 
 		// Compute bounding box center of this mesh in world space to auto-detect inward vs outward normals
 		XMFLOAT3 minPos = { 1e30f, 1e30f, 1e30f };
@@ -948,7 +1069,7 @@ void ModelRenderer::LoadFbx(const char* FileName, MODEL_OBJ* ModelObj)
 						}
 						if (!resolvedTexPath.empty()) {
 							strncpy(subset.Material.TextureName, resolvedTexPath.c_str(), 255);
-							subset.Material.TextureName[255] = '\0';
+						subset.Material.TextureName[255] = '\0';
 						}
 					}
 				}
@@ -994,6 +1115,33 @@ void ModelRenderer::LoadFbx(const char* FileName, MODEL_OBJ* ModelObj)
 						triVerts[corner].normal = XMFLOAT3((float)norm.x, (float)norm.y, (float)norm.z);
 						triVerts[corner].uv = XMFLOAT2((float)uv.x, (float)uv.y);
 						triVerts[corner].color = XMFLOAT4((float)col.x, (float)col.y, (float)col.z, (float)col.w);
+
+						// Extract up to 4 skinning weights per vertex
+						if (skin && idx < mesh->vertex_indices.count) {
+							uint32_t vertexIdx = mesh->vertex_indices.data[idx];
+							if (vertexIdx < skin->vertices.count) {
+								ufbx_skin_vertex sv = skin->vertices.data[vertexIdx];
+								float weightSum = 0.0f;
+								int assigned = 0;
+								for (uint32_t wi = 0; wi < sv.num_weights && assigned < 4; wi++) {
+									ufbx_skin_weight sw = skin->weights.data[sv.weight_begin + wi];
+									if (sw.cluster_index < clusterToBoneIndex.size()) {
+										int boneIdx = clusterToBoneIndex[sw.cluster_index];
+										if (boneIdx >= 0 && sw.weight > 0.0f) {
+											triVerts[corner].boneIndices[assigned] = (uint32_t)boneIdx;
+											triVerts[corner].boneWeights[assigned] = (float)sw.weight;
+											weightSum += (float)sw.weight;
+											assigned++;
+										}
+									}
+								}
+								if (weightSum > 1e-6f) {
+									for (int wi = 0; wi < 4; wi++) {
+										triVerts[corner].boneWeights[wi] /= weightSum;
+									}
+								}
+							}
+						}
 					}
 
 					// Auto-align triangle winding to CW (FrontCounterClockwise = FALSE) relative to outward normal
@@ -1137,6 +1285,35 @@ void ModelRenderer::ShowUI() {
 		}
 		if (m_Model->IndexBuffer) {
 			ImGui::Text(" - Indices: %u", m_Model->IndexBuffer->Size);
+		}
+		ImGui::Text(" - Skinning: %s (%zu Bones)", m_Model->HasSkinning ? "Enabled" : "None", m_Model->Bones.size());
+
+		if (m_Model->HasSkinning && !m_Model->Bones.empty()) {
+			ImGui::Spacing();
+			if (ImGui::TreeNode("Skeleton & Bone Skinning Test")) {
+				if (m_TestBoneIndex < 0 || m_TestBoneIndex >= (int)m_Model->Bones.size()) {
+					m_TestBoneIndex = 0;
+				}
+				const char* currentBoneName = m_Model->Bones[m_TestBoneIndex].Name.c_str();
+				if (ImGui::BeginCombo("Select Bone", currentBoneName)) {
+					for (int bi = 0; bi < (int)m_Model->Bones.size(); bi++) {
+						bool isSelected = (m_TestBoneIndex == bi);
+						std::string label = "[" + std::to_string(bi) + "] " + m_Model->Bones[bi].Name;
+						if (ImGui::Selectable(label.c_str(), isSelected)) {
+							m_TestBoneIndex = bi;
+						}
+						if (isSelected) {
+							ImGui::SetItemDefaultFocus();
+						}
+					}
+					ImGui::EndCombo();
+				}
+				ImGui::DragFloat3("Bone Rot (Deg)", &m_TestBoneRotation.x, 1.0f, -180.0f, 180.0f);
+				if (ImGui::Button("Reset Bone Rotation")) {
+					m_TestBoneRotation = { 0.0f, 0.0f, 0.0f };
+				}
+				ImGui::TreePop();
+			}
 		}
 	}
 }

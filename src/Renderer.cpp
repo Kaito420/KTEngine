@@ -178,6 +178,10 @@ namespace Renderer {
         RendererDX12::SetConstant(slot, data, size);
     }
 
+    void SetBoneBuffer(const BONE_BUFFER* boneBuffer) {
+        RendererDX12::SetBoneBuffer(boneBuffer);
+    }
+
     void SetTexture(int slot, const TEXTURE* texture) {
         RendererDX12::SetTexture(slot, texture);
     }

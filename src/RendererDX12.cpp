@@ -244,6 +244,12 @@ namespace RendererDX12 {
     unsigned int g_constantBufferView[FrameCount][CONSTANT_BUFFER_MAX];
     unsigned int g_constantBufferIndex[FrameCount] = { 0 };
 
+    static const unsigned int BONE_BUFFER_ALIGNED_SIZE = (sizeof(BONE_BUFFER) + 255) & ~255;
+    static const unsigned int BONE_BUFFER_MAX = 256;
+    ComPtr<ID3D12Resource> g_boneConstantBuffer[FrameCount];
+    byte* g_boneConstantBufferPointer[FrameCount] = { nullptr };
+    unsigned int g_boneBufferIndex[FrameCount] = { 1 };
+
     // 記述子ハンドル取得ヘルパー
     D3D12_CPU_DESCRIPTOR_HANDLE GetRtvHandle(int index) {
         D3D12_CPU_DESCRIPTOR_HANDLE handle = g_pd3dRtvDescHeap->GetCPUDescriptorHandleForHeapStart();
@@ -425,7 +431,7 @@ namespace RendererDX12 {
 
         // ルートシグネチャ生成
         {
-            D3D12_ROOT_PARAMETER rootParameters[14] = {};
+            D3D12_ROOT_PARAMETER rootParameters[15] = {};
             D3D12_DESCRIPTOR_RANGE range[14] = {};
 
             // 定数バッファ (0〜5)
@@ -453,6 +459,12 @@ namespace RendererDX12 {
                 rootParameters[i].DescriptorTable.NumDescriptorRanges = 1;
                 rootParameters[i].DescriptorTable.pDescriptorRanges = &range[i];
             }
+
+            // ボーン定数バッファ (スロット14 -> register b6, Root CBV)
+            rootParameters[14].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+            rootParameters[14].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+            rootParameters[14].Descriptor.ShaderRegister = 6;
+            rootParameters[14].Descriptor.RegisterSpace = 0;
 
             // サンプラー (Static Samplers)
             D3D12_STATIC_SAMPLER_DESC samplerDesc[3] = {};
@@ -544,6 +556,29 @@ namespace RendererDX12 {
                 g_constantBufferView[i][j] = index;
             }
             g_constantBufferIndex[i] = 0;
+
+            // スキニング用ボーン定数バッファ生成 (スロット0はHasSkinning=0のデフォルト領域として予約)
+            auto boneBufDesc = CD3DX12_RESOURCE_DESC::Buffer(BONE_BUFFER_ALIGNED_SIZE * BONE_BUFFER_MAX);
+            hr = g_pd3dDevice->CreateCommittedResource(
+                &heapProperties,
+                D3D12_HEAP_FLAG_NONE,
+                &boneBufDesc,
+                D3D12_RESOURCE_STATE_GENERIC_READ,
+                nullptr,
+                IID_PPV_ARGS(&g_boneConstantBuffer[i])
+            );
+            assert(SUCCEEDED(hr));
+
+            hr = g_boneConstantBuffer[i]->Map(0, nullptr, (void**)&g_boneConstantBufferPointer[i]);
+            assert(SUCCEEDED(hr));
+
+            BONE_BUFFER defaultBoneBuf = {};
+            defaultBoneBuf.HasSkinning = 0;
+            for (int b = 0; b < MAX_BONES; b++) {
+                XMStoreFloat4x4(&defaultBoneBuf.BoneMatrices[b], XMMatrixIdentity());
+            }
+            memcpy(g_boneConstantBufferPointer[i], &defaultBoneBuf, sizeof(BONE_BUFFER));
+            g_boneBufferIndex[i] = 1;
         }
 
         // 各種標準シェーダーの事前ロード
@@ -686,10 +721,12 @@ namespace RendererDX12 {
             psoDesc.PS.BytecodeLength = 0;
             // 入力レイアウト
             static const D3D12_INPUT_ELEMENT_DESC inputElementDescs[] = {
-                { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-                { "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-                { "COLOR",    0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-                { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0, 40, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+                { "POSITION",     0, DXGI_FORMAT_R32G32B32_FLOAT,    0, 0,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+                { "NORMAL",       0, DXGI_FORMAT_R32G32B32_FLOAT,    0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+                { "COLOR",        0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+                { "TEXCOORD",     0, DXGI_FORMAT_R32G32_FLOAT,       0, 40, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+                { "BLENDINDICES", 0, DXGI_FORMAT_R32G32B32A32_UINT,  0, 48, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+                { "BLENDWEIGHT",  0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 64, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
             };
             psoDesc.InputLayout.pInputElementDescs = inputElementDescs;
             psoDesc.InputLayout.NumElements = _countof(inputElementDescs);
@@ -742,6 +779,10 @@ namespace RendererDX12 {
             if (g_constantBuffer[i]) {
                 g_constantBuffer[i]->Unmap(0, nullptr);
                 g_constantBuffer[i].Reset();
+            }
+            if (g_boneConstantBuffer[i]) {
+                g_boneConstantBuffer[i]->Unmap(0, nullptr);
+                g_boneConstantBuffer[i].Reset();
             }
             g_mainRenderTargetResource[i].Reset();
             g_commandAllocators[i].Reset();
@@ -796,10 +837,12 @@ namespace RendererDX12 {
         g_pd3dCommandList->Reset(g_commandAllocators[g_frameIndex].Get(), nullptr);
 
         g_constantBufferIndex[g_frameIndex] = 0;
+        g_boneBufferIndex[g_frameIndex] = 1;
 
         ID3D12DescriptorHeap* descriptorHeaps[] = { g_pd3dSrvDescHeap.Get() };
         g_pd3dCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
         g_pd3dCommandList->SetGraphicsRootSignature(g_pd3dRootSignature.Get());
+        g_pd3dCommandList->SetGraphicsRootConstantBufferView(14, g_boneConstantBuffer[g_frameIndex]->GetGPUVirtualAddress());
 
         if (g_gameRenderTarget) {
             if (g_isGeometryPass) {
@@ -856,6 +899,7 @@ namespace RendererDX12 {
         g_currentRenderContext = CurrentRenderContext::Scene;
 
         g_pd3dCommandList->SetGraphicsRootSignature(g_pd3dRootSignature.Get());
+        g_pd3dCommandList->SetGraphicsRootConstantBufferView(14, g_boneConstantBuffer[g_frameIndex]->GetGPUVirtualAddress());
 
         if (g_gameRenderTarget) {
             GBufferTarget tempRT;
@@ -917,6 +961,7 @@ namespace RendererDX12 {
 
     void BeginFrame() {
         g_pd3dCommandList->SetGraphicsRootSignature(g_pd3dRootSignature.Get());
+        g_pd3dCommandList->SetGraphicsRootConstantBufferView(14, g_boneConstantBuffer[g_frameIndex]->GetGPUVirtualAddress());
 
         if (g_sceneRenderTarget) {
             GBufferTarget tempRT;
@@ -1337,6 +1382,7 @@ namespace RendererDX12 {
     void BeginShadowRender() {
         // ルートシグネチャをバインド（描画時の定数バッファバインドが正しく機能するようにする）
         g_pd3dCommandList->SetGraphicsRootSignature(g_pd3dRootSignature.Get());
+        g_pd3dCommandList->SetGraphicsRootConstantBufferView(14, g_boneConstantBuffer[g_frameIndex]->GetGPUVirtualAddress());
 
         // 1. ライトのView-Projection行列を計算
         XMVECTOR lightDir = XMLoadFloat4(&g_currentLightData.Direction);
@@ -1476,6 +1522,19 @@ namespace RendererDX12 {
         g_pd3dCommandList->SetGraphicsRootDescriptorTable((UINT)slot, handle);
         
         g_constantBufferIndex[g_frameIndex]++;
+    }
+
+    void SetBoneBuffer(const BONE_BUFFER* boneBuffer) {
+        if (!boneBuffer || boneBuffer->HasSkinning == 0) {
+            g_pd3dCommandList->SetGraphicsRootConstantBufferView(14, g_boneConstantBuffer[g_frameIndex]->GetGPUVirtualAddress());
+            return;
+        }
+        assert(g_boneBufferIndex[g_frameIndex] < BONE_BUFFER_MAX);
+        unsigned int offset = g_boneBufferIndex[g_frameIndex] * BONE_BUFFER_ALIGNED_SIZE;
+        memcpy(g_boneConstantBufferPointer[g_frameIndex] + offset, boneBuffer, sizeof(BONE_BUFFER));
+        D3D12_GPU_VIRTUAL_ADDRESS gpuAddr = g_boneConstantBuffer[g_frameIndex]->GetGPUVirtualAddress() + offset;
+        g_pd3dCommandList->SetGraphicsRootConstantBufferView(14, gpuAddr);
+        g_boneBufferIndex[g_frameIndex]++;
     }
 
     void SetTexture(int slot, const TEXTURE* texture) {

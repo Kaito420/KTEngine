@@ -9,10 +9,11 @@ PS_IN main(VS_IN input)
     wvp = mul(wvp, Projection);
     
     float4 position = float4(input.Position, 1.0f);
+    float4 normal = float4(input.Normal, 0.0f);
+    ApplySkinning(position, normal, input.BoneIndices, input.BoneWeights);
+
     output.Position = mul(position, wvp);
     output.WorldPosition = mul(position, World);
-    
-    float4 normal = float4(input.Normal, 0.0f);
     output.Normal = mul(normal, World);
     
     output.TexCoord = input.TexCoord;
