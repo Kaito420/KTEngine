@@ -9,7 +9,7 @@
 
 #include "Renderer.h"
 
-// ãƒãƒ†ãƒªã‚¢ãƒ«æ§‹é€ ä½“
+// ƒ}ƒeƒŠƒAƒ‹\‘¢‘Ì
 struct MODEL_MATERIAL
 {
 	char						Name[256];
@@ -20,7 +20,7 @@ struct MODEL_MATERIAL
 };
 
 
-// ã‚µãƒ–ã‚»ãƒƒãƒˆæ§‹é€ ä½“
+// ƒTƒuƒZƒbƒg\‘¢‘Ì
 struct SUBSET
 {
 	unsigned int	StartIndex;
@@ -32,7 +32,7 @@ struct SUBSET
 #include <vector>
 #include <string>
 
-// ãƒœãƒ¼ãƒ³éšå±¤ãƒ»é€†ãƒã‚¤ãƒ³ãƒ‰è¡Œåˆ—æƒ…å ±
+// ƒ{[ƒ“ŠK‘wE‹tƒoƒCƒ“ƒhs—ñî•ñ
 struct BoneInfo
 {
 	std::string Name;
@@ -41,7 +41,39 @@ struct BoneInfo
 	XMFLOAT4X4 DefaultLocalTransform;
 };
 
-// ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆãƒ‡ãƒ¼ã‚¿æ§‹é€ ä½“
+// ƒL[ƒtƒŒ[ƒ€\‘¢‘Ì
+struct KeyframeVec3
+{
+	float Time = 0.0f;
+	XMFLOAT3 Value = { 0.0f, 0.0f, 0.0f };
+};
+
+struct KeyframeQuat
+{
+	float Time = 0.0f;
+	XMFLOAT4 Value = { 0.0f, 0.0f, 0.0f, 1.0f };
+};
+
+// 1ƒ{[ƒ“‚ ‚½‚è‚ÌƒAƒjƒ[ƒVƒ‡ƒ“ƒgƒ‰ƒbƒN
+struct BoneAnimationTrack
+{
+	int BoneIndex = -1;
+	std::string BoneName;
+	std::vector<KeyframeVec3> Translations;
+	std::vector<KeyframeQuat> Rotations;
+	std::vector<KeyframeVec3> Scales;
+};
+
+// ƒAƒjƒ[ƒVƒ‡ƒ“ƒNƒŠƒbƒvi1‚Â‚Ìƒ‚[ƒVƒ‡ƒ“ƒf[ƒ^j
+struct AnimationClip
+{
+	std::string Name;
+	std::string SourceFile;
+	float Duration = 0.0f;
+	std::vector<BoneAnimationTrack> Tracks;
+};
+
+// ƒIƒuƒWƒFƒNƒgƒf[ƒ^\‘¢‘Ì
 struct MODEL_OBJ
 {
 	Vertex* VertexArray;
@@ -54,6 +86,7 @@ struct MODEL_OBJ
 	unsigned int	SubsetNum;
 
 	std::vector<BoneInfo> Bones;
+	std::vector<AnimationClip> Animations;
 	bool HasSkinning = false;
 };
 
@@ -71,6 +104,7 @@ struct MODEL
 	unsigned int	SubsetNum;
 
 	std::vector<BoneInfo> Bones;
+	std::vector<AnimationClip> Animations;
 	bool HasSkinning = false;
 };
 
@@ -99,6 +133,8 @@ private:
 	int m_CullMode = 0; // 0: Back (Default), 1: Front, 2: None (Double-Sided)
 
 	mutable BONE_BUFFER m_BoneBuffer{};
+	mutable bool m_UseAnimatedBones = false;
+	mutable std::vector<XMFLOAT4X4> m_AnimatedLocalTransforms;
 	int m_TestBoneIndex = 0;
 	XMFLOAT3 m_TestBoneRotation = { 0.0f, 0.0f, 0.0f };
 
@@ -109,6 +145,7 @@ public:
 
 	static void Preload(const char* FileName);
 	static void UnloadAll();
+	static bool LoadAnimationFromFbx(const char* FileName, MODEL* TargetModel);
 
 	void Awake() override;
 	void Load(const char* FileName);
@@ -116,6 +153,16 @@ public:
 	void ShowUI() override;
 	std::string GetLoadedFileName() const;
 	std::string GetComponentName() override { return "ModelRenderer"; }
+
+	MODEL* GetModel() const { return m_Model; }
+	void SetAnimatedLocalTransforms(const std::vector<XMFLOAT4X4>& localTransforms) const {
+		m_AnimatedLocalTransforms = localTransforms;
+		m_UseAnimatedBones = !localTransforms.empty();
+	}
+	void ClearAnimatedLocalTransforms() const {
+		m_UseAnimatedBones = false;
+		m_AnimatedLocalTransforms.clear();
+	}
 
 	template <class Archive>
 	void serialize(Archive& ar) {

@@ -91,6 +91,7 @@ CEREAL_REGISTER_POLYMORPHIC_RELATION(GameObject, FadeObject);
 #include "Square.h"
 #include "SkyDome.h"
 #include "ModelRenderer.h"
+#include "Animator.h"
 #include "Particle.h"
 #include "Billboard.h"
 #include "BillboardEffect.h"
@@ -142,6 +143,9 @@ CEREAL_REGISTER_POLYMORPHIC_RELATION(Component, SkyDome);
 
 CEREAL_REGISTER_TYPE(ModelRenderer);
 CEREAL_REGISTER_POLYMORPHIC_RELATION(Component, ModelRenderer);
+
+CEREAL_REGISTER_TYPE(Animator);
+CEREAL_REGISTER_POLYMORPHIC_RELATION(Component, Animator);
 
 CEREAL_REGISTER_TYPE(Particle);
 CEREAL_REGISTER_POLYMORPHIC_RELATION(Component, Particle);

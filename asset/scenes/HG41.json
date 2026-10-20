@@ -18,9 +18,9 @@
                                     "ExecuteInEditor": true,
                                     "Transform": {
                                         "Position": {
-                                            "x": 0.0,
-                                            "y": 0.0,
-                                            "z": -0.4107339382171631
+                                            "x": 0.13068127632141114,
+                                            "y": 0.30687856674194338,
+                                            "z": -2.891324520111084
                                         },
                                         "Scale": {
                                             "x": 1.0,
@@ -29,17 +29,18 @@
                                         },
                                         "Rotation": {
                                             "x": 0.0,
-                                            "y": -0.0,
-                                            "z": 0.0
+                                            "y": 0.0,
+                                            "z": -0.0
                                         },
                                         "Quaternion": {
-                                            "x": 0.0,
-                                            "y": -0.0,
-                                            "z": 0.0,
+                                            "x": -0.0,
+                                            "y": 0.0,
+                                            "z": -0.0,
                                             "w": 1.0
                                         }
                                     },
-                                    "Components": []
+                                    "Components": [],
+                                    "ParentID": -1
                                 },
                                 "Distance": 100.0
                             }
@@ -58,9 +59,9 @@
                                     "ExecuteInEditor": true,
                                     "Transform": {
                                         "Position": {
-                                            "x": 0.0,
-                                            "y": 0.0,
-                                            "z": -0.4107339382171631
+                                            "x": 0.13068127632141114,
+                                            "y": 0.30687856674194338,
+                                            "z": -2.891324520111084
                                         },
                                         "Scale": {
                                             "x": 500.0,
@@ -133,7 +134,8 @@
                                                 }
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "ParentID": -1
                                 }
                             }
                         }
@@ -172,7 +174,8 @@
                                             "w": 1.0
                                         }
                                     },
-                                    "Components": []
+                                    "Components": [],
+                                    "ParentID": -1
                                 },
                                 "LightData": {
                                     "Enable": 1,
@@ -306,11 +309,15 @@
                                                     "Active": true,
                                                     "ExecuteInEditor": false
                                                 },
-                                                "FileName": "asset/model/Drill_01_4k.obj"
+                                                "FileName": "asset/model/Drill_01_4k.obj",
+                                                "FlipWinding": false,
+                                                "FlipNormals": false,
+                                                "CullMode": 0
                                             }
                                         }
                                     }
-                                ]
+                                ],
+                                "ParentID": -1
                             }
                         }
                     },
@@ -400,7 +407,8 @@
                                             }
                                         }
                                     }
-                                ]
+                                ],
+                                "ParentID": -1
                             }
                         }
                     },
@@ -493,7 +501,125 @@
                                             }
                                         }
                                     }
-                                ]
+                                ],
+                                "ParentID": -1
+                            }
+                        }
+                    },
+                    {
+                        "polymorphic_id": 1073741824,
+                        "ptr_wrapper": {
+                            "id": 2147483664,
+                            "data": {
+                                "ID": 9,
+                                "Name": "GameObject(1)",
+                                "Active": true,
+                                "ExecuteInEditor": false,
+                                "Transform": {
+                                    "Position": {
+                                        "x": -1.4702165126800538,
+                                        "y": 0.0,
+                                        "z": 0.0
+                                    },
+                                    "Scale": {
+                                        "x": 0.12999999523162843,
+                                        "y": 0.12999999523162843,
+                                        "z": 0.12999999523162843
+                                    },
+                                    "Rotation": {
+                                        "x": 0.0,
+                                        "y": 0.0,
+                                        "z": -0.0
+                                    },
+                                    "Quaternion": {
+                                        "x": -0.0,
+                                        "y": 0.0,
+                                        "z": -0.0,
+                                        "w": 1.0
+                                    }
+                                },
+                                "Components": [
+                                    {
+                                        "polymorphic_id": 3,
+                                        "ptr_wrapper": {
+                                            "id": 2147483665,
+                                            "data": {
+                                                "value0": {
+                                                    "Active": true,
+                                                    "ExecuteInEditor": false
+                                                },
+                                                "VertexShaderID": "DirectionalLight",
+                                                "VertexLayoutID": "DirectionalLight",
+                                                "PixelShaderID": "DirectionalLight",
+                                                "BaseColor": {
+                                                    "x": 1.0,
+                                                    "y": 1.0,
+                                                    "z": 1.0,
+                                                    "w": 1.0
+                                                },
+                                                "EmissionColor": {
+                                                    "x": 0.0,
+                                                    "y": 0.0,
+                                                    "z": 0.0,
+                                                    "w": 0.0
+                                                },
+                                                "Metallic": 0.0,
+                                                "Specular": 0.5,
+                                                "Roughness": 0.5,
+                                                "NormalWeight": 1.0,
+                                                "ShadingModelID": 0,
+                                                "FlipU": false,
+                                                "FlipV": false,
+                                                "TexturePath": "",
+                                                "NormalMapPath": "",
+                                                "MetallicMapPath": "",
+                                                "RoughnessMapPath": "",
+                                                "ARMMapPath": ""
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 6,
+                                        "ptr_wrapper": {
+                                            "id": 2147483666,
+                                            "data": {
+                                                "value0": {
+                                                    "Active": true,
+                                                    "ExecuteInEditor": false
+                                                },
+                                                "FileName": "asset/model/Human.fbx",
+                                                "FlipWinding": false,
+                                                "FlipNormals": false,
+                                                "CullMode": 0
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 2147483659,
+                                        "polymorphic_name": "Animator",
+                                        "ptr_wrapper": {
+                                            "id": 2147483667,
+                                            "data": {
+                                                "value0": {
+                                                    "Active": true,
+                                                    "ExecuteInEditor": true
+                                                },
+                                                "CurrentClipIndex": 1,
+                                                "Speed": 1.0,
+                                                "IsPlaying": true,
+                                                "IsLooping": true,
+                                                "DefaultCrossfadeDuration": 0.25,
+                                                "ExtraAnimationFiles": [
+                                                    "asset/animation/Human_Idle.fbx",
+                                                    "asset/animation/Human_Jump.fbx",
+                                                    "asset/animation/Human_Walking.fbx",
+                                                    "asset/animation/Human_Running.fbx"
+                                                ]
+                                            }
+                                        }
+                                    }
+                                ],
+                                "ParentID": -1
                             }
                         }
                     }
@@ -514,7 +640,9 @@
                     "DofFocusDistance": 5.0,
                     "DofFocusRange": 3.0,
                     "DofBlurIntensity": 1.0
-                }
+                },
+                "PhysicsSubSteps": 2,
+                "PhysicsSolverIterations": 12
             }
         }
     }

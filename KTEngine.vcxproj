@@ -60,6 +60,7 @@
     <ClCompile Include="src\Light.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Manager.cpp" />
+    <ClCompile Include="src\Animator.cpp" />
     <ClCompile Include="src\ModelRenderer.cpp" />
     <ClCompile Include="src\Particle.cpp" />
     <ClCompile Include="src\PhysicsSystem.cpp" />
@@ -133,6 +134,7 @@
     <ClInclude Include="src\ktvector.hpp" />
     <ClInclude Include="src\Light.h" />
     <ClInclude Include="src\Manager.h" />
+    <ClInclude Include="src\Animator.h" />
     <ClInclude Include="src\ModelRenderer.h" />
     <ClInclude Include="src\Particle.h" />
     <ClInclude Include="src\PhysicsSystem.h" />

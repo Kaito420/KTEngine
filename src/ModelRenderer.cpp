@@ -23,6 +23,7 @@
 #include "ShaderManager.h"
 #include "Shader.h"
 #include "Profiler.h"
+#include "Animator.h"
 
 
 std::unordered_map<std::string, MODEL*> ModelRenderer::m_ModelPool;
@@ -332,6 +333,7 @@ void ModelRenderer::LoadModel(const char* FileName, MODEL* Model)
 	Model->BaseVertices.assign(modelObj.VertexArray, modelObj.VertexArray + modelObj.VertexNum);
 	Model->BaseIndices.assign(modelObj.IndexArray, modelObj.IndexArray + modelObj.IndexNum);
 	Model->Bones = std::move(modelObj.Bones);
+	Model->Animations = std::move(modelObj.Animations);
 	Model->HasSkinning = modelObj.HasSkinning;
 	Model->AppliedFlipWinding = false;
 	Model->AppliedFlipNormals = false;
@@ -783,11 +785,184 @@ static XMMATRIX UfbxMatrixToXMMatrix(const ufbx_matrix& m)
 	);
 }
 
+static std::string NormalizeBoneName(const std::string& name)
+{
+	size_t colonPos = name.find_last_of(":|");
+	if (colonPos != std::string::npos && colonPos + 1 < name.size()) {
+		return name.substr(colonPos + 1);
+	}
+	return name;
+}
+
+static int FindBoneIndexByName(const std::vector<BoneInfo>& bones, const std::string& nodeName)
+{
+	if (nodeName.empty()) return -1;
+	for (size_t i = 0; i < bones.size(); i++) {
+		if (bones[i].Name == nodeName) return (int)i;
+	}
+	std::string normTarget = NormalizeBoneName(nodeName);
+	for (size_t i = 0; i < bones.size(); i++) {
+		if (NormalizeBoneName(bones[i].Name) == normTarget) return (int)i;
+	}
+	return -1;
+}
+
+static void ExtractAnimationsFromScene(
+	ufbx_scene* scene,
+	const char* FileName,
+	const std::vector<BoneInfo>& bones,
+	const std::vector<int>& nodeToBoneIndex,
+	std::vector<AnimationClip>& outClips)
+{
+	if (!scene || bones.empty() || scene->anim_stacks.count == 0) return;
+
+	std::string fileStem = "";
+	if (FileName && strlen(FileName) > 0) {
+		fileStem = std::filesystem::path(FileName).stem().string();
+	}
+
+	for (size_t stackIdx = 0; stackIdx < scene->anim_stacks.count; stackIdx++) {
+		ufbx_anim_stack* stack = scene->anim_stacks.data[stackIdx];
+		if (!stack || !stack->anim) continue;
+
+		ufbx_bake_opts bakeOpts = {};
+		bakeOpts.trim_start_time = true;
+		ufbx_error bakeErr;
+		ufbx_baked_anim* baked = ufbx_bake_anim(scene, stack->anim, &bakeOpts, &bakeErr);
+		if (!baked) continue;
+
+		AnimationClip clip;
+		std::string rawStackName = (stack->name.length > 0)
+			? std::string(stack->name.data, stack->name.length)
+			: ("Anim_" + std::to_string(stackIdx));
+
+		if (!fileStem.empty() && (rawStackName == "mixamo.com" || rawStackName.find("Take ") == 0)) {
+			clip.Name = fileStem + " (" + rawStackName + ")";
+		} else if (!fileStem.empty() && rawStackName.empty()) {
+			clip.Name = fileStem;
+		} else {
+			clip.Name = rawStackName;
+		}
+		clip.SourceFile = FileName ? FileName : "";
+
+		// Avoid adding duplicate clips from the same file
+		bool alreadyExists = false;
+		for (const auto& existing : outClips) {
+			if (existing.Name == clip.Name && existing.SourceFile == clip.SourceFile) {
+				alreadyExists = true;
+				break;
+			}
+		}
+		if (alreadyExists) {
+			ufbx_free_baked_anim(baked);
+			continue;
+		}
+
+		float duration = (float)baked->playback_duration;
+		if (duration <= 0.0f && baked->key_time_max > baked->key_time_min) {
+			duration = (float)(baked->key_time_max - baked->key_time_min);
+		}
+		clip.Duration = (duration > 0.0f) ? duration : 0.0f;
+
+		for (size_t bni = 0; bni < baked->nodes.count; bni++) {
+			const ufbx_baked_node& bn = baked->nodes.data[bni];
+			int boneIdx = -1;
+			if (bn.typed_id < nodeToBoneIndex.size()) {
+				boneIdx = nodeToBoneIndex[bn.typed_id];
+			}
+			if (boneIdx < 0 && bn.typed_id < scene->nodes.count) {
+				ufbx_node* uNode = scene->nodes.data[bn.typed_id];
+				if (uNode && uNode->name.length > 0) {
+					boneIdx = FindBoneIndexByName(bones, std::string(uNode->name.data, uNode->name.length));
+				}
+			}
+			if (boneIdx < 0 || boneIdx >= (int)bones.size()) continue;
+
+			BoneAnimationTrack track;
+			track.BoneIndex = boneIdx;
+			track.BoneName = bones[boneIdx].Name;
+
+			track.Translations.reserve(bn.translation_keys.count);
+			for (size_t k = 0; k < bn.translation_keys.count; k++) {
+				const ufbx_baked_vec3& key = bn.translation_keys.data[k];
+				KeyframeVec3 kf;
+				kf.Time = (float)key.time;
+				kf.Value = XMFLOAT3((float)key.value.x, (float)key.value.y, (float)key.value.z);
+				track.Translations.push_back(kf);
+				if (kf.Time > clip.Duration) clip.Duration = kf.Time;
+			}
+
+			track.Rotations.reserve(bn.rotation_keys.count);
+			for (size_t k = 0; k < bn.rotation_keys.count; k++) {
+				const ufbx_baked_quat& key = bn.rotation_keys.data[k];
+				KeyframeQuat kf;
+				kf.Time = (float)key.time;
+				kf.Value = XMFLOAT4((float)key.value.x, (float)key.value.y, (float)key.value.z, (float)key.value.w);
+				track.Rotations.push_back(kf);
+				if (kf.Time > clip.Duration) clip.Duration = kf.Time;
+			}
+
+			track.Scales.reserve(bn.scale_keys.count);
+			for (size_t k = 0; k < bn.scale_keys.count; k++) {
+				const ufbx_baked_vec3& key = bn.scale_keys.data[k];
+				KeyframeVec3 kf;
+				kf.Time = (float)key.time;
+				kf.Value = XMFLOAT3((float)key.value.x, (float)key.value.y, (float)key.value.z);
+				track.Scales.push_back(kf);
+				if (kf.Time > clip.Duration) clip.Duration = kf.Time;
+			}
+
+			clip.Tracks.push_back(std::move(track));
+		}
+
+		ufbx_free_baked_anim(baked);
+		if (!clip.Tracks.empty()) {
+			outClips.push_back(std::move(clip));
+		}
+	}
+}
+
+bool ModelRenderer::LoadAnimationFromFbx(const char* FileName, MODEL* TargetModel)
+{
+	if (!FileName || strlen(FileName) == 0 || !TargetModel || TargetModel->Bones.empty()) return false;
+
+	ufbx_load_opts opts = {};
+	opts.target_axes = ufbx_axes_left_handed_y_up;
+	opts.target_unit_meters = 1.0f;
+	opts.space_conversion = UFBX_SPACE_CONVERSION_MODIFY_GEOMETRY;
+	opts.handedness_conversion_axis = UFBX_MIRROR_AXIS_Z;
+	opts.ignore_geometry = true;
+	opts.ignore_missing_external_files = true;
+
+	ufbx_error error;
+	ufbx_scene* scene = ufbx_load_file(FileName, &opts, &error);
+	if (!scene) return false;
+
+	std::vector<int> nodeToBoneIndex(scene->nodes.count, -1);
+	for (size_t ni = 0; ni < scene->nodes.count; ni++) {
+		ufbx_node* node = scene->nodes.data[ni];
+		if (!node) continue;
+		std::string nodeName = (node->name.length > 0)
+			? std::string(node->name.data, node->name.length)
+			: (node->is_root ? "Root" : "");
+		nodeToBoneIndex[node->typed_id] = FindBoneIndexByName(TargetModel->Bones, nodeName);
+	}
+
+	size_t beforeCount = TargetModel->Animations.size();
+	ExtractAnimationsFromScene(scene, FileName, TargetModel->Bones, nodeToBoneIndex, TargetModel->Animations);
+	ufbx_free_scene(scene);
+	return TargetModel->Animations.size() > beforeCount;
+}
+
 void ModelRenderer::UpdateBoneMatrices() const
 {
 	if (!m_Model || !m_Model->HasSkinning || m_Model->Bones.empty()) {
 		m_BoneBuffer.HasSkinning = 0;
 		return;
+	}
+
+	if (!_owner || !_owner->GetComponent<Animator>()) {
+		m_UseAnimatedBones = false;
 	}
 
 	m_BoneBuffer.HasSkinning = 1;
@@ -796,7 +971,9 @@ void ModelRenderer::UpdateBoneMatrices() const
 
 	std::vector<XMMATRIX> globalMatrices(numBones, XMMatrixIdentity());
 	for (size_t i = 0; i < numBones; i++) {
-		XMMATRIX localMat = XMLoadFloat4x4(&m_Model->Bones[i].DefaultLocalTransform);
+		XMMATRIX localMat = (m_UseAnimatedBones && i < m_AnimatedLocalTransforms.size())
+			? XMLoadFloat4x4(&m_AnimatedLocalTransforms[i])
+			: XMLoadFloat4x4(&m_Model->Bones[i].DefaultLocalTransform);
 		if ((int)i == m_TestBoneIndex && (m_TestBoneRotation.x != 0.0f || m_TestBoneRotation.y != 0.0f || m_TestBoneRotation.z != 0.0f)) {
 			XMMATRIX rotMat = XMMatrixRotationRollPitchYaw(
 				XMConvertToRadians(m_TestBoneRotation.x),
@@ -832,6 +1009,7 @@ void ModelRenderer::LoadFbx(const char* FileName, MODEL_OBJ* ModelObj)
 	ModelObj->SubsetArray = nullptr;
 	ModelObj->SubsetNum = 0;
 	ModelObj->Bones.clear();
+	ModelObj->Animations.clear();
 	ModelObj->HasSkinning = false;
 
 	if (!FileName || strlen(FileName) == 0) return;
@@ -889,6 +1067,11 @@ void ModelRenderer::LoadFbx(const char* FileName, MODEL_OBJ* ModelObj)
 				stack.push_back(cur->children.data[ci - 1]);
 			}
 		}
+	}
+
+	// Extract FBX animation clips
+	if (!ModelObj->Bones.empty() && scene->anim_stacks.count > 0) {
+		ExtractAnimationsFromScene(scene, FileName, ModelObj->Bones, nodeToBoneIndex, ModelObj->Animations);
 	}
 
 	std::filesystem::path fbxPath(FileName);
@@ -1287,6 +1470,12 @@ void ModelRenderer::ShowUI() {
 			ImGui::Text(" - Indices: %u", m_Model->IndexBuffer->Size);
 		}
 		ImGui::Text(" - Skinning: %s (%zu Bones)", m_Model->HasSkinning ? "Enabled" : "None", m_Model->Bones.size());
+		ImGui::Text(" - Animations: %zu Clips", m_Model->Animations.size());
+		if ((m_Model->HasSkinning || !m_Model->Animations.empty()) && _owner && !_owner->GetComponent<Animator>()) {
+			if (ImGui::Button("Add Animator Component")) {
+				_owner->AddComponent<Animator>();
+			}
+		}
 
 		if (m_Model->HasSkinning && !m_Model->Bones.empty()) {
 			ImGui::Spacing();

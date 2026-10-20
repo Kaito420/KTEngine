@@ -25,6 +25,7 @@ void RegisterAllComponents() {
 	ComponentRegistry::Register<Square>("Square");
 	ComponentRegistry::Register<SkyDome>("SkyDome");
 	ComponentRegistry::Register<ModelRenderer>("ModelRenderer");
+	ComponentRegistry::Register<Animator>("Animator");
 	ComponentRegistry::Register<Particle>("Particle");
 	ComponentRegistry::Register<Billboard>("Billboard");
 	ComponentRegistry::Register<BillboardEffect>("BillboardEffect");
