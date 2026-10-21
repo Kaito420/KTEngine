@@ -20,6 +20,10 @@ namespace Renderer {
         RendererDX12::Shutdown();
     }
 
+    void BeginRenderFrame() {
+        RendererDX12::BeginRenderFrame();
+    }
+
     void BeginFrame() {
         RendererDX12::BeginFrame();
     }

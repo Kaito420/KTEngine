@@ -820,27 +820,42 @@ namespace RendererDX12 {
         Scene
     };
     CurrentRenderContext g_currentRenderContext = CurrentRenderContext::None;
+    static bool g_isCommandListOpen = false;
 
-    void BeginGameRender() {
-        g_currentRenderContext = CurrentRenderContext::Game;
+    void BeginRenderFrame() {
+        if (g_isCommandListOpen) return;
 
         if (g_sceneResizePending) {
+            WaitForLastSubmittedFrame();
             RecreateSceneBuffer(g_scenePendingWidth, g_scenePendingHeight);
             g_sceneResizePending = false;
         }
         if (g_gameResizePending) {
+            WaitForLastSubmittedFrame();
             RecreateGameBuffer(g_gamePendingWidth, g_gamePendingHeight);
             g_gameResizePending = false;
         }
 
         g_commandAllocators[g_frameIndex]->Reset();
         g_pd3dCommandList->Reset(g_commandAllocators[g_frameIndex].Get(), nullptr);
+        g_isCommandListOpen = true;
 
         g_constantBufferIndex[g_frameIndex] = 0;
         g_boneBufferIndex[g_frameIndex] = 1;
 
         ID3D12DescriptorHeap* descriptorHeaps[] = { g_pd3dSrvDescHeap.Get() };
         g_pd3dCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+        g_pd3dCommandList->SetGraphicsRootSignature(g_pd3dRootSignature.Get());
+        g_pd3dCommandList->SetGraphicsRootConstantBufferView(14, g_boneConstantBuffer[g_frameIndex]->GetGPUVirtualAddress());
+    }
+
+    void BeginGameRender() {
+        g_currentRenderContext = CurrentRenderContext::Game;
+
+        if (!g_isCommandListOpen) {
+            BeginRenderFrame();
+        }
+
         g_pd3dCommandList->SetGraphicsRootSignature(g_pd3dRootSignature.Get());
         g_pd3dCommandList->SetGraphicsRootConstantBufferView(14, g_boneConstantBuffer[g_frameIndex]->GetGPUVirtualAddress());
 
@@ -897,6 +912,10 @@ namespace RendererDX12 {
 
     void BeginSceneRender() {
         g_currentRenderContext = CurrentRenderContext::Scene;
+
+        if (!g_isCommandListOpen) {
+            BeginRenderFrame();
+        }
 
         g_pd3dCommandList->SetGraphicsRootSignature(g_pd3dRootSignature.Get());
         g_pd3dCommandList->SetGraphicsRootConstantBufferView(14, g_boneConstantBuffer[g_frameIndex]->GetGPUVirtualAddress());
@@ -960,8 +979,21 @@ namespace RendererDX12 {
     }
 
     void BeginFrame() {
+        if (!g_isCommandListOpen) {
+            BeginRenderFrame();
+        }
+
+        g_currentRenderContext = CurrentRenderContext::None;
         g_pd3dCommandList->SetGraphicsRootSignature(g_pd3dRootSignature.Get());
         g_pd3dCommandList->SetGraphicsRootConstantBufferView(14, g_boneConstantBuffer[g_frameIndex]->GetGPUVirtualAddress());
+
+        if (g_gameRenderTarget) {
+            GBufferTarget tempRT;
+            tempRT.Resource = g_gameRenderTarget;
+            tempRT.RtvIndex = 3;
+            tempRT.State = g_gameRTState;
+            TransitionTarget(tempRT, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+        }
 
         if (g_sceneRenderTarget) {
             GBufferTarget tempRT;
@@ -991,6 +1023,8 @@ namespace RendererDX12 {
     }
 
     void EndFrame() {
+        if (!g_isCommandListOpen) return;
+
         D3D12_RESOURCE_BARRIER barrier = {};
         barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
         barrier.Transition.pResource = g_mainRenderTargetResource[g_frameIndex].Get();
@@ -999,8 +1033,17 @@ namespace RendererDX12 {
         g_pd3dCommandList->ResourceBarrier(1, &barrier);
 
         g_pd3dCommandList->Close();
+        g_isCommandListOpen = false;
+
         ID3D12CommandList* ppCommandLists[] = { g_pd3dCommandList.Get() };
         g_pd3dCommandQueue->ExecuteCommandLists(1, ppCommandLists);
+
+        // Render secondary platform windows AFTER main command list has executed
+        ImGuiIO& io = ImGui::GetIO();
+        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+            ImGui::UpdatePlatformWindows();
+            ImGui::RenderPlatformWindowsDefault();
+        }
 
         g_pSwapChain->Present(1, 0);
 
@@ -1079,8 +1122,9 @@ namespace RendererDX12 {
     }
 
     bool InitSceneRenderTarget(int width, int height) {
-        g_sceneWidth = (float)width;
-        g_sceneHeight = (float)height;
+        if (width < 1) width = 1;
+        if (height < 1) height = 1;
+        RecreateSceneBuffer((float)width, (float)height);
         return true;
     }
 
@@ -1122,7 +1166,7 @@ namespace RendererDX12 {
         clearVal.Color[3] = clearColor.w;
 
         auto rtHeapProps = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-        g_pd3dDevice->CreateCommittedResource(
+        HRESULT hr = g_pd3dDevice->CreateCommittedResource(
             &rtHeapProps,
             D3D12_HEAP_FLAG_NONE,
             &desc,
@@ -1130,6 +1174,7 @@ namespace RendererDX12 {
             &clearVal,
             IID_PPV_ARGS(&target.Resource)
         );
+        if (FAILED(hr) || !target.Resource) return;
 
         g_pd3dDevice->CreateRenderTargetView(target.Resource.Get(), nullptr, GetRtvHandle(target.RtvIndex));
 
@@ -1152,6 +1197,8 @@ namespace RendererDX12 {
     }
 
     void RecreateSceneBuffer(float width, float height) {
+        if (width < 1.0f) width = 1.0f;
+        if (height < 1.0f) height = 1.0f;
         g_sceneWidth = width;
         g_sceneHeight = height;
 
@@ -1177,7 +1224,7 @@ namespace RendererDX12 {
         clearVal.Color[3] = 1.0f;
 
         auto rtHeapProps = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-        g_pd3dDevice->CreateCommittedResource(
+        HRESULT hr = g_pd3dDevice->CreateCommittedResource(
             &rtHeapProps,
             D3D12_HEAP_FLAG_NONE,
             &desc,
@@ -1185,6 +1232,7 @@ namespace RendererDX12 {
             &clearVal,
             IID_PPV_ARGS(&g_sceneRenderTarget)
         );
+        if (FAILED(hr) || !g_sceneRenderTarget) return;
 
         g_pd3dDevice->CreateRenderTargetView(g_sceneRenderTarget.Get(), nullptr, GetRtvHandle(2));
 
@@ -1211,7 +1259,7 @@ namespace RendererDX12 {
         depthClear.DepthStencil.Depth = 1.0f;
 
         auto dsHeapProps = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-        g_pd3dDevice->CreateCommittedResource(
+        hr = g_pd3dDevice->CreateCommittedResource(
             &dsHeapProps,
             D3D12_HEAP_FLAG_NONE,
             &depthDesc,
@@ -1219,6 +1267,7 @@ namespace RendererDX12 {
             &depthClear,
             IID_PPV_ARGS(&g_sceneDepthBuffer)
         );
+        if (FAILED(hr) || !g_sceneDepthBuffer) return;
         g_pd3dDevice->CreateDepthStencilView(g_sceneDepthBuffer.Get(), nullptr, GetDsvHandle(1));
 
         // Scene G-Bufferの作成
@@ -1251,8 +1300,9 @@ namespace RendererDX12 {
     }
 
     bool InitGameRenderTarget(int width, int height) {
-        g_gameWidth = (float)width;
-        g_gameHeight = (float)height;
+        if (width < 1) width = 1;
+        if (height < 1) height = 1;
+        RecreateGameBuffer((float)width, (float)height);
         return true;
     }
 
@@ -1271,6 +1321,8 @@ namespace RendererDX12 {
     }
 
     void RecreateGameBuffer(float width, float height) {
+        if (width < 1.0f) width = 1.0f;
+        if (height < 1.0f) height = 1.0f;
         g_gameWidth = width;
         g_gameHeight = height;
 
@@ -1296,7 +1348,7 @@ namespace RendererDX12 {
         clearVal.Color[3] = 1.0f;
 
         auto rtHeapProps = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-        g_pd3dDevice->CreateCommittedResource(
+        HRESULT hr = g_pd3dDevice->CreateCommittedResource(
             &rtHeapProps,
             D3D12_HEAP_FLAG_NONE,
             &desc,
@@ -1304,6 +1356,7 @@ namespace RendererDX12 {
             &clearVal,
             IID_PPV_ARGS(&g_gameRenderTarget)
         );
+        if (FAILED(hr) || !g_gameRenderTarget) return;
 
         g_pd3dDevice->CreateRenderTargetView(g_gameRenderTarget.Get(), nullptr, GetRtvHandle(3));
 
@@ -1330,7 +1383,7 @@ namespace RendererDX12 {
         depthClear.DepthStencil.Depth = 1.0f;
 
         auto dsHeapProps = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-        g_pd3dDevice->CreateCommittedResource(
+        hr = g_pd3dDevice->CreateCommittedResource(
             &dsHeapProps,
             D3D12_HEAP_FLAG_NONE,
             &depthDesc,
@@ -1338,6 +1391,7 @@ namespace RendererDX12 {
             &depthClear,
             IID_PPV_ARGS(&g_gameDepthBuffer)
         );
+        if (FAILED(hr) || !g_gameDepthBuffer) return;
         g_pd3dDevice->CreateDepthStencilView(g_gameDepthBuffer.Get(), nullptr, GetDsvHandle(2));
 
         // Game G-Bufferの作成
@@ -1380,6 +1434,10 @@ namespace RendererDX12 {
     void SetShadowPass(bool enable) { g_isShadowPass = enable; }
     ID3D12PipelineState* GetShadowPipelineState() { return g_shadowPipelineState.Get(); }
     void BeginShadowRender() {
+        if (!g_shadowMapArray) return;
+        if (!g_isCommandListOpen) {
+            BeginRenderFrame();
+        }
         // ルートシグネチャをバインド（描画時の定数バッファバインドが正しく機能するようにする）
         g_pd3dCommandList->SetGraphicsRootSignature(g_pd3dRootSignature.Get());
         g_pd3dCommandList->SetGraphicsRootConstantBufferView(14, g_boneConstantBuffer[g_frameIndex]->GetGPUVirtualAddress());
@@ -1428,6 +1486,7 @@ namespace RendererDX12 {
         g_pd3dCommandList->RSSetScissorRects(1, &scissorRect);
     }
     void EndShadowRender() {
+        if (!g_shadowMapArray) return;
         // シャドウリソースを PIXEL_SHADER_RESOURCE へ戻す
         D3D12_RESOURCE_BARRIER barrier = {};
         barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;

@@ -92,6 +92,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
 
         {
             PROFILE_SCOPE("Render");
+            Renderer::BeginRenderFrame();
 
             // ゲームビューテクスチャにレンダリング
             if (Manager::IsShowGameView()) {
@@ -188,7 +189,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
                 {
                     ImVec2 viewportSize = ImGui::GetContentRegionAvail();
                     ImVec2 cursorPos = ImGui::GetCursorScreenPos();
-                    Renderer::ResizeSceneBuffer((UINT)viewportSize.x, (UINT)viewportSize.y);
+                    if (viewportSize.x >= 1.0f && viewportSize.y >= 1.0f) {
+                        Renderer::ResizeSceneBuffer(viewportSize.x, viewportSize.y);
+                    }
                     void* myTexture = Renderer::GetSceneSRV();
                     if (myTexture) {
                         ImGui::Image(myTexture, viewportSize);
@@ -240,7 +243,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
                     ImVec2 viewportSize = ImGui::GetContentRegionAvail(); //描画領域のサイズ取得
 
                     //サイズが有効かつ現在のテクスチャサイズと異なる場合はリサイズ
-					Renderer::ResizeGameBuffer((UINT)viewportSize.x, (UINT)viewportSize.y);
+				if (viewportSize.x >= 1.0f && viewportSize.y >= 1.0f) {
+                        Renderer::ResizeGameBuffer(viewportSize.x, viewportSize.y);
+                    }
 
                     void* myTexture = Renderer::GetGameSRV();
                     if (myTexture == nullptr)

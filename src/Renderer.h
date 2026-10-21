@@ -145,6 +145,7 @@ namespace RendererDX12 {
 
     bool Init(HWND hwnd);
     void Shutdown();
+    void BeginRenderFrame();
     void BeginFrame();
     void EndFrame();
     void ResizeMainWindow(UINT width, UINT height);
@@ -220,6 +221,7 @@ namespace Renderer {
 
     bool Init(HWND hwnd);
     void Shutdown();
+    void BeginRenderFrame();
     void BeginFrame();
     void EndFrame();
     void ResizeMainWindow(UINT width, UINT height);
