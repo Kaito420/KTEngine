@@ -173,13 +173,14 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
             ImGuizmo::BeginFrame();
             {
                 Manager::RenderMenuBar();
+                Manager::RenderToolbar();
                 if (Manager::IsShowContentBrowser())
                     fileBrowser.Render();
                 if (Manager::IsShowHierarchy())
                     Manager::GetCurrentScene()->RenderHierarchy();
                 if (Manager::IsShowInspector())
                     Manager::GetCurrentScene()->RenderInspector();
-                Manager::GetCurrentScene()->RenderButton();
+
 
                 if (Manager::IsShowProfiler()) {
                     Profiler::RenderUI(&Manager::GetShowProfiler());

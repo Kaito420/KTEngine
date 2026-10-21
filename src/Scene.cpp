@@ -522,18 +522,7 @@ void Scene::RenderInspector()
 }
 
 void Scene::RenderButton(){
-	ImGui::SetNextWindowSize({ 720,50 });
-	ImGui::Begin("Mode", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
-	{
-		if (ImGui::Button("Play")) {
-			Manager::Play();
-		}
-		ImGui::SameLine();
-		if (ImGui::Button("Stop")) {
-			Manager::Stop();
-		}
-	}
-	ImGui::End();
+	// Manager::RenderToolbar() に移行済み
 }
 
 

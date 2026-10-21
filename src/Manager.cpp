@@ -15,6 +15,7 @@
 #include "Renderer.h"
 #include "ImGuiLayer.h"
 #include "imgui.h"
+#include "imgui_internal.h"
 
 #include "SerializerRegistry.h"
 #include "ComponentRegistry.h"
@@ -426,4 +427,73 @@ void Manager::Play(){
 void Manager::Stop(){
 	if (_mode == EngineMode::Editor)return;
 	_stopPending = true;
+}
+
+void Manager::RenderToolbar() {
+	ImGuiViewport* viewport = ImGui::GetMainViewport();
+	const float toolbarHeight = 36.0f;
+	const float btnWidth = 72.0f;
+	const float btnHeight = 24.0f;
+	const float spacing = 6.0f;
+
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.0f, 0.0f));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.0f);
+
+	if (ImGui::BeginViewportSideBar("##MainToolbar", viewport, ImGuiDir_Up, toolbarHeight,
+		ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings)) {
+
+		bool isPlaying = (_mode == EngineMode::Runtime);
+		float availWidth = ImGui::GetContentRegionAvail().x;
+		float totalWidth = (btnWidth * 2.0f) + spacing;
+		float startX = (availWidth - totalWidth) * 0.5f;
+		float startY = (toolbarHeight - btnHeight) * 0.5f;
+
+		ImGui::SetCursorPos(ImVec2(startX > 0.0f ? startX : 8.0f, startY));
+
+		// --- Play Button ---
+		if (isPlaying) {
+			// Green highlight while playing
+			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.18f, 0.65f, 0.32f, 1.0f));
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.24f, 0.78f, 0.38f, 1.0f));
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.14f, 0.55f, 0.26f, 1.0f));
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+		}
+
+		if (ImGui::Button(isPlaying ? "Playing##Play" : "Play", ImVec2(btnWidth, btnHeight))) {
+			if (isPlaying) {
+				Stop();
+			} else {
+				Play();
+			}
+		}
+
+		if (isPlaying) {
+			ImGui::PopStyleColor(4);
+		}
+
+		ImGui::SameLine(0.0f, spacing);
+
+		// --- Stop Button ---
+		if (!isPlaying) {
+			// Disabled while in editor mode
+			ImGui::BeginDisabled(true);
+		} else {
+			// Red hover highlight while playing
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.85f, 0.25f, 0.25f, 1.0f));
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.70f, 0.20f, 0.20f, 1.0f));
+		}
+
+		if (ImGui::Button("Stop", ImVec2(btnWidth, btnHeight))) {
+			Stop();
+		}
+
+		if (isPlaying) {
+			ImGui::PopStyleColor(2);
+		} else {
+			ImGui::EndDisabled();
+		}
+
+		ImGui::End();
+	}
+	ImGui::PopStyleVar(2);
 }

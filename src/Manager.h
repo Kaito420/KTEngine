@@ -100,6 +100,11 @@ public:
 	static void RenderMenuBar();
 
 	/// <summary>
+	/// 固定ツールバーの描画（Play/Stopボタン等）
+	/// </summary>
+	static void RenderToolbar();
+
+	/// <summary>
 	/// 現在のパスに上書き保存（パスがなければダイアログ）
 	/// </summary>
 	static void SaveScene();
