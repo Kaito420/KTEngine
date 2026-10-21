@@ -374,6 +374,10 @@ void Manager::RenderMenuBar(){
 			ImGui::MenuItem("Scene View", nullptr, &_showSceneView);
 			ImGui::Separator();
 			ImGui::MenuItem("Profiler", nullptr, &_showProfiler);
+			ImGui::Separator();
+			if (ImGui::MenuItem("Reset Window Layout")) {
+				ImGuiLayer::ResetLayout();
+			}
 			
 			ImGui::EndMenu();
 		}

@@ -25,5 +25,7 @@ namespace ImGuiLayer {
 
     void SetTheme(EditorTheme theme);
     EditorTheme GetTheme();
+
+    void ResetLayout();
 }
 #endif // !_IMGUILAYER_H

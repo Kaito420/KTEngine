@@ -281,17 +281,18 @@ namespace RendererDX12 {
         g_fenceLastSignaledValue++;
         if (g_fence->GetCompletedValue() < fence) {
             g_fence->SetEventOnCompletion(fence, g_fenceEvent);
-            DWORD result = WaitForSingleObject(g_fenceEvent, 2000);
-            if (result == WAIT_TIMEOUT) {
-                HRESULT reason = g_pd3dDevice->GetDeviceRemovedReason();
+            WaitForSingleObject(g_fenceEvent, INFINITE);
+            HRESULT reason = g_pd3dDevice ? g_pd3dDevice->GetDeviceRemovedReason() : S_OK;
+            if (FAILED(reason)) {
+
                 FILE* fp = nullptr;
                 fopen_s(&fp, "d3d12_log.txt", "a");
                 if (fp) {
-                    fprintf(fp, "[FATAL] Fence wait timeout! DeviceRemovedReason: 0x%08X\n", reason);
+                    fprintf(fp, "[FATAL] Device removed detected! DeviceRemovedReason: 0x%08X\n", reason);
                     fclose(fp);
                 }
                 PrintDebugMessages();
-                assert(false && "GPU hang or device lost detected!");
+                assert(false && "GPU device lost detected!");
             }
         }
         g_frameIndex = g_pSwapChain->GetCurrentBackBufferIndex();

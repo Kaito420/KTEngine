@@ -343,6 +343,34 @@ void ImGuiLayer::Init(HWND hwnd) {
     ImGui_ImplDX12_Init(&initInfo);
 }
 
+static bool s_resetLayoutRequested = false;
+
+static void BuildDefaultLayout(ImGuiID dockspace_id) {
+    ImGui::DockBuilderRemoveNode(dockspace_id);
+    ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
+    ImGui::DockBuilderSetNodeSize(dockspace_id, ImGui::GetMainViewport()->Size);
+
+    ImGuiID dock_main_id = dockspace_id;
+    ImGuiID dock_left = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.20f, nullptr, &dock_main_id);
+    ImGuiID dock_right = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.25f, nullptr, &dock_main_id);
+    ImGuiID dock_down = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 0.25f, nullptr, &dock_main_id);
+
+    ImGui::DockBuilderDockWindow("Hierarchy", dock_left);
+    ImGui::DockBuilderDockWindow("Inspector", dock_right);
+    ImGui::DockBuilderDockWindow("Post Process", dock_right);
+    ImGui::DockBuilderDockWindow("File Browser", dock_down);
+    ImGui::DockBuilderDockWindow("Profiler", dock_down);
+    ImGui::DockBuilderDockWindow("G-Buffer Visualizer", dock_down);
+    ImGui::DockBuilderDockWindow("Game View", dock_main_id);
+    ImGui::DockBuilderDockWindow("Scene View", dock_main_id);
+
+    ImGui::DockBuilderFinish(dockspace_id);
+}
+
+void ImGuiLayer::ResetLayout() {
+    s_resetLayoutRequested = true;
+}
+
 void ImGuiLayer::Begin() {
     ImGui_ImplDX12_NewFrame();
     ImGui_ImplWin32_NewFrame();
@@ -350,35 +378,24 @@ void ImGuiLayer::Begin() {
 
     ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
     ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
-    ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), dockspace_flags);
+    ImGui::DockSpaceOverViewport(dockspace_id, ImGui::GetMainViewport(), dockspace_flags);
 
     static bool s_firstTime = true;
     if (s_firstTime) {
         s_firstTime = false;
-        ImGuiDockNode* node = ImGui::DockBuilderGetNode(dockspace_id);
-        if (node == nullptr || node->IsEmpty()) {
-            ImGui::DockBuilderRemoveNode(dockspace_id);
-            ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
-            ImGui::DockBuilderSetNodeSize(dockspace_id, ImGui::GetMainViewport()->Size);
+        FILE* fp = nullptr;
+        fopen_s(&fp, "imgui.ini", "rb");
+        bool hasIni = (fp != nullptr);
+        if (fp) fclose(fp);
 
-            ImGuiID dock_main_id = dockspace_id;
-            ImGuiID dock_left = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.20f, nullptr, &dock_main_id);
-            ImGuiID dock_right = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.25f, nullptr, &dock_main_id);
-            ImGuiID dock_down = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 0.25f, nullptr, &dock_main_id);
-
-            ImGui::DockBuilderDockWindow("Hierarchy View", dock_left);
-            ImGui::DockBuilderDockWindow("Hierarchy", dock_left);
-            ImGui::DockBuilderDockWindow("Inspector", dock_right);
-            ImGui::DockBuilderDockWindow("Post Process", dock_right);
-            ImGui::DockBuilderDockWindow("Content Browser", dock_down);
-            ImGui::DockBuilderDockWindow("File Browser", dock_down);
-            ImGui::DockBuilderDockWindow("Profiler", dock_down);
-            ImGui::DockBuilderDockWindow("G-Buffer Visualizer", dock_down);
-            ImGui::DockBuilderDockWindow("Game View", dock_main_id);
-            ImGui::DockBuilderDockWindow("Scene View", dock_main_id);
-
-            ImGui::DockBuilderFinish(dockspace_id);
+        if (!hasIni) {
+            BuildDefaultLayout(dockspace_id);
         }
+    }
+
+    if (s_resetLayoutRequested) {
+        s_resetLayoutRequested = false;
+        BuildDefaultLayout(dockspace_id);
     }
 }
 
