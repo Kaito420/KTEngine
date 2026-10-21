@@ -153,11 +153,15 @@ namespace RendererDX12 {
     bool InitSceneRenderTarget(int width, int height);
     void BeginSceneRender();
     void* GetSceneSRV();
+    float GetSceneWidth();
+    float GetSceneHeight();
     void ResizeSceneBuffer(float width, float height);
 
     bool InitGameRenderTarget(int width, int height);
     void BeginGameRender();
     void* GetGameSRV();
+    float GetGameWidth();
+    float GetGameHeight();
     void ResizeGameBuffer(float width, float height);
 
     std::unique_ptr<VERTEX_BUFFER> CreateVertexBuffer(unsigned int stride, unsigned int size);

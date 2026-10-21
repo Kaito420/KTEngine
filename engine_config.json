@@ -1,3 +1,5 @@
 {
-    "GraphicsAPI": 1
+    "GraphicsAPI": 1,
+    "Theme": 0,
+    "AspectRatio": 1
 }

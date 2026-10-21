@@ -89,8 +89,12 @@ namespace Renderer {
         return RendererDX12::GetSceneSRV();
     }
 
-    float GetSceneWidth() { return 1280.0f; }
-    float GetSceneHeight() { return 720.0f; }
+    float GetSceneWidth() {
+        return RendererDX12::GetSceneWidth();
+    }
+    float GetSceneHeight() {
+        return RendererDX12::GetSceneHeight();
+    }
     void ResizeSceneBuffer(float width, float height) {
         RendererDX12::ResizeSceneBuffer(width, height);
     }
@@ -107,8 +111,12 @@ namespace Renderer {
         return RendererDX12::GetGameSRV();
     }
 
-    float GetGameWidth() { return 1280.0f; }
-    float GetGameHeight() { return 720.0f; }
+    float GetGameWidth() {
+        return RendererDX12::GetGameWidth();
+    }
+    float GetGameHeight() {
+        return RendererDX12::GetGameHeight();
+    }
     void ResizeGameBuffer(float width, float height) {
         RendererDX12::ResizeGameBuffer(width, height);
     }

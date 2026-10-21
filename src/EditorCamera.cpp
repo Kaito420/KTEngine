@@ -1,6 +1,7 @@
 #include "EditorCamera.h"
 #include "Input.h"
 #include "Renderer.h"
+#include "Manager.h"
 
 using namespace DirectX;
 
@@ -59,9 +60,7 @@ void EditorCamera::Update() {
 
 	float width = Renderer::GetSceneWidth();
 	float height = Renderer::GetSceneHeight();
-	float aspectRatio = width / height;
-
-	if (height <= 0.0f) aspectRatio = 1.777f; //16:9
+	float aspectRatio = (height > 0.0f) ? (width / height) : Manager::GetAspectRatioValue();
 
 	_projectionMatrix = XMMatrixPerspectiveFovLH(
 		XMConvertToRadians(60.0f),

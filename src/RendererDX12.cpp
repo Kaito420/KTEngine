@@ -1133,6 +1133,9 @@ namespace RendererDX12 {
         return (void*)handle.ptr;
     }
 
+    float GetSceneWidth() { return g_sceneWidth; }
+    float GetSceneHeight() { return g_sceneHeight; }
+
     void ResizeSceneBuffer(float width, float height) {
         if (width <= 0 || height <= 0) return;
         if (g_sceneWidth == width && g_sceneHeight == height && g_sceneRenderTarget != nullptr) return;
@@ -1310,6 +1313,9 @@ namespace RendererDX12 {
         D3D12_GPU_DESCRIPTOR_HANDLE handle = GetSrvGpuHandle(2);
         return (void*)handle.ptr;
     }
+
+    float GetGameWidth() { return g_gameWidth; }
+    float GetGameHeight() { return g_gameHeight; }
 
     void ResizeGameBuffer(float width, float height) {
         if (width <= 0 || height <= 0) return;

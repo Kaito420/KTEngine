@@ -38,6 +38,7 @@ bool Manager::_showGameView = true;
 bool Manager::_showSceneView = true;
 bool Manager::_showProfiler = true;
 bool Manager::_showColliderWireframe = false;
+AspectRatioType Manager::_aspectRatio = AspectRatioType::Aspect_16_9;
 EditorCamera Manager::_editorCamera;
 bool Manager::_playPending = false;
 bool Manager::_stopPending = false;
@@ -84,6 +85,12 @@ void Manager::LoadEngineConfig() {
                 iarchive(cereal::make_nvp("Theme", theme));
                 ImGuiLayer::SetTheme(static_cast<EditorTheme>(theme));
             } catch (...) {}
+
+            int aspect = 0;
+            try {
+                iarchive(cereal::make_nvp("AspectRatio", aspect));
+                _aspectRatio = static_cast<AspectRatioType>(aspect);
+            } catch (...) {}
         } catch(...) {}
     }
 }
@@ -96,11 +103,38 @@ void Manager::SaveEngineConfig(GraphicsAPI api) {
         oarchive(cereal::make_nvp("GraphicsAPI", api_val));
         int theme_val = static_cast<int>(ImGuiLayer::GetTheme());
         oarchive(cereal::make_nvp("Theme", theme_val));
+        int aspect_val = static_cast<int>(_aspectRatio);
+        oarchive(cereal::make_nvp("AspectRatio", aspect_val));
     }
 }
 
 void Manager::SaveEngineConfig() {
     SaveEngineConfig(Renderer::GetGraphicsAPI());
+}
+
+float Manager::GetAspectRatioValue() {
+    switch (_aspectRatio) {
+    case AspectRatioType::Aspect_16_10:
+        return 16.0f / 10.0f;
+    case AspectRatioType::Aspect_4_3:
+        return 4.0f / 3.0f;
+    case AspectRatioType::Aspect_16_9:
+    default:
+        return 16.0f / 9.0f;
+    }
+}
+
+void Manager::RenderAspectRatioSelector() {
+    int current = static_cast<int>(_aspectRatio);
+    const char* items[] = { "16:9", "16:10", "4:3" };
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextUnformatted("Aspect Ratio:");
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(90.0f);
+    if (ImGui::Combo("##AspectRatioCombo", &current, items, IM_ARRAYSIZE(items))) {
+        _aspectRatio = static_cast<AspectRatioType>(current);
+        SaveEngineConfig();
+    }
 }
 
 void Manager::Initialize() {
@@ -304,6 +338,23 @@ void Manager::RenderMenuBar(){
                     ImGui::Separator();
                     if (ImGui::MenuItem("Classic Dark (ImGui Default)", nullptr, currentTheme == EditorTheme::ClassicDark)) {
                         ImGuiLayer::SetTheme(EditorTheme::ClassicDark);
+                        SaveEngineConfig();
+                    }
+                    ImGui::EndMenu();
+                }
+                ImGui::Separator();
+                if (ImGui::BeginMenu("Aspect Ratio")) {
+                    int current = static_cast<int>(_aspectRatio);
+                    if (ImGui::MenuItem("16:9", nullptr, current == 0)) {
+                        _aspectRatio = AspectRatioType::Aspect_16_9;
+                        SaveEngineConfig();
+                    }
+                    if (ImGui::MenuItem("16:10", nullptr, current == 1)) {
+                        _aspectRatio = AspectRatioType::Aspect_16_10;
+                        SaveEngineConfig();
+                    }
+                    if (ImGui::MenuItem("4:3", nullptr, current == 2)) {
+                        _aspectRatio = AspectRatioType::Aspect_4_3;
                         SaveEngineConfig();
                     }
                     ImGui::EndMenu();

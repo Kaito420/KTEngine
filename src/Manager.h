@@ -22,6 +22,12 @@ enum class EngineMode {
 	Runtime
 };
 
+enum class AspectRatioType {
+	Aspect_16_9 = 0,
+	Aspect_16_10,
+	Aspect_4_3
+};
+
 class Manager {
 private:
 	static std::shared_ptr<Scene> _editorScene;
@@ -39,6 +45,7 @@ private:
 	static bool _showSceneView;
 	static bool _showProfiler;
 	static bool _showColliderWireframe;
+	static AspectRatioType _aspectRatio;
 
 	static EditorCamera _editorCamera;
 
@@ -67,6 +74,11 @@ public:
 	static bool& GetShowProfiler() { return _showProfiler; }
 	static bool IsShowColliderWireframe() { return _showColliderWireframe; }
 	static bool& GetShowColliderWireframe() { return _showColliderWireframe; }
+
+	static AspectRatioType GetAspectRatio() { return _aspectRatio; }
+	static void SetAspectRatio(AspectRatioType aspect) { _aspectRatio = aspect; }
+	static float GetAspectRatioValue();
+	static void RenderAspectRatioSelector();
 
 	static EditorCamera* GetEditorCamera() { return &_editorCamera; }
 

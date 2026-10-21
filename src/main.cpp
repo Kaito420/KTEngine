@@ -1,5 +1,6 @@
 #include <windows.h>
 #include <time.h>
+#include <cmath>
 #include "ImGuiLayer.h"
 #include "imgui.h"
 #include "imgui/ImGuizmo.h"
@@ -187,23 +188,45 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
             if (Manager::IsShowSceneView()) {
                 ImGui::Begin("Scene View", nullptr, ImGuiWindowFlags_NoScrollbar);
                 {
-                    ImVec2 viewportSize = ImGui::GetContentRegionAvail();
-                    ImVec2 cursorPos = ImGui::GetCursorScreenPos();
-                    if (viewportSize.x >= 1.0f && viewportSize.y >= 1.0f) {
-                        Renderer::ResizeSceneBuffer(viewportSize.x, viewportSize.y);
-                    }
-                    void* myTexture = Renderer::GetSceneSRV();
-                    if (myTexture) {
-                        ImGui::Image(myTexture, viewportSize);
-                        bool isHovered = ImGui::IsItemHovered();
-                        Input::SetSceneViewHovered(isHovered);
-                        
-                        auto selectedObj = Manager::GetCurrentScene()->GetSelectedGameObject();
-                        if (selectedObj) {
-                            ImGuizmo::SetOrthographic(false);
-                            ImGuizmo::SetDrawlist();
+                    Manager::RenderAspectRatioSelector();
+                    ImGui::Separator();
+
+                    ImVec2 availSize = ImGui::GetContentRegionAvail();
+                    float targetAspect = Manager::GetAspectRatioValue();
+
+                    if (availSize.x >= 1.0f && availSize.y >= 1.0f) {
+                        float imgW = availSize.x;
+                        float imgH = availSize.y;
+                        if (availSize.x / availSize.y > targetAspect) {
+                            imgH = floorf(availSize.y);
+                            imgW = floorf(imgH * targetAspect);
+                        } else {
+                            imgW = floorf(availSize.x);
+                            imgH = floorf(imgW / targetAspect);
+                        }
+                        if (imgW < 1.0f) imgW = 1.0f;
+                        if (imgH < 1.0f) imgH = 1.0f;
+
+                        float offsetX = (availSize.x - imgW) * 0.5f;
+                        float offsetY = (availSize.y - imgH) * 0.5f;
+
+                        ImVec2 currentCursor = ImGui::GetCursorPos();
+                        ImGui::SetCursorPos(ImVec2(currentCursor.x + offsetX, currentCursor.y + offsetY));
+                        ImVec2 imageScreenPos = ImGui::GetCursorScreenPos();
+
+                        Renderer::ResizeSceneBuffer(imgW, imgH);
+                        void* myTexture = Renderer::GetSceneSRV();
+                        if (myTexture) {
+                            ImGui::Image(myTexture, ImVec2(imgW, imgH));
+                            bool isHovered = ImGui::IsItemHovered();
+                            Input::SetSceneViewHovered(isHovered);
                             
-                            ImGuizmo::SetRect(cursorPos.x, cursorPos.y, viewportSize.x, viewportSize.y);
+                            auto selectedObj = Manager::GetCurrentScene()->GetSelectedGameObject();
+                            if (selectedObj) {
+                                ImGuizmo::SetOrthographic(false);
+                                ImGuizmo::SetDrawlist();
+                                
+                                ImGuizmo::SetRect(imageScreenPos.x, imageScreenPos.y, imgW, imgH);
                             
                             EditorCamera* camera = Manager::GetEditorCamera();
                             DirectX::XMMATRIX view = camera->GetViewMatrix();
@@ -234,31 +257,52 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
                         }
                     }
                 }
-                ImGui::End();
             }
+            ImGui::End();
+        }
 
             if (Manager::IsShowGameView()) {
-                ImGui::Begin("Game View", nullptr, ImGuiWindowFlags_NoScrollbar);//ゲームビュー描画
+                ImGui::Begin("Game View", nullptr, ImGuiWindowFlags_NoScrollbar);
                 {
-                    ImVec2 viewportSize = ImGui::GetContentRegionAvail(); //描画領域のサイズ取得
+                    Manager::RenderAspectRatioSelector();
+                    ImGui::Separator();
 
-                    //サイズが有効かつ現在のテクスチャサイズと異なる場合はリサイズ
-				if (viewportSize.x >= 1.0f && viewportSize.y >= 1.0f) {
-                        Renderer::ResizeGameBuffer(viewportSize.x, viewportSize.y);
-                    }
+                    ImVec2 availSize = ImGui::GetContentRegionAvail();
+                    float targetAspect = Manager::GetAspectRatioValue();
 
-                    void* myTexture = Renderer::GetGameSRV();
-                    if (myTexture == nullptr)
-                        ImGui::Text("Texture is NULL!");
-                    else {
-                        ImGui::Image(myTexture, viewportSize);
-                        bool isHovered = ImGui::IsItemHovered();
-                        Input::SetGameViewHovered(isHovered);
+                    if (availSize.x >= 1.0f && availSize.y >= 1.0f) {
+                        float imgW = availSize.x;
+                        float imgH = availSize.y;
+                        if (availSize.x / availSize.y > targetAspect) {
+                            imgH = floorf(availSize.y);
+                            imgW = floorf(imgH * targetAspect);
+                        } else {
+                            imgW = floorf(availSize.x);
+                            imgH = floorf(imgW / targetAspect);
+                        }
+                        if (imgW < 1.0f) imgW = 1.0f;
+                        if (imgH < 1.0f) imgH = 1.0f;
+
+                        float offsetX = (availSize.x - imgW) * 0.5f;
+                        float offsetY = (availSize.y - imgH) * 0.5f;
+
+                        ImVec2 currentCursor = ImGui::GetCursorPos();
+                        ImGui::SetCursorPos(ImVec2(currentCursor.x + offsetX, currentCursor.y + offsetY));
+
+                        Renderer::ResizeGameBuffer(imgW, imgH);
+
+                        void* myTexture = Renderer::GetGameSRV();
+                        if (myTexture == nullptr)
+                            ImGui::Text("Texture is NULL!");
+                        else {
+                            ImGui::Image(myTexture, ImVec2(imgW, imgH));
+                            bool isHovered = ImGui::IsItemHovered();
+                            Input::SetGameViewHovered(isHovered);
+                        }
                     }
                 }
                 ImGui::End();
             }
-
             // G-Buffer Visualizer Window
             {
                 ImGui::Begin("G-Buffer Visualizer");

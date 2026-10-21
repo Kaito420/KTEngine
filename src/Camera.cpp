@@ -6,24 +6,25 @@
 
 #include "Camera.h"
 #include "Input.h"
+#include "Manager.h"
 #include <Windows.h>
 
 void Camera::Awake() {
-	_executeInEditor = true;	//ƒGƒfƒBƒ^ƒ‚[ƒh‚Å‚àÀs‚·‚é
+	_executeInEditor = true;	//ï¿½Gï¿½fï¿½Bï¿½^ï¿½ï¿½ï¿½[ï¿½hï¿½Å‚ï¿½ï¿½ï¿½sï¿½ï¿½ï¿½ï¿½
 }
 
 void Camera::Update() {
-	//‚±‚±‚ÅRendererDX11‚ÌView‚ÆProjection‚ğXV‚·‚é
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½RendererDX11ï¿½ï¿½Viewï¿½ï¿½Projectionï¿½ï¿½Xï¿½Vï¿½ï¿½ï¿½ï¿½
 
-	//ƒ‰ƒWƒAƒ“‚É•ÏŠ·
+	//ï¿½ï¿½ï¿½Wï¿½Aï¿½ï¿½ï¿½É•ÏŠï¿½
 	float pitch = XMConvertToRadians(_transform._rotation.x);
 	float yaw = XMConvertToRadians(_transform._rotation.y);
 	float roll = XMConvertToRadians(_transform._rotation.z);
 
-	//‰ñ“]s—ñì¬
+	//ï¿½ï¿½]ï¿½sï¿½ï¿½ì¬
 	XMMATRIX rotMtx = XMMatrixRotationRollPitchYaw(pitch, yaw, roll);
 
-	//ƒxƒNƒgƒ‹‚É•ÏŠ·
+	//ï¿½xï¿½Nï¿½gï¿½ï¿½ï¿½É•ÏŠï¿½
 	XMVECTOR frontVec = XMVector3TransformNormal(XMVectorSet(0, 0, 1, 0), rotMtx);
 	XMVECTOR rightVec = XMVector3TransformNormal(XMVectorSet(1, 0, 0, 0), rotMtx);
 	XMVECTOR upVec = XMVector3TransformNormal(XMVectorSet(0, 1, 0, 0), rotMtx);
@@ -46,17 +47,15 @@ void Camera::Update() {
 	XMVECTOR position = XMVectorSet(worldPos.x, worldPos.y, worldPos.z, 1.0f);
 
 	XMMATRIX view = XMMatrixLookAtLH(
-		position, // ƒJƒƒ‰ˆÊ’u
-		position + frontVec * _distance, // ’‹“_
-		upVec  // ã•ûŒü
+		position, // ï¿½Jï¿½ï¿½ï¿½ï¿½ï¿½Ê’u
+		position + frontVec * _distance, // ï¿½ï¿½ï¿½ï¿½ï¿½_
+		upVec  // ï¿½ï¿½ï¿½ï¿½ï¿½
 	);
 
-	//RendererDX11‚©‚çƒV[ƒ“ƒTƒCƒY‚ğæ“¾‚µ‚ÄƒAƒXƒyƒNƒg”ä‚ğŒvZ
+	//RendererDX11ï¿½ï¿½ï¿½ï¿½Vï¿½[ï¿½ï¿½ï¿½Tï¿½Cï¿½Yï¿½ï¿½æ“¾ï¿½ï¿½ï¿½ÄƒAï¿½Xï¿½yï¿½Nï¿½gï¿½ï¿½ï¿½vï¿½Z
 	float width = Renderer::GetGameWidth();
 	float height = Renderer::GetGameHeight();
-	float aspectRatio = width / height;
-
-	if (height <= 0.0f) aspectRatio = 1.777f; //16:9
+	float aspectRatio = (height > 0.0f) ? (width / height) : Manager::GetAspectRatioValue();
 
 	XMMATRIX projection = XMMatrixPerspectiveFovLH(
 		XMConvertToRadians(60.0f),
