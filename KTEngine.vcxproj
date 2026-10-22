@@ -526,6 +526,12 @@
       <ObjectFileOutput>$(SolutionDir)shader\%(Filename).cso</ObjectFileOutput>
     </FxCompile>
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup>
+    <PostBuildEvent>
+      <Command>call "$(ProjectDir)sync_assets.bat" "$(OutDir)"</Command>
+      <Message>Syncing assets, shaders, and configs to output directory...</Message>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

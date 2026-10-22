@@ -1,6 +1,7 @@
 @echo off
 setlocal enabledelayedexpansion
 
+set "ROOT_DIR=%~dp0"
 cd /d "%~dp0"
 
 :: -------------------------------------------------------------
@@ -118,34 +119,16 @@ if %BUILD_STATUS% NEQ 0 (
 :: -------------------------------------------------------------
 :: 必要なアセット・シェーダー等の出力フォルダへの差分同期
 :: -------------------------------------------------------------
-if /i not "%TARGET%"=="Clean" call :sync_assets
+:: -------------------------------------------------------------
+:: Asset and Config Synchronization to Output Folder
+:: -------------------------------------------------------------
+if /i not "%TARGET%"=="Clean" (
+    call "%ROOT_DIR%sync_assets.bat" "%ROOT_DIR%x64\%CONFIG%"
+)
 
 echo ========================================================
 echo   [SUCCESS] Build and asset synchronization succeeded.
 echo ========================================================
 
 if %NO_PAUSE%==0 pause
-exit /b 0
-
-:: -------------------------------------------------------------
-:: サブルーチン: アセット同期
-:: -------------------------------------------------------------
-:sync_assets
-echo [INFO] Syncing assets, shaders, and configs to output folder...
-set "OUT_DIR=%~dp0x64\%CONFIG%"
-if not exist "%OUT_DIR%" mkdir "%OUT_DIR%"
-
-if exist asset (
-    robocopy asset "%OUT_DIR%\asset" /E /XO /NP /NFL /NDL /NJH /NJS >nul
-)
-if exist shader (
-    robocopy shader "%OUT_DIR%\shader" /E /XO /NP /NFL /NDL /NJH /NJS >nul
-)
-if exist engine_config.json (
-    copy /Y engine_config.json "%OUT_DIR%\" >nul 2>nul
-)
-if exist imgui.ini (
-    copy /Y imgui.ini "%OUT_DIR%\" >nul 2>nul
-)
-echo [INFO] Assets synced successfully.
 exit /b 0
