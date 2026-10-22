@@ -117,6 +117,9 @@
     <ClCompile Include="src\ModelRenderer.cpp">
       <Filter>ソース ファイル\Component</Filter>
     </ClCompile>
+    <ClCompile Include="src\FractalGenerator.cpp">
+      <Filter>ソース ファイル\Component</Filter>
+    </ClCompile>
     <ClCompile Include="src\Texture.cpp">
       <Filter>ソース ファイル\Framework</Filter>
     </ClCompile>
@@ -297,6 +300,9 @@
       <Filter>ヘッダー ファイル\Framework</Filter>
     </ClInclude>
     <ClInclude Include="src\ModelRenderer.h">
+      <Filter>ヘッダー ファイル\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="src\FractalGenerator.h">
       <Filter>ヘッダー ファイル\Component</Filter>
     </ClInclude>
     <ClInclude Include="src\Texture.h">

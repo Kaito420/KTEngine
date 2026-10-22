@@ -97,6 +97,7 @@ CEREAL_REGISTER_POLYMORPHIC_RELATION(GameObject, FadeObject);
 #include "BillboardEffect.h"
 #include "Fade.h"
 #include "Wave.h"
+#include "FractalGenerator.h"
 
 //=====ゲーム用に作成したコンポーネント=====
 #include "BlockSpawner.h"
@@ -161,6 +162,9 @@ CEREAL_REGISTER_POLYMORPHIC_RELATION(Square, Fade);
 
 CEREAL_REGISTER_TYPE(Wave);
 CEREAL_REGISTER_POLYMORPHIC_RELATION(Component, Wave);
+
+CEREAL_REGISTER_TYPE(FractalGenerator);
+CEREAL_REGISTER_POLYMORPHIC_RELATION(Component, FractalGenerator);
 
 //=====ゲーム用に作成したコンポーネント=====
 CEREAL_REGISTER_TYPE(BlockSpawner);

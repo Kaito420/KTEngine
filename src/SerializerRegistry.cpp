@@ -31,4 +31,5 @@ void RegisterAllComponents() {
 	ComponentRegistry::Register<BillboardEffect>("BillboardEffect");
 	ComponentRegistry::Register<Fade>("Fade");
 	ComponentRegistry::Register<Wave>("Wave");
+	ComponentRegistry::Register<FractalGenerator>("FractalGenerator");
 }

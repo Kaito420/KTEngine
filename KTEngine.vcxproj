@@ -62,6 +62,7 @@
     <ClCompile Include="src\Manager.cpp" />
     <ClCompile Include="src\Animator.cpp" />
     <ClCompile Include="src\ModelRenderer.cpp" />
+    <ClCompile Include="src\FractalGenerator.cpp" />
     <ClCompile Include="src\Particle.cpp" />
     <ClCompile Include="src\PhysicsSystem.cpp" />
     <ClCompile Include="src\Piece.cpp" />
@@ -136,6 +137,7 @@
     <ClInclude Include="src\Manager.h" />
     <ClInclude Include="src\Animator.h" />
     <ClInclude Include="src\ModelRenderer.h" />
+    <ClInclude Include="src\FractalGenerator.h" />
     <ClInclude Include="src\Particle.h" />
     <ClInclude Include="src\PhysicsSystem.h" />
     <ClInclude Include="src\Piece.h" />
