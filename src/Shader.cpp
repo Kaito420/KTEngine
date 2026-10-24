@@ -64,6 +64,25 @@ void Shader::SetARMMapPath(const std::string& path) {
 	}
 }
 
+void Shader::CopyFrom(const Shader* source) {
+	if (!source) return;
+	_vertexShaderID = source->_vertexShaderID;
+	_vertexLayoutID = source->_vertexLayoutID;
+	_pixelShaderID = source->_pixelShaderID;
+	_baseColor = source->_baseColor;
+	_emissionColor = source->_emissionColor;
+	_metallic = source->_metallic;
+	_specular = source->_specular;
+	_roughness = source->_roughness;
+	_normalWeight = source->_normalWeight;
+	_shadingModelID = source->_shadingModelID;
+	_flipU = source->_flipU;
+	_flipV = source->_flipV;
+
+	SetTexturePath(source->_texturePath);
+	SetNormalMapPath(source->_normalMapPath);
+	SetARMMapPath(source->_armMapPath);
+}
 // テクスチャ選択UIの共通ヘルパー
 static void ShowTextureCombo(const char* label, std::string& currentPath, 
 	std::function<void(const std::string&)> setter) {

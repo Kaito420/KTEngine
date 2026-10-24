@@ -51,6 +51,9 @@ public:
 	std::string GetVertexLayoutID() const { return _vertexLayoutID; }
 	std::string GetPixelShaderID() const { return _pixelShaderID; }
 
+	// Copy all shader & material properties from source Shader
+	void CopyFrom(const Shader* source);
+
 	// Getters and Setters for Material
 	XMFLOAT4 GetBaseColor() const { return _baseColor; }
 	void SetBaseColor(const XMFLOAT4& val) { _baseColor = val; }

@@ -6,6 +6,7 @@
 
 #include "FractalGenerator.h"
 #include "ModelRenderer.h"
+#include "Shader.h"
 #include "Manager.h"
 #include "Scene.h"
 #include "imgui.h"
@@ -131,11 +132,14 @@ void FractalGenerator::Generate() {
         modelPath = mr->GetLoadedFileName();
     }
 
-    // 3. Begin recursive branch generation
-    GenerateRecursive(_owner, 1, modelPath);
+    // 3. Identify Shader on owner
+    const Shader* rootShader = _owner->GetComponent<Shader>();
+
+    // 4. Begin recursive branch generation
+    GenerateRecursive(_owner, 1, modelPath, rootShader);
 }
 
-void FractalGenerator::GenerateRecursive(GameObject* parent, int currentDepth, const std::string& modelPath) {
+void FractalGenerator::GenerateRecursive(GameObject* parent, int currentDepth, const std::string& modelPath, const Shader* rootShader) {
     if (!parent || currentDepth > m_MaxDepth) return;
     auto scene = Manager::GetCurrentScene();
     if (!scene) return;
@@ -187,11 +191,22 @@ void FractalGenerator::GenerateRecursive(GameObject* parent, int currentDepth, c
             childMr->Load(modelPath.c_str());
         }
 
+        // Inherit parent's Shader & Material if enabled
+        if (m_InheritShader && rootShader) {
+            auto childShader = child->GetComponent<Shader>();
+            if (!childShader) {
+                childShader = child->AddComponent<Shader>();
+            }
+            if (childShader) {
+                childShader->CopyFrom(rootShader);
+            }
+        }
+
         m_SpawnedChildIds.push_back(child->_id);
 
         // Recurse to next depth level
         if (currentDepth < m_MaxDepth) {
-            GenerateRecursive(child, currentDepth + 1, modelPath);
+            GenerateRecursive(child, currentDepth + 1, modelPath, rootShader);
         }
     }
 }
@@ -208,6 +223,16 @@ void FractalGenerator::ShowUI() {
     } else {
         std::string fname = mr->GetLoadedFileName();
         ImGui::TextColored(ImVec4(0.4f, 0.9f, 0.5f, 1.0f), "Using Model: %s", fname.c_str());
+        ImGui::Separator();
+    }
+
+    // Check Shader on owner & Inherit toggle
+    auto shader = _owner ? _owner->GetComponent<Shader>() : nullptr;
+    if (shader) {
+        changed |= ImGui::Checkbox("Inherit Parent Shader / Material", &m_InheritShader);
+        if (ImGui::IsItemHovered()) {
+            ImGui::SetTooltip("Copy parent object's Shader, BaseColor, PBR material parameters, and textures to all branches.");
+        }
         ImGui::Separator();
     }
 
@@ -283,4 +308,3 @@ void FractalGenerator::ShowUI() {
         Generate();
     }
 }
-

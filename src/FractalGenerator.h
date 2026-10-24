@@ -14,6 +14,8 @@
 #include <string>
 #include <cereal/types/vector.hpp>
 
+class Shader;
+
 enum class FractalPreset {
     Tree_Classic2D = 0,   // 2D 2-way planar tree
     Tree_Y3D       = 1,   // 3D 2-way alternating twist tree
@@ -32,11 +34,12 @@ private:
     float m_ScaleDecay     = 0.70f;  // Scale ratio for children relative to parent
     float m_BranchOffsetY  = 1.0f;   // Local offset along Y to sprout branches
     bool  m_AutoRegenerate = false;  // Automatically regenerate on inspector change
+    bool  m_InheritShader  = true;   // Inherit root GameObject's Shader & material settings
 
     std::vector<uint32_t> m_SpawnedChildIds;
 
     void ApplyPreset(FractalPreset preset);
-    void GenerateRecursive(GameObject* parent, int currentDepth, const std::string& modelPath);
+    void GenerateRecursive(GameObject* parent, int currentDepth, const std::string& modelPath, const Shader* rootShader);
     int  CalculateTotalObjectCount() const;
 
 public:
@@ -67,6 +70,9 @@ public:
     float GetScaleDecay() const { return m_ScaleDecay; }
     void SetScaleDecay(float decay) { m_ScaleDecay = decay; }
 
+    bool GetInheritShader() const { return m_InheritShader; }
+    void SetInheritShader(bool inherit) { m_InheritShader = inherit; }
+
     template <class Archive>
     void serialize(Archive& ar) {
         ar(cereal::base_class<Component>(this));
@@ -78,9 +84,13 @@ public:
         ar(cereal::make_nvp("ScaleDecay", m_ScaleDecay));
         ar(cereal::make_nvp("BranchOffsetY", m_BranchOffsetY));
         ar(cereal::make_nvp("AutoRegenerate", m_AutoRegenerate));
+        try {
+            ar(cereal::make_nvp("InheritShader", m_InheritShader));
+        } catch (...) {
+            m_InheritShader = true;
+        }
         ar(cereal::make_nvp("SpawnedChildIds", m_SpawnedChildIds));
     }
 };
 
 #endif // !_FRACTALGENERATOR_H_
-
