@@ -13,8 +13,13 @@ PostProcessSettings& PostProcessSystem::GetSettings() {
     return s_settings;
 }
 
-void PostProcessSystem::RenderUI() {
-    ImGui::Begin("Post Process");
+void PostProcessSystem::RenderUI(bool* pOpen) {
+    if (pOpen && !*pOpen) return;
+
+    if (!ImGui::Begin("Post Process", pOpen)) {
+        ImGui::End();
+        return;
+    }
 
     // Bloom セクション
     if (ImGui::CollapsingHeader("Bloom", ImGuiTreeNodeFlags_DefaultOpen)) {

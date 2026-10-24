@@ -54,7 +54,7 @@ struct PostProcessSettings {
 class PostProcessSystem {
 public:
     static PostProcessSettings& GetSettings();
-    static void RenderUI();
+    static void RenderUI(bool* pOpen = nullptr);
 };
 
 #endif // !_POSTPROCESSSYSTEM_H_

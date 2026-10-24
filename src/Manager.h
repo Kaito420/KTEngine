@@ -43,6 +43,8 @@ private:
 	static bool _showContentBrowser;
 	static bool _showGameView;
 	static bool _showSceneView;
+	static bool _showPostProcess;
+	static bool _showGBufferVisualizer;
 	static bool _showProfiler;
 	static bool _showColliderWireframe;
 	static AspectRatioType _aspectRatio;
@@ -70,6 +72,10 @@ public:
 	static bool IsShowContentBrowser() { return _showContentBrowser; }
 	static bool IsShowGameView() { return _showGameView; }
 	static bool IsShowSceneView() { return _showSceneView; }
+	static bool IsShowPostProcess() { return _showPostProcess; }
+	static bool& GetShowPostProcess() { return _showPostProcess; }
+	static bool IsShowGBufferVisualizer() { return _showGBufferVisualizer; }
+	static bool& GetShowGBufferVisualizer() { return _showGBufferVisualizer; }
 	static bool IsShowProfiler() { return _showProfiler; }
 	static bool& GetShowProfiler() { return _showProfiler; }
 	static bool IsShowColliderWireframe() { return _showColliderWireframe; }

@@ -37,6 +37,8 @@ bool Manager::_showInspector = true;
 bool Manager::_showContentBrowser = true;
 bool Manager::_showGameView = true;
 bool Manager::_showSceneView = true;
+bool Manager::_showPostProcess = true;
+bool Manager::_showGBufferVisualizer = true;
 bool Manager::_showProfiler = true;
 bool Manager::_showColliderWireframe = false;
 AspectRatioType Manager::_aspectRatio = AspectRatioType::Aspect_16_9;
@@ -372,6 +374,9 @@ void Manager::RenderMenuBar(){
 			ImGui::MenuItem("Content Browser", nullptr, &_showContentBrowser);
 			ImGui::MenuItem("Game View", nullptr, &_showGameView);
 			ImGui::MenuItem("Scene View", nullptr, &_showSceneView);
+			ImGui::Separator();
+			ImGui::MenuItem("Post Process", nullptr, &_showPostProcess);
+			ImGui::MenuItem("G-Buffer Visualizer", nullptr, &_showGBufferVisualizer);
 			ImGui::Separator();
 			ImGui::MenuItem("Profiler", nullptr, &_showProfiler);
 			ImGui::Separator();
