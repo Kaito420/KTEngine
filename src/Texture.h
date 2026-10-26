@@ -22,6 +22,7 @@ private:
 public:
 	static const TEXTURE* Load(const char* FileName);
 	static const TEXTURE* LoadFromMemory(const std::string& key, const void* data, size_t size);
+	static const TEXTURE* CreateFromRGBA(const std::string& key, const unsigned char* rgbaData, unsigned int width, unsigned int height);
 };
 
 #endif // !_TEXTURE_H_

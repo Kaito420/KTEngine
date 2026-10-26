@@ -177,6 +177,7 @@ namespace RendererDX12 {
     void ApplyDeferredLighting();
     void ApplyPostProcess();
     void* GetGBufferSRV(int bufferIndex, bool isGame);
+    void* GetTextureSRV(const TEXTURE* texture);
     void* GetShadowMapSRV();
     bool IsShadowPass();
     void SetShadowPass(bool enable);
@@ -297,6 +298,7 @@ namespace Renderer {
     void ApplyDeferredLighting();
     void ApplyPostProcess();
     void* GetGBufferSRV(int bufferIndex, bool isGame);
+    void* GetTextureSRV(const TEXTURE* texture);
 }
 
 struct ID3D12Device;

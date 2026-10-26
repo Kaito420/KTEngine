@@ -197,6 +197,33 @@ void ModelRenderer::Render() const
 	Renderer::SetBoneBuffer(nullptr);
 }
 
+const MODEL* ModelRenderer::GetOrLoadModel(const char* FileName)
+{
+	if (FileName == nullptr || strlen(FileName) == 0)
+		return nullptr;
+
+	std::string key = FileName;
+	std::replace(key.begin(), key.end(), '\\', '/');
+
+	if (m_ModelPool.find(key) != m_ModelPool.end()) {
+		return m_ModelPool[key];
+	}
+	if (m_ModelPool.find(FileName) != m_ModelPool.end()) {
+		return m_ModelPool[FileName];
+	}
+
+	MODEL* newModel = new MODEL();
+	LoadModel(key.c_str(), newModel);
+	if (newModel->VertexBuffer != nullptr && !newModel->BaseVertices.empty()) {
+		m_ModelPool[key] = newModel;
+		return newModel;
+	}
+	else {
+		delete newModel;
+		return nullptr;
+	}
+}
+
 void ModelRenderer::Preload(const char* FileName)
 {
 	if (m_ModelPool.count(FileName) > 0)

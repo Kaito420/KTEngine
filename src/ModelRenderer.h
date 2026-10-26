@@ -144,6 +144,7 @@ private:
 public:
 
 	static void Preload(const char* FileName);
+	static const MODEL* GetOrLoadModel(const char* FileName);
 	static void UnloadAll();
 	static bool LoadAnimationFromFbx(const char* FileName, MODEL* TargetModel);
 

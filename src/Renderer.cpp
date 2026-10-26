@@ -221,6 +221,10 @@ namespace Renderer {
     void* GetGBufferSRV(int bufferIndex, bool isGame) {
         return RendererDX12::GetGBufferSRV(bufferIndex, isGame);
     }
+
+    void* GetTextureSRV(const TEXTURE* texture) {
+        return RendererDX12::GetTextureSRV(texture);
+    }
 }
 
 TEXTURE::~TEXTURE() {

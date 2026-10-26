@@ -2088,6 +2088,12 @@ namespace RendererDX12 {
         return (void*)handle.ptr;
     }
 
+    void* GetTextureSRV(const TEXTURE* texture) {
+        if (!texture) return nullptr;
+        D3D12_GPU_DESCRIPTOR_HANDLE handle = GetSrvGpuHandle(texture->SRVIndex);
+        return (void*)handle.ptr;
+    }
+
     void PrintDebugMessages() {
 #if !defined(_DEBUG) || defined(DEVELOPMENT)
         return;
