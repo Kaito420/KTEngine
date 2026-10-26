@@ -19,6 +19,8 @@
 
 #include "SerializerRegistry.h"
 #include "ComponentRegistry.h"
+#include "HotReloadManager.h"
+#include "ComponentRegistry.h"
 #include <commdlg.h>
 #include <fstream>
 #include <sstream>
@@ -388,6 +390,7 @@ void Manager::RenderMenuBar(){
 			
 			ImGui::EndMenu();
 		}
+		HotReloadManager::RenderMenuItems();
 	ImGui::EndMainMenuBar();
 	}
 
@@ -455,7 +458,7 @@ void Manager::RenderToolbar() {
 
 		bool isPlaying = (_mode == EngineMode::Runtime);
 		float availWidth = ImGui::GetContentRegionAvail().x;
-		float totalWidth = (btnWidth * 2.0f) + spacing;
+		float totalWidth = (btnWidth * 3.0f) + (spacing * 2.0f);
 		float startX = (availWidth - totalWidth) * 0.5f;
 		float startY = (toolbarHeight - btnHeight) * 0.5f;
 
@@ -504,7 +507,149 @@ void Manager::RenderToolbar() {
 			ImGui::EndDisabled();
 		}
 
+		ImGui::SameLine(0.0f, spacing);
+
+		// --- Reload Button ---
+		bool isCompiling = HotReloadManager::IsCompilingCpp();
+		if (isCompiling) {
+			ImGui::BeginDisabled(true);
+		}
+		if (ImGui::Button(isCompiling ? "Building..." : "Reload", ImVec2(btnWidth + 8.0f, btnHeight))) {
+			HotReloadManager::CheckAndReloadModified();
+		}
+		if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+			ImGui::SetTooltip("Hot-Reload Modified HLSL / C++ Files (Ctrl+R)");
+		}
+		if (isCompiling) {
+			ImGui::EndDisabled();
+		}
+
 		ImGui::End();
 	}
 	ImGui::PopStyleVar(2);
+}
+
+bool Manager::SaveHotReloadSnapshot(const std::string& filePath, HWND hwnd) {
+	try {
+		std::ofstream ofs(filePath, std::ios::binary);
+		if (!ofs.is_open()) return false;
+
+		cereal::BinaryOutputArchive ar(ofs);
+
+		int modeInt = static_cast<int>(_mode);
+		int aspectInt = static_cast<int>(_aspectRatio);
+		ar(modeInt, _currentScenePath, aspectInt);
+		ar(_showHierarchy, _showInspector, _showContentBrowser, _showGameView, _showSceneView);
+		ar(_showPostProcess, _showGBufferVisualizer, _showProceduralTextureEditor, _showProfiler, _showColliderWireframe);
+
+		DirectX::XMFLOAT3 camPos = _editorCamera.GetPosition();
+		DirectX::XMFLOAT3 camRot = _editorCamera.GetRotation();
+		float camDist = _editorCamera.GetDistance();
+		ar(camPos.x, camPos.y, camPos.z, camRot.x, camRot.y, camRot.z, camDist);
+
+		BOOL isZoomed = (hwnd != nullptr) ? IsZoomed(hwnd) : FALSE;
+		RECT winRect = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
+		if (hwnd != nullptr) {
+			GetWindowRect(hwnd, &winRect);
+		}
+		ar(isZoomed, winRect.left, winRect.top, winRect.right, winRect.bottom);
+
+		bool hasEditorScene = (_editorScene != nullptr);
+		ar(hasEditorScene);
+		if (hasEditorScene) {
+			ar(_editorScene);
+			int selId = _editorScene->GetSelectedObjId();
+			ar(selId);
+		}
+
+		bool hasRuntimeScene = (_runtimeScene != nullptr);
+		ar(hasRuntimeScene);
+		if (hasRuntimeScene) {
+			ar(_runtimeScene);
+			int selId = _runtimeScene->GetSelectedObjId();
+			ar(selId);
+		}
+
+		return true;
+	}
+	catch (...) {
+		return false;
+	}
+}
+
+bool Manager::LoadHotReloadSnapshot(const std::string& filePath, HWND hwnd) {
+	try {
+		std::ifstream ifs(filePath, std::ios::binary);
+		if (!ifs.is_open()) return false;
+
+		Renderer::FlushGPUDX12();
+
+		cereal::BinaryInputArchive ar(ifs);
+
+		int modeInt = 0;
+		int aspectInt = 0;
+		ar(modeInt, _currentScenePath, aspectInt);
+		ar(_showHierarchy, _showInspector, _showContentBrowser, _showGameView, _showSceneView);
+		ar(_showPostProcess, _showGBufferVisualizer, _showProceduralTextureEditor, _showProfiler, _showColliderWireframe);
+
+		_aspectRatio = static_cast<AspectRatioType>(aspectInt);
+
+		DirectX::XMFLOAT3 camPos = {};
+		DirectX::XMFLOAT3 camRot = {};
+		float camDist = 100.0f;
+		ar(camPos.x, camPos.y, camPos.z, camRot.x, camRot.y, camRot.z, camDist);
+		_editorCamera.SetPosition(camPos);
+		_editorCamera.SetRotation(camRot);
+		_editorCamera.SetDistance(camDist);
+		_editorCamera.Update();
+
+		BOOL isZoomed = FALSE;
+		LONG left = 0, top = 0, right = SCREEN_WIDTH, bottom = SCREEN_HEIGHT;
+		ar(isZoomed, left, top, right, bottom);
+		if (hwnd != nullptr) {
+			if (isZoomed) {
+				ShowWindow(hwnd, SW_SHOWMAXIMIZED);
+			} else if (right > left && bottom > top) {
+				SetWindowPos(hwnd, NULL, left, top, right - left, bottom - top, SWP_NOZORDER | SWP_NOACTIVATE);
+			}
+		}
+
+		bool hasEditorScene = false;
+		ar(hasEditorScene);
+		if (hasEditorScene) {
+			std::shared_ptr<Scene> loadedEditorScene;
+			int selId = -1;
+			ar(loadedEditorScene);
+			ar(selId);
+			if (loadedEditorScene) {
+				_editorScene = loadedEditorScene;
+				_editorScene->OnLoaded();
+				_editorScene->SetSelectedObjId(selId);
+			}
+		}
+
+		bool hasRuntimeScene = false;
+		ar(hasRuntimeScene);
+		if (hasRuntimeScene) {
+			std::shared_ptr<Scene> loadedRuntimeScene;
+			int selId = -1;
+			ar(loadedRuntimeScene);
+			ar(selId);
+			if (loadedRuntimeScene) {
+				_runtimeScene = loadedRuntimeScene;
+				_runtimeScene->OnLoaded();
+				_runtimeScene->SetSelectedObjId(selId);
+			}
+		}
+
+		_mode = static_cast<EngineMode>(modeInt);
+		_newScenePending = false;
+		_playPending = false;
+		_stopPending = false;
+
+		return true;
+	}
+	catch (...) {
+		return false;
+	}
 }

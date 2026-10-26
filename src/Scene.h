@@ -47,6 +47,8 @@ public:
 
 	virtual PhysicsSystem* GetPhysicsSystem() { return _physicsSystem; }
 	std::shared_ptr<GameObject> GetSelectedGameObject();
+	int GetSelectedObjId() const { return _selectedObjId; }
+	void SetSelectedObjId(int id) { _selectedObjId = id; }
 
 	void OnLoaded();
 

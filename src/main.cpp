@@ -17,6 +17,7 @@
 #include "PostProcessSystem.h"
 #include "ProceduralTextureEditor.h"
 #include "Profiler.h"
+#include "HotReloadManager.h"
 #include "../resource/resource.h"
 
 // グローバル変数
@@ -37,6 +38,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             Renderer::ResizeMainWindow(width, height);
         }
         return 0;
+
+    case WM_ACTIVATEAPP:
+        HotReloadManager::OnWindowActivate(wParam != 0);
+        break;
 
     case WM_INPUT:
         Input::ProcessRawInput(lParam);
@@ -78,6 +83,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
     //シーン用バッファ（一旦サイズ固定）
     Renderer::InitSceneRenderTarget(1280,720);
     Renderer::InitGameRenderTarget(1280,720);
+    HotReloadManager::Initialize(hwnd);
 
     // メインループ
     MSG msg = {};
@@ -90,6 +96,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
 
         Profiler::BeginFrame();
 
+        HotReloadManager::Update();
         Manager::Update(); // Managerの更新
 
         {
@@ -360,6 +367,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
                 ProceduralTextureEditor::RenderUI(&Manager::GetShowProceduralTextureEditor());
             }
         }
+            HotReloadManager::RenderUI();
         ImGuiLayer::End();
         }
 
@@ -371,6 +379,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
     }
 
     // クリーンアップ
+    HotReloadManager::Shutdown();
 	Manager::Finalize();
     ImGuiLayer::Shutdown();
     Renderer::Shutdown();

@@ -183,6 +183,7 @@ namespace RendererDX12 {
     bool IsShadowPass();
     void SetShadowPass(bool enable);
     ID3D12PipelineState* GetShadowPipelineState();
+    void RecreateShadowPSO();
     void BeginShadowRender();
     void EndShadowRender();
     void PrintDebugMessages();
@@ -283,6 +284,7 @@ namespace Renderer {
     bool IsShadowPass();
     void SetShadowPass(bool enable);
     ID3D12PipelineState* GetShadowPipelineState();
+    void RecreateShadowPSO();
     void BeginShadowRender();
     void EndShadowRender();
 
@@ -320,6 +322,7 @@ namespace Renderer {
     bool GetDepthWriteDX12();
     void BindShaderConstantsDX12();
     void FlushGPUDX12();
+    void RecreateShadowPSODX12();
 }
 
 #endif // !_RENDERER_H

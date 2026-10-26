@@ -128,6 +128,9 @@ public:
 	static EngineMode GetMode() { return _mode; }
 
 	static std::string GetCurrentScenePath() { return _currentScenePath; }
+
+	static bool SaveHotReloadSnapshot(const std::string& filePath, HWND hwnd);
+	static bool LoadHotReloadSnapshot(const std::string& filePath, HWND hwnd);
 };
 
 

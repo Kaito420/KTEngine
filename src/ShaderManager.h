@@ -39,6 +39,8 @@ class ShaderManager {
 private:
     std::map<std::string, std::vector<unsigned char>> _vertexShaderBinaries;
     std::map<std::string, std::vector<unsigned char>> _pixelShaderBinaries;
+    std::map<std::string, std::vector<std::string>> _vsFileToIds;
+    std::map<std::string, std::vector<std::string>> _psFileToIds;
     std::map<PipelineStateKey, ComPtr<ID3D12PipelineState>> _pipelineStates;
     PipelineStateKey _lastKey = {};
     ID3D12PipelineState* _lastPSO = nullptr;
@@ -55,6 +57,8 @@ public:
     void LoadVertexShader(const std::string& id, const char* fileName);
     void LoadPixelShader(const std::string& id, const char* fileName);
     const std::vector<unsigned char>& GetVertexShaderBinary(const std::string& id) const;
+    bool ReloadShaderFromBinary(const std::string& stem, bool isVS, const std::vector<unsigned char>& binary);
+    void ClearPSOCache();
 
     ID3D12PipelineState* GetPipelineState(
         const std::string& vsId,

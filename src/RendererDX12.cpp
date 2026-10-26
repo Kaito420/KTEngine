@@ -1440,6 +1440,48 @@ namespace RendererDX12 {
     bool IsShadowPass() { return g_isShadowPass; }
     void SetShadowPass(bool enable) { g_isShadowPass = enable; }
     ID3D12PipelineState* GetShadowPipelineState() { return g_shadowPipelineState.Get(); }
+    void RecreateShadowPSO() {
+        if (!g_pd3dDevice || !g_pd3dRootSignature) return;
+        const auto& vsBin = ShaderManager::Instance().GetVertexShaderBinary("ShadowVS");
+        if (vsBin.empty()) return;
+        D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
+        psoDesc.pRootSignature = g_pd3dRootSignature.Get();
+        psoDesc.VS.pShaderBytecode = vsBin.data();
+        psoDesc.VS.BytecodeLength = vsBin.size();
+        psoDesc.PS.pShaderBytecode = nullptr;
+        psoDesc.PS.BytecodeLength = 0;
+        static const D3D12_INPUT_ELEMENT_DESC inputElementDescs[] = {
+            { "POSITION",     0, DXGI_FORMAT_R32G32B32_FLOAT,    0, 0,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+            { "NORMAL",       0, DXGI_FORMAT_R32G32B32_FLOAT,    0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+            { "COLOR",        0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+            { "TEXCOORD",     0, DXGI_FORMAT_R32G32_FLOAT,       0, 40, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+            { "BLENDINDICES", 0, DXGI_FORMAT_R32G32B32A32_UINT,  0, 48, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+            { "BLENDWEIGHT",  0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 64, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+        };
+        psoDesc.InputLayout.pInputElementDescs = inputElementDescs;
+        psoDesc.InputLayout.NumElements = _countof(inputElementDescs);
+        psoDesc.BlendState.RenderTarget[0].RenderTargetWriteMask = 0;
+        psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
+        psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
+        psoDesc.RasterizerState.FrontCounterClockwise = FALSE;
+        psoDesc.RasterizerState.DepthBias = 10000;
+        psoDesc.RasterizerState.DepthBiasClamp = 0.0f;
+        psoDesc.RasterizerState.SlopeScaledDepthBias = 1.0f;
+        psoDesc.RasterizerState.DepthClipEnable = TRUE;
+        psoDesc.DepthStencilState.DepthEnable = TRUE;
+        psoDesc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+        psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+        psoDesc.DepthStencilState.StencilEnable = FALSE;
+        psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+        psoDesc.NumRenderTargets = 0;
+        psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
+        psoDesc.SampleDesc.Count = 1;
+        psoDesc.SampleMask = UINT_MAX;
+        ComPtr<ID3D12PipelineState> newPso;
+        if (SUCCEEDED(g_pd3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&newPso)))) {
+            g_shadowPipelineState = newPso;
+        }
+    }
     void BeginShadowRender() {
         if (!g_shadowMapArray) return;
         if (!g_isCommandListOpen) {

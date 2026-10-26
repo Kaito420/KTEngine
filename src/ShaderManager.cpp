@@ -2,8 +2,24 @@
 #include "Renderer.h"
 #include <cassert>
 #include <cstdio>
+#include <filesystem>
+#include <algorithm>
+
+static std::string ExtractShaderStem(const char* fileName) {
+    if (!fileName) return "";
+    return std::filesystem::path(fileName).stem().string();
+}
+
+static void RegisterStemMapping(std::map<std::string, std::vector<std::string>>& map, const std::string& stem, const std::string& id) {
+    if (stem.empty()) return;
+    auto& vec = map[stem];
+    if (std::find(vec.begin(), vec.end(), id) == vec.end()) {
+        vec.push_back(id);
+    }
+}
 
 void ShaderManager::LoadVertexShader(const std::string& id, const char* fileName) {
+    RegisterStemMapping(_vsFileToIds, ExtractShaderStem(fileName), id);
     FILE* file = nullptr;
     fopen_s(&file, fileName, "rb");
     if (!file) {
@@ -40,6 +56,7 @@ void ShaderManager::LoadVertexShader(const std::string& id, const char* fileName
 }
 
 void ShaderManager::LoadPixelShader(const std::string& id, const char* fileName) {
+    RegisterStemMapping(_psFileToIds, ExtractShaderStem(fileName), id);
     FILE* file = nullptr;
     fopen_s(&file, fileName, "rb");
     if (!file) {
@@ -253,7 +270,7 @@ ID3D12PipelineState* ShaderManager::GetPipelineState(
         }
         // D3D12デバッグメッセージも強制出力
         Renderer::PrintDebugMessagesDX12();
-        assert(false && "CreateGraphicsPipelineState failed!");
+        OutputDebugStringA("CreateGraphicsPipelineState failed!\n");
         return nullptr;
     }
 
@@ -270,5 +287,45 @@ const std::vector<unsigned char>& ShaderManager::GetVertexShaderBinary(const std
     }
     static const std::vector<unsigned char> empty;
     return empty;
+}
+
+bool ShaderManager::ReloadShaderFromBinary(const std::string& stem, bool isVS, const std::vector<unsigned char>& binary) {
+    if (binary.empty()) return false;
+    bool updated = false;
+    if (isVS) {
+        auto it = _vsFileToIds.find(stem);
+        if (it != _vsFileToIds.end()) {
+            for (const auto& id : it->second) {
+                _vertexShaderBinaries[id] = binary;
+                updated = true;
+            }
+        }
+        if (_vertexShaderBinaries.count(stem) > 0) {
+            _vertexShaderBinaries[stem] = binary;
+            updated = true;
+        }
+    } else {
+        auto it = _psFileToIds.find(stem);
+        if (it != _psFileToIds.end()) {
+            for (const auto& id : it->second) {
+                _pixelShaderBinaries[id] = binary;
+                updated = true;
+            }
+        }
+        if (_pixelShaderBinaries.count(stem) > 0) {
+            _pixelShaderBinaries[stem] = binary;
+            updated = true;
+        }
+    }
+    if (updated) {
+        ClearPSOCache();
+    }
+    return updated;
+}
+
+void ShaderManager::ClearPSOCache() {
+    _pipelineStates.clear();
+    _lastKey = {};
+    _lastPSO = nullptr;
 }
 

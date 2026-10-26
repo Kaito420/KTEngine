@@ -173,6 +173,7 @@ namespace Renderer {
     bool GetDepthWriteDX12() { return RendererDX12::GetDepthWrite(); }
     void BindShaderConstantsDX12() { RendererDX12::BindShaderConstants(); }
     void FlushGPUDX12() { RendererDX12::WaitForLastSubmittedFrame(); }
+    void RecreateShadowPSODX12() { RendererDX12::RecreateShadowPSO(); }
 
     std::unique_ptr<VERTEX_BUFFER> CreateVertexBuffer(unsigned int stride, unsigned int size) {
         return RendererDX12::CreateVertexBuffer(stride, size);
