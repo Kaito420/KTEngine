@@ -1,4 +1,4 @@
-//=====================================================================================
+ï»¿//=====================================================================================
 // Animator.h
 // Author:Kaito Aoki
 // Date:2026/10/20
@@ -26,7 +26,7 @@ private:
 	bool m_IsLooping = true;
 	bool m_BindPoseOverride = false;
 
-	// ƒNƒƒXƒtƒF[ƒh•âŠÔ—pƒXƒe[ƒg
+	// ã‚¯ãƒ­ã‚¹ãƒ•ã‚§ãƒ¼ãƒ‰è£œé–“ç”¨ã‚¹ãƒ†ãƒ¼ãƒˆ
 	int m_PrevClipIndex = -1;
 	float m_PrevTime = 0.0f;
 	bool m_PrevLooping = true;
@@ -34,7 +34,7 @@ private:
 	float m_CrossfadeElapsed = 0.0f;
 	float m_DefaultCrossfadeDuration = 0.25f;
 
-	// ŠO•”FBX‚©‚ç’Ç‰Á“Ç‚İ‚İ‚µ‚½ƒAƒjƒ[ƒVƒ‡ƒ“ƒtƒ@ƒCƒ‹ƒpƒXˆê——
+	// å¤–éƒ¨FBXã‹ã‚‰è¿½åŠ èª­ã¿è¾¼ã¿ã—ãŸã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ãƒ•ã‚¡ã‚¤ãƒ«ãƒ‘ã‚¹ä¸€è¦§
 	std::vector<std::string> m_ExtraAnimationFiles;
 	std::string m_AppliedModelFile;
 
@@ -59,7 +59,7 @@ public:
 	void ShowUI() override;
 	std::string GetComponentName() override { return "Animator"; }
 
-	// Ä¶§ŒäAPI
+	// å†ç”Ÿåˆ¶å¾¡API
 	void Play(int clipIndex, float crossfadeDuration = -1.0f, bool restartIfSame = false);
 	void Play(const std::string& clipName, float crossfadeDuration = -1.0f, bool restartIfSame = false);
 	void Pause() { m_IsPlaying = false; }

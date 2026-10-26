@@ -1,4 +1,4 @@
-//=====================================================================================
+Ôªø//=====================================================================================
 // Input.h
 // Author:Kaito Aoki
 // Date:2025/07/22
@@ -42,16 +42,16 @@ bool Input::IsGameViewHovered(){
 void Input::Initialize(HWND hwnd){
 	_hWnd = hwnd;
 
-	//ÉLÅ[É{Å[ÉhÇ∆É}ÉEÉX
+	//„Ç≠„Éº„Éú„Éº„Éâ„Å®„Éû„Ç¶„Çπ
 	RAWINPUTDEVICE rid[2];
 
-	//ÉLÅ[É{Å[Éh
+	//„Ç≠„Éº„Éú„Éº„Éâ
 	rid[0].usUsagePage = 0x01;
 	rid[0].usUsage = 0x06;
 	rid[0].dwFlags = RIDEV_INPUTSINK;
 	rid[0].hwndTarget = hwnd;
 
-	//É}ÉEÉX
+	//„Éû„Ç¶„Çπ
 	rid[1].usUsagePage = 0x01;
 	rid[1].usUsage = 0x02;
 	rid[1].dwFlags = RIDEV_INPUTSINK;
@@ -121,7 +121,7 @@ void Input::ProcessRawInput(LPARAM lParam){
 
 		if (mouse.usButtonFlags & RI_MOUSE_WHEEL) {
 			SHORT wheel = (SHORT)mouse.usButtonData;
-			_wheelDelta += wheel;	//WHEEL_DELTAíPà Åií èÌ120Åj
+			_wheelDelta += wheel;	//WHEEL_DELTAÂçò‰ΩçÔºàÈÄöÂ∏∏120Ôºâ
 		}
 	}
 

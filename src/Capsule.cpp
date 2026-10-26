@@ -1,4 +1,4 @@
-#include "Capsule.h"
+﻿#include "Capsule.h"
 #include "GameObject.h"
 #include "ktvector.hpp"
 #include "Texture.h"
@@ -148,7 +148,7 @@ void Capsule::Render() const {
 	cmdList->IASetIndexBuffer(&ibView);
 
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	// PSOバインチE
+	// PSOバインド
 	{
 		std::string vsId = "VertexDirectionalLightingVS";
 		std::string psId = "VertexDirectionalLightingPS";

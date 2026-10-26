@@ -1,4 +1,4 @@
-//=====================================================================================
+﻿//=====================================================================================
 // Camera.cpp
 // Author:Kaito Aoki
 // Date:2025/07/18
@@ -10,21 +10,21 @@
 #include <Windows.h>
 
 void Camera::Awake() {
-	_executeInEditor = true;	//�G�f�B�^���[�h�ł���s����
+	_executeInEditor = true;	// エディタモードでも実行する
 }
 
 void Camera::Update() {
-	//������RendererDX11��View��Projection��X�V����
+	// ここでRendererDX11のViewとProjectionを更新する？
 
-	//���W�A���ɕϊ�
+	// ラジアンに変換
 	float pitch = XMConvertToRadians(_transform._rotation.x);
 	float yaw = XMConvertToRadians(_transform._rotation.y);
 	float roll = XMConvertToRadians(_transform._rotation.z);
 
-	//��]�s��쐬
+	// 回転行列作成
 	XMMATRIX rotMtx = XMMatrixRotationRollPitchYaw(pitch, yaw, roll);
 
-	//�x�N�g���ɕϊ�
+	// ベクトルに変換
 	XMVECTOR frontVec = XMVector3TransformNormal(XMVectorSet(0, 0, 1, 0), rotMtx);
 	XMVECTOR rightVec = XMVector3TransformNormal(XMVectorSet(1, 0, 0, 0), rotMtx);
 	XMVECTOR upVec = XMVector3TransformNormal(XMVectorSet(0, 1, 0, 0), rotMtx);
@@ -47,12 +47,12 @@ void Camera::Update() {
 	XMVECTOR position = XMVectorSet(worldPos.x, worldPos.y, worldPos.z, 1.0f);
 
 	XMMATRIX view = XMMatrixLookAtLH(
-		position, // �J�����ʒu
-		position + frontVec * _distance, // �����_
-		upVec  // �����
+		position, // カメラ位置
+		position + frontVec * _distance, // 注視点
+		upVec  // 上方向
 	);
 
-	//RendererDX11����V�[���T�C�Y��擾���ăA�X�y�N�g���v�Z
+	// RendererDX11からシーンサイズを取得してアスペクト比計算
 	float width = Renderer::GetGameWidth();
 	float height = Renderer::GetGameHeight();
 	float aspectRatio = (height > 0.0f) ? (width / height) : Manager::GetAspectRatioValue();

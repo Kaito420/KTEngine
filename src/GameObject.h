@@ -1,4 +1,4 @@
-//=====================================================================================
+﻿//=====================================================================================
 // GameObject.h
 // Author:Kaito Aoki
 // Date:2025/06/25
@@ -28,9 +28,9 @@ class GameObject : public std::enable_shared_from_this<GameObject> {
 	friend class Scene;
 private:
 
-	bool _awakened = false; //Awakeが実行されたかどぁE��
-	bool _started = false; //Startが実行されたかどぁE��
-	static uint32_t _nextId; //次に割り当てるID
+	bool _awakened = false; // Awakeが実行されたかどうか
+	bool _started = false; // Startが実行されたかどうか
+	static uint32_t _nextId; // 次に割り当てるID
 
 	std::shared_ptr<GameObject> _parent = nullptr;
 	std::vector<std::shared_ptr<GameObject>> _children;
@@ -40,17 +40,17 @@ protected:
 
 public:
 	uint32_t _id;
-	int _parentId = -1; // シリアライズ用親ID�E�E1は親なし！E
+	int _parentId = -1; // シリアライズ用親ID（-1は親なし）
 	std::string _name = "gameObject";
-	bool _active = true; //アクチE��ブ状態！Erue:有効, false:無効�E�E
-	bool _executeInEditor = false; //エチE��タモードでも実行するかどぁE��
-	std::list<std::shared_ptr<Component>> _components; //こ�EGameObjectにアタチE��されてぁE��コンポ�Eネント�EリスチE
+	bool _active = true; // アクティブ状態（true:有効, false:無効）
+	bool _executeInEditor = false; // エディタモードでも実行するかどうか
+	std::list<std::shared_ptr<Component>> _components; // このGameObjectにアタッチされているコンポーネントのリスト
 
 	struct Transform {
 		KTVECTOR3 _position = { 0.0f, 0.0f, 0.0f };
 		KTVECTOR3 _scale = { 1.0f, 1.0f, 1.0f };
 		KTVECTOR3 _rotation = { 0.0f, 0.0f, 0.0f };	//Degree
-		KTQUATERNION _quaternion = { 0.0f, 0.0f, 0.0f, 1.0f }; //回転を表すクォータニオン
+		KTQUATERNION _quaternion = { 0.0f, 0.0f, 0.0f, 1.0f }; // 回転を表すクォータニオン
 		
 		template <class Archive>
 		void serialize(Archive& ar) {
@@ -60,18 +60,18 @@ public:
 			ar(cereal::make_nvp("Quaternion", _quaternion));
 		}
 	};
-	Transform _transform; //位置、スケール、回転を保持するTransform構造体（親がいる場合�E親からの相対ローカル座標！E
+	Transform _transform; // 位置、スケール、回転を保持するTransform構造体（親がいる場合は親からの相対ローカル座標）
 	GameObject() {
-		_id = _nextId++;	//コンストラクタにてID決定し、次回以降�EIDをインクリメンチE
+		_id = _nextId++;	// コンストラクタにてID決定し、次回以降のIDをインクリメント
 	}
 	virtual ~GameObject() {}
 	virtual void ShowUI() {}
 
-	// 自身のローカルアクチE��ブ状態�E設定�E取征E
+	// 自身のローカルアクティブ状態の設定・取得
 	bool Active(bool active) { _active = active; return _active; }
 	bool GetActiveSelf() const { return _active; }
 
-	// 親のアクチE��ブ状態を老E�Eした階層全体�E有効状態（親が非アクチE��ブなら子も非アクチE��ブ！E
+	// 親のアクティブ状態を考慮した階層全体の有効状態（親が非アクティブなら子も非アクティブ）
 	bool GetActive() const {
 		if (!_active) return false;
 		if (_parent) return _parent->GetActive();
@@ -83,7 +83,7 @@ public:
 	bool Started() { return _started = true; }
 	bool GetStarted() { return _started; }
 
-	// 削除マ�Eク�E�子オブジェクトも連動して削除マ�Eクを付与！E
+	// 削除マーク（子オブジェクトも連動して削除マークを付与）
 	void Destroy() {
 		_destroy = true;
 		for (auto& child : _children) {
@@ -92,7 +92,7 @@ public:
 	}
 	bool IsDestroy() const { return _destroy; }
 
-	// ==== 親子関係！Eierarchy�E�操作メソチE�� ====
+	// ==== 親子関係（Hierarchy）操作メソッド ====
 	std::shared_ptr<GameObject> GetParent() const { return _parent; }
 	const std::vector<std::shared_ptr<GameObject>>& GetChildren() const { return _children; }
 
@@ -117,7 +117,7 @@ public:
 		return depth;
 	}
 
-	// ==== ローカル・ワールド行�E�E�E��ランスフォーム計箁E====
+	// ==== ローカル・ワールド行列・トランスフォーム計算 ====
 	XMMATRIX GetLocalMatrix() const {
 		XMMATRIX scaling = XMMatrixScaling(_transform._scale.x, _transform._scale.y, _transform._scale.z);
 		XMFLOAT4 q(_transform._quaternion.x, _transform._quaternion.y, _transform._quaternion.z, _transform._quaternion.w);
@@ -220,56 +220,56 @@ public:
 	}
 
 	/// <summary>
-	/// インスタンス生�E直後に実行（コンポ�Eネント有効無効に関係なく呼ばれる�E�E
+	/// インスタンス生成直後に実行（コンポーネント有効無効に関係なく呼ばれる）
 	/// </summary>
 	virtual void Awake() {}
 
 	/// <summary>
-	/// 最初�EUpdate直前に実行（�E回�Eみ、E��アクチE��ブ�E際�E無視！E
+	/// 最初のUpdate直前に実行（初回のみ、非アクティブの際は無視）
 	/// </summary>
 	virtual void Start() {}
 
 	/// <summary>
-	/// 毎フレーム実行（非アクチE��ブ�E際�E無視！E
+	/// 毎フレーム実行（非アクティブの際は無視）
 	/// </summary>
 	virtual void Update() {}
 
 	/// <summary>
-	/// 固定時間スチE��プで実行（物琁E��新直前、E��アクチE��ブ�E際�E無視！E
+	/// 固定時間ステップで実行（物理更新直前、非アクティブの際は無視）
 	/// </summary>
 	virtual void FixedUpdate() {}
 
 	/// <summary>
-	/// エチE��タ上で毎フレーム実行（非アクチE��ブ�E際�E無視！E
+	/// エディタ上で毎フレーム実行（非アクティブの際は無視）
 	/// </summary>
 	virtual void UpdateEditor();
 
 	/// <summary>
-	/// //Update後に実行（非アクチE��ブ�E際�E無視！E
+	/// Update後に実行（非アクティブの際は無視）
 	/// </summary>
 	virtual void LateUpdate() {}
 
 	/// <summary>
-	/// LateUpdate後に実行（非アクチE��ブ�E際�E無視！E
+	/// LateUpdate後に実行（非アクティブの際は無視）
 	/// </summary>
 	virtual void Render() const {}
 
 	/// <summary>
-	/// 削除直前に実行（非アクチE��ブ�E際�E無視！E
+	/// 削除直前に実行（非アクティブの際は無視）
 	/// </summary>
 	virtual void OnDestroy() {}
 
 
 
 	/// <summary>
-	/// コンポ�Eネントを追加する
+	/// コンポーネントを追加する
 	/// </summary>
 	template <typename T, typename... Args>
 	T* AddComponent(Args&&... args) {
 		static_assert(std::is_base_of<Component, T>::value, "T must be derived from Component");
 		auto component = std::make_shared<T>(std::forward<Args>(args)...);
-		component->_owner = this; //コンポ�Eネントにこ�EGameObjectのポインタを設宁E
-		component->Active(true); //追加したコンポ�Eネントを有効匁E
+		component->_owner = this; // コンポーネントにこのGameObjectのポインタを設定
+		component->Active(true); // 追加したコンポーネントを有効化
 		component->Awake();
 		component->Awakened();
 
@@ -278,13 +278,13 @@ public:
 	}
 
 	/// <summary>
-	/// コンポ�Eネントを削除する
+	/// コンポーネントを削除する
 	/// </summary>
 	/// <param name="component"></param>
 	void RemoveComponent(Component* component);
 
 	/// <summary>
-	/// 持E��した型のコンポ�Eネントを取得すめE
+	/// 指定した型のコンポーネントを取得する
 	/// </summary>
 	template <typename T>
 	T* GetComponent() {
@@ -294,11 +294,11 @@ public:
 				return castedComponent;
 			}
 		}
-		return nullptr; //持E��した型のコンポ�Eネントが見つからなかった場合�Enullptrを返す
+		return nullptr; // 指定した型のコンポーネントが見つからなかった場合はnullptrを返す
 	}
 
 	/// <summary>
-	/// コンポ�Eネント�EUpdateを呼び出ぁE
+	/// コンポーネントのUpdateを呼び出す
 	/// </summary>
 	void UpdateComponents() {
 		for (const auto& component : _components) {
@@ -313,7 +313,7 @@ public:
 	}
 
 	/// <summary>
-	/// コンポ�Eネント�EFixedUpdateを呼び出ぁE
+	/// コンポーネントのFixedUpdateを呼び出す
 	/// </summary>
 	void FixedUpdateComponents() {
 		for (const auto& component : _components) {
@@ -328,7 +328,7 @@ public:
 	}
 
 	/// <summary>
-	/// コンポ�Eネント�ELateUpdateを呼び出ぁE
+	/// コンポーネントのLateUpdateを呼び出す
 	/// </summary>
 	void LateUpdateComponents() {
 		for (const auto& component : _components) {
@@ -339,7 +339,7 @@ public:
 	}
 
 	/// <summary>
-	/// コンポ�Eネント�E描画を呼び出ぁE
+	/// コンポーネントの描画を呼び出す
 	/// </summary>
 	void RenderComponents() const {
 		for (const auto& component : _components) {
@@ -392,7 +392,7 @@ public:
 		if (std::is_same<Archive, cereal::JSONInputArchive>::value ||
 			std::is_same<Archive, cereal::BinaryInputArchive>::value) {
 			for(auto& component: _components){
-				component->SetOwner(this); //ロード時に_ownerを�E設宁E
+		component->SetOwner(this); // ロード時に_ownerを再設定
 			}
 		}
 	}

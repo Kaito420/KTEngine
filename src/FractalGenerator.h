@@ -1,4 +1,4 @@
-//=====================================================================================
+﻿//=====================================================================================
 // FractalGenerator.h
 // Author: KTEngine / Antigravity
 // Description: Component to generate 3D fractal structures (Fractal Trees, Menger Sponge, etc.)

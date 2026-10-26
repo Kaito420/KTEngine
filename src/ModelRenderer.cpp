@@ -1,4 +1,4 @@
-//=====================================================================================
+﻿//=====================================================================================
 // ModelRenderer.cpp
 // Author:Kaito Aoki
 // Date:2025/09/14
@@ -40,21 +40,21 @@ void ModelRenderer::Render() const
 {
 	if (!m_Model || !m_Model->VertexBuffer || !m_Model->IndexBuffer) return;
 
-	// Transform 行�E計箁E
+	// Transform 行列計算
 	XMMATRIX worldMatrix = _owner->GetWorldMatrix();
 
 	auto cmdList = Renderer::GetCommandListDX12();
 	if (!cmdList) return;
 
 	if (Renderer::IsShadowPass()) {
-		// 頂点バッファビュー設宁E
+	// 頂点バッファビュー設定
 		D3D12_VERTEX_BUFFER_VIEW vbView = {};
 		vbView.BufferLocation = m_Model->VertexBuffer->Resource->GetGPUVirtualAddress();
 		vbView.StrideInBytes = m_Model->VertexBuffer->Stride;
 		vbView.SizeInBytes = m_Model->VertexBuffer->Stride * m_Model->VertexBuffer->Size;
 		cmdList->IASetVertexBuffers(0, 1, &vbView);
 
-		// インチE��クスバッファビュー設宁E
+	// インデックスバッファビュー設定
 		D3D12_INDEX_BUFFER_VIEW ibView = {};
 		ibView.BufferLocation = m_Model->IndexBuffer->Resource->GetGPUVirtualAddress();
 		ibView.SizeInBytes = sizeof(unsigned int) * m_Model->IndexBuffer->Size;
@@ -82,14 +82,14 @@ void ModelRenderer::Render() const
 	if (Renderer::IsGeometryPass() && blendMode != 0) return;
 	if (!Renderer::IsGeometryPass() && blendMode == 0) return;
 
-	// 頂点バッファビュー設宁E
+	// 頂点バッファビュー設定
 	D3D12_VERTEX_BUFFER_VIEW vbView = {};
 	vbView.BufferLocation = m_Model->VertexBuffer->Resource->GetGPUVirtualAddress();
 	vbView.StrideInBytes = m_Model->VertexBuffer->Stride;
 	vbView.SizeInBytes = m_Model->VertexBuffer->Stride * m_Model->VertexBuffer->Size;
 	cmdList->IASetVertexBuffers(0, 1, &vbView);
 
-	// インチE��クスバッファビュー設宁E
+	// インデックスバッファビュー設定
 	D3D12_INDEX_BUFFER_VIEW ibView = {};
 	ibView.BufferLocation = m_Model->IndexBuffer->Resource->GetGPUVirtualAddress();
 	ibView.SizeInBytes = sizeof(unsigned int) * m_Model->IndexBuffer->Size;
@@ -98,7 +98,7 @@ void ModelRenderer::Render() const
 
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	// PSOバインチE
+	// PSOバインド
 	{
 		std::string vsId = "Geometry";
 		std::string psId = "Geometry";
@@ -248,7 +248,7 @@ void ModelRenderer::UnloadAll()
 
 		for (unsigned int i = 0; i < pair.second->SubsetNum; i++)
 		{
-			// eNX`͎ŃfXgN^ȁẼ|C^́E߁A蓮ŃZbg(ۂɁEtexturePoolŊǗĂ̂łł͉̕Kv͂ȁEQƂnullptrɂāE
+	// テクスチャはtexturePoolで管理するためnullptrにして破棄を防止
 			pair.second->SubsetArray[i].Material.Texture = nullptr;
 		}
 
@@ -262,11 +262,11 @@ void ModelRenderer::UnloadAll()
 
 void ModelRenderer::Load(const char* FileName)
 {
-	//t@CȂ牽
+	// ファイル名が空なら何もしない
 	if(FileName == nullptr || strlen(FileName) == 0)
 		return;
 
-	//dǂݍݖh~
+	// 二重読み込みを防止
 	if(m_ModelPool.find(FileName) != m_ModelPool.end())
 	{
 		m_Model = m_ModelPool[FileName];
@@ -311,7 +311,7 @@ void ModelRenderer::LoadModel(const char* FileName, MODEL* Model)
 		return;
 	}
 
-	// _obt@�E�
+	// 頂点バッファ作成
 	Model->VertexBuffer = Renderer::CreateVertexBuffer(sizeof(Vertex), modelObj.VertexNum);
 	void* data = nullptr;
 	HRESULT hr = Model->VertexBuffer->Resource->Map(0, nullptr, &data);
@@ -320,7 +320,7 @@ void ModelRenderer::LoadModel(const char* FileName, MODEL* Model)
 		Model->VertexBuffer->Resource->Unmap(0, nullptr);
 	}
 
-	// CfbNXobt@�E�
+	// インデックスバッファ作成
 	Model->IndexBuffer = Renderer::CreateIndexBuffer(modelObj.IndexNum);
 	hr = Model->IndexBuffer->Resource->Map(0, nullptr, &data);
 	if (SUCCEEDED(hr)) {
@@ -328,7 +328,7 @@ void ModelRenderer::LoadModel(const char* FileName, MODEL* Model)
 		Model->IndexBuffer->Resource->Unmap(0, nullptr);
 	}
 
-	// TuZbg݁E
+	// サブセット設定
 	{
 		Model->SubsetArray = new SUBSET[modelObj.SubsetNum];
 		Model->SubsetNum = modelObj.SubsetNum;
@@ -487,7 +487,7 @@ void ModelRenderer::LoadObj(const char* FileName, MODEL_OBJ* ModelObj)
 				c = fgetc(file);
 			} while (c != '\n' && c != '\r');
 
-			//lp͎Op
+							// 四角形は三角形に分割
 			if (in == 4)
 				in = 6;
 
@@ -618,7 +618,7 @@ void ModelRenderer::LoadObj(const char* FileName, MODEL_OBJ* ModelObj)
 				ModelObj->VertexArray[vc].position = positionArray[atoi(s) - 1];
 				if (s[strlen(s) + 1] != '/')
 				{
-					//eNX`W݂Ȃꍇ
+				// テクスチャが存在しない場合
 					s = strtok(nullptr, "/");
 					ModelObj->VertexArray[vc].uv = texcoordArray[atoi(s) - 1];
 				}
@@ -635,7 +635,7 @@ void ModelRenderer::LoadObj(const char* FileName, MODEL_OBJ* ModelObj)
 				c = fgetc(file);
 			} while (c != '\n' && c != '\r');
 
-			//lp͎Op
+							// 四角形は三角形に分割
 			if (in == 4)
 			{
 				ModelObj->IndexArray[ic] = vc - 4;
@@ -669,7 +669,7 @@ void ModelRenderer::LoadObj(const char* FileName, MODEL_OBJ* ModelObj)
 
 
 
-//}eAǁE//////////////////////////////////////////////////////////////////
+	// マテリアル読み込み //////////////////////////////////////////////////////////////////
 void ModelRenderer::LoadMaterial(const char* FileName, MODEL_MATERIAL** MaterialArray, unsigned int* MaterialNum)
 {
 

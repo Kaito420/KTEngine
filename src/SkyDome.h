@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "Component.h"
 #include "Sphere.h"
@@ -6,7 +6,7 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 
-class SkyDome : public Component{//ƒRƒ“ƒ|[ƒlƒ“ƒg‚Å‚Í‚È‚­GameObject‚ÌŒp³‚É•ÏX‚·‚é‚×‚«H
+class SkyDome : public Component{//ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã§ã¯ãªãGameObjectã®ç¶™æ‰¿ã«å¤‰æ›´ã™ã‚‹ã¹ãï¼Ÿ
 	friend class cereal::access;
 public:
 	Sphere* _sphere;

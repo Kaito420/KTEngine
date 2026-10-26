@@ -1,4 +1,4 @@
-#include "Wave.h"
+﻿#include "Wave.h"
 #include "GameObject.h"
 #include "Texture.h"
 #include "ktvector.hpp"
@@ -26,7 +26,7 @@ void Wave::Awake(){
 		m_vertexBuffer->Resource->Unmap(0, nullptr);
 	}
 
-	// CfbNXobt@
+	// インデックスバッファ作成
 	unsigned int index[((21 + 1) * 2) * 20 - 2];
 	int i = 0;
 	for (int x = 0; x < 20; x++)
@@ -126,7 +126,7 @@ void Wave::Render() const{
 	cmdList->IASetIndexBuffer(&ibView);
 
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-	// PSOバインチE
+	// PSOバインド
 	{
 		std::string vsId = "UnlitTextureVS";
 		std::string psId = "UnlitTexturePS";

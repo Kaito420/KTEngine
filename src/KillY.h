@@ -1,4 +1,4 @@
-//=====================================================================================
+ï»¿//=====================================================================================
 // KillY.h
 // Author:Kaito Aoki
 // Date:2025/12/18
@@ -15,8 +15,8 @@
 class KillY : public Component{
 	friend class cereal::access;
 private:
-	float _threshold = -30.0f; // YÀ•W‚Ìè‡’l
-	KTVECTOR3 _resetPosition = { 0.0f, 0.0f, 0.0f }; // ƒŠƒZƒbƒgŒã‚ÌYÀ•W
+	float _threshold = -30.0f; // Yåº§æ¨™ã®é–¾å€¤
+	KTVECTOR3 _resetPosition = { 0.0f, 0.0f, 0.0f }; // ãƒªã‚»ãƒƒãƒˆå¾Œã®Yåº§æ¨™
 	class RigidBody* _rigidBody = nullptr;
 public:
 	void SetThreshold(float threshold) { _threshold = threshold; }

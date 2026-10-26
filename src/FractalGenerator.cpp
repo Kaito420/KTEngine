@@ -1,4 +1,4 @@
-//=====================================================================================
+﻿//=====================================================================================
 // FractalGenerator.cpp
 // Author: KTEngine / Antigravity
 // Description: Implementation of FractalGenerator component.

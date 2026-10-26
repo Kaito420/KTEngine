@@ -1,4 +1,4 @@
-//=====================================================================================
+ï»¿//=====================================================================================
 // ComponentRegistry.h
 // Author:Kaito Aoki
 // Date:2026/02/17
@@ -15,22 +15,22 @@
 
 class ComponentRegistry {
 private:
-	//ƒRƒ“ƒ|[ƒlƒ“ƒg¶¬ŠÖ”‚ÌŒ^’è‹`
+	//ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆç”Ÿæˆé–¢æ•°ã®å‹å®šç¾©
 	using CreatorFunc = std::function<void(GameObject*)>;
 
 	static std::map<std::string, CreatorFunc> _creators;
 
 public:
-	//ƒRƒ“ƒ|[ƒlƒ“ƒg“o˜^—pƒeƒ“ƒvƒŒ[ƒg
+	//ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆç™»éŒ²ç”¨ãƒ†ãƒ³ãƒ—ãƒ¬ãƒ¼ãƒˆ
 	template <typename T>
 	static void Register(const std::string& name) {
-		//ƒ‰ƒ€ƒ_®‚ÅAddComponent<T>‚ğŒÄ‚Ño‚·ŠÖ”‚ğ•Û‘¶
+		//ãƒ©ãƒ ãƒ€å¼ã§AddComponent<T>ã‚’å‘¼ã³å‡ºã™é–¢æ•°ã‚’ä¿å­˜
 		_creators[name] = [](GameObject* obj) {
 			obj->AddComponent<T>();
 		};
 	}
 
-	//ƒCƒ“ƒXƒyƒNƒ^[•`‰æ—p
+	//ã‚¤ãƒ³ã‚¹ãƒšã‚¯ã‚¿ãƒ¼æç”»ç”¨
 	static void RenderAddComponentMenu(GameObject* target);
 
 };

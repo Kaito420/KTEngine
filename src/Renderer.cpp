@@ -1,4 +1,4 @@
-#include "Renderer.h"
+﻿#include "Renderer.h"
 #include <iostream>
 
 GraphicsAPI g_CurrentAPI = GraphicsAPI::DirectX12;

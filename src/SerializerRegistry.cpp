@@ -1,4 +1,4 @@
-//=====================================================================================
+ï»¿//=====================================================================================
 // SerializerRegistry.cpp
 // Author:Kaito Aoki
 // Date:2026/02/12
@@ -8,12 +8,12 @@
 #include "ComponentRegistry.h"
 
 void RegisterAllComponents() {
-	//“ñd“o˜^–h~
+	//äºŒé‡ç™»éŒ²é˜²æ­¢
 	static bool initialized = false;
 	if (initialized) return;
 	initialized = true;
 
-	//Component‚Ì—ñ‹“
+	//Componentã®åˆ—æŒ™
 	ComponentRegistry::Register<RigidBody>("RigidBody");
 	ComponentRegistry::Register<ColliderBox>("ColliderBox");
 	ComponentRegistry::Register<ColliderSphere>("ColliderSphere");

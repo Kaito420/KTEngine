@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Square.h"
 #include <cereal/types/base_class.hpp>

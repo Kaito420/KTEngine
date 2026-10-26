@@ -1,4 +1,4 @@
-#include "Square.h"
+﻿#include "Square.h"
 #include "GameObject.h"
 #include "Input.h"
 #include "Texture.h"
@@ -40,7 +40,7 @@ void Square::Render()const{
 	if (!cmdList) return;
 
 	if (Renderer::IsShadowPass()) {
-		// _obt@r[݁E
+		// 頂点バッファビュー設定
 		D3D12_VERTEX_BUFFER_VIEW vbView = {};
 		vbView.BufferLocation = _vertexBuffer->Resource->GetGPUVirtualAddress();
 		vbView.StrideInBytes = _vertexBuffer->Stride;
@@ -59,7 +59,7 @@ void Square::Render()const{
 	if (Renderer::IsGeometryPass() && blendMode != 0) return;
 	if (!Renderer::IsGeometryPass() && blendMode == 0) return;
 
-	// _obt@r[݁E
+	// 頂点バッファビュー設定
 	D3D12_VERTEX_BUFFER_VIEW vbView = {};
 	vbView.BufferLocation = _vertexBuffer->Resource->GetGPUVirtualAddress();
 	vbView.StrideInBytes = _vertexBuffer->Stride;
@@ -68,7 +68,7 @@ void Square::Render()const{
 
 	// g|W
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-	// PSOバインチE
+	// PSOバインド
 	{
 		std::string vsId = "UnlitTextureVS";
 		std::string psId = "UnlitTexturePS";

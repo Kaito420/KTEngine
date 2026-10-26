@@ -1,4 +1,4 @@
-//=====================================================================================
+ï»¿//=====================================================================================
 // Scene.cpp
 // Author:Kaito Aoki
 // Date:2025/07/04
@@ -24,7 +24,7 @@ std::string Scene::GenerateUniqueName(const std::string& baseName){
 	std::string uniqueName = baseName;
 	int index = 1;
 
-	//dÄ‚é–¼Oèƒ‹[vÄƒCfbNXißE
+	// é‡è¤‡ã™ã‚‹åå‰ã‚’æ¤œå‡ºã—ã¦ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã‚’ä»˜ä¸
 	while (FindGameObjectByName<GameObject>(uniqueName) != nullptr) {
 		std::stringstream ss;
 		ss << baseName << "(" << index << ")";
@@ -100,7 +100,7 @@ void Scene::Update(){
 		}
 	}
 
-	//å‰Šé™¤
+			// å‰Šé™¤
 	_gameObjects.remove_if([](const std::shared_ptr<GameObject>& obj) { 
 		if (obj->IsDestroy())
 			obj->ProcessDestroyComponents();
@@ -124,7 +124,7 @@ void Scene::UpdateEditor() {
 		_physicsSystem->UpdateEditor();
 	}
 
-	//ú«E
+			// ã‚¯ãƒªã‚¢
 	_gameObjects.remove_if([](const std::shared_ptr<GameObject>& obj) {
 		if (obj->IsDestroy())
 			obj->ProcessDestroyComponents();
@@ -148,7 +148,7 @@ void Scene::OnLoaded() {
 	_physicsAccumulator = 0.0f;
 	uint32_t maxId = 0;
 
-	// eqŠÖŒW‚ÌƒLƒƒƒbƒVƒ…‚ğˆê’UƒNƒŠƒA
+	// è¦ªå­é–¢ä¿‚ã®ã‚­ãƒ£ãƒƒã‚·ãƒ¥ã‚’ä¸€æ—¦ã‚¯ãƒªã‚¢
 	for (auto& gameObject : _gameObjects) {
 		gameObject->_parent.reset();
 		gameObject->_children.clear();
@@ -166,7 +166,7 @@ void Scene::OnLoaded() {
 		}
 	}
 
-	// _parentId ‚©‚çeqƒŠƒ“ƒNi_parent ‚Æ _childrenj‚ğ•œŒ³
+	// _parentId ã‹ã‚‰è¦ªå­ãƒªãƒ³ã‚¯ï¼ˆ_parent ã¨ _childrenï¼‰ã‚’å¾©å…ƒ
 	for (auto& gameObject : _gameObjects) {
 		if (gameObject->_parentId != -1) {
 			for (auto& candidate : _gameObjects) {
@@ -199,7 +199,7 @@ void Scene::RenderHierarchyNode(const std::shared_ptr<GameObject>& gameObject) {
 		flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
 	}
 
-	// ”ñƒAƒNƒeƒBƒui©g‚Ü‚½‚Íe‚ª”ñƒAƒNƒeƒBƒuj‚Ìê‡‚Í•¶šF‚ğ”¼“§–¾‚É‚·‚é
+	// éã‚¢ã‚¯ãƒ†ã‚£ãƒ–ï¼ˆè‡ªèº«ã¾ãŸã¯è¦ªãŒéã‚¢ã‚¯ãƒ†ã‚£ãƒ–ï¼‰ã®å ´åˆã¯æ–‡å­—è‰²ã‚’åŠé€æ˜ã«ã™ã‚‹
 	bool isEffectiveActive = gameObject->GetActive();
 	if (!isEffectiveActive) {
 		ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
@@ -223,7 +223,7 @@ void Scene::RenderHierarchyNode(const std::shared_ptr<GameObject>& gameObject) {
 		ImGui::EndDragDropSource();
 	}
 
-	// Drag & Drop Target (ƒIƒuƒWƒFƒNƒg‚Éd‚Ë‚Äƒhƒƒbƒv‚·‚é‚Æeq‰»)
+	// Drag & Drop Target (ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã«é‡ã­ã¦ãƒ‰ãƒ­ãƒƒãƒ—ã™ã‚‹ã¨è¦ªå­åŒ–)
 	if (ImGui::BeginDragDropTarget()) {
 		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_GAMEOBJECT")) {
 			GameObject* srcPtr = *(GameObject**)payload->Data;
@@ -234,7 +234,7 @@ void Scene::RenderHierarchyNode(const std::shared_ptr<GameObject>& gameObject) {
 		ImGui::EndDragDropTarget();
 	}
 
-	// ‰EƒNƒŠƒbƒN‚ÅƒRƒ“ƒeƒLƒXƒgƒƒjƒ…[
+	// å³ã‚¯ãƒªãƒƒã‚¯ã§ã‚³ãƒ³ãƒ†ã‚­ã‚¹ãƒˆãƒ¡ãƒ‹ãƒ¥ãƒ¼
 	if (ImGui::BeginPopupContextItem()) {
 		if (gameObject->GetParent() != nullptr) {
 			if (ImGui::MenuItem("Unparent")) {
@@ -260,9 +260,9 @@ void Scene::RenderHierarchyNode(const std::shared_ptr<GameObject>& gameObject) {
 		ImGui::EndPopup();
 	}
 
-	// qƒm[ƒh‚ÌÄ‹A•`‰æ
+	// å­ãƒãƒ¼ãƒ‰ã®å†å¸°æç”»
 	if (hasChildren && nodeOpen) {
-		// ƒ‹[ƒv’†‚Éeq•ÏX‚ª‹N‚«‚Ä‚àˆÀ‘S‚È‚æ‚¤‚ÉƒRƒs[‚Å‘–¸
+		// ãƒ«ãƒ¼ãƒ—ä¸­ã«è¦ªå­å¤‰æ›´ãŒèµ·ãã¦ã‚‚å®‰å…¨ãªã‚ˆã†ã«ã‚³ãƒ”ãƒ¼ã§èµ°æŸ»
 		std::vector<std::shared_ptr<GameObject>> childrenCopy = gameObject->GetChildren();
 		for (const auto& child : childrenCopy) {
 			RenderHierarchyNode(child);
@@ -312,7 +312,7 @@ void Scene::RenderHierarchy()
 			}
 		};
 
-		// ã•”ŒÅ’èƒwƒbƒ_[—ÌˆæFu+vƒ{ƒ^ƒ“‚Æã•”ƒhƒƒbƒv•‰EƒNƒŠƒbƒN—Ìˆæ
+		// ä¸Šéƒ¨å›ºå®šãƒ˜ãƒƒãƒ€ãƒ¼é ˜åŸŸï¼šã€Œ+ã€ãƒœã‚¿ãƒ³ã¨ä¸Šéƒ¨ãƒ‰ãƒ­ãƒƒãƒ—ï¼†å³ã‚¯ãƒªãƒƒã‚¯é ˜åŸŸ
 		if (ImGui::Button("+")) {
 			ImGui::OpenPopup("HierarchyCreateObjectPopup");
 		}
@@ -333,9 +333,9 @@ void Scene::RenderHierarchy()
 
 		ImGui::Separator();
 
-		// ‰º•”ƒXƒNƒ[ƒ‹—Ìˆæi+ƒ{ƒ^ƒ“‚ğã•”‚ÉŒÅ’è‚µ‚½‚Ü‚ÜƒcƒŠ[‚Ì‚İ‚ğƒXƒNƒ[ƒ‹‚³‚¹‚éj
+		// ä¸‹éƒ¨ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«é ˜åŸŸï¼ˆ+ãƒœã‚¿ãƒ³ã‚’ä¸Šéƒ¨ã«å›ºå®šã—ãŸã¾ã¾ãƒ„ãƒªãƒ¼ã®ã¿ã‚’ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ã•ã›ã‚‹ï¼‰
 		if (ImGui::BeginChild("HierarchyScrollRegion", ImVec2(0, 0), false)) {
-			// ƒ‹[ƒgƒIƒuƒWƒFƒNƒgie‚ğ‚½‚È‚¢ƒIƒuƒWƒFƒNƒgj‚Ì‚İ‚ğƒgƒbƒvƒŒƒxƒ‹‚É•`‰æ
+			// ãƒ«ãƒ¼ãƒˆã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆï¼ˆè¦ªã‚’æŒãŸãªã„ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆï¼‰ã®ã¿ã‚’ãƒˆãƒƒãƒ—ãƒ¬ãƒ™ãƒ«ã«æç”»
 			for (auto it = _gameObjects.begin(); it != _gameObjects.end(); ++it) {
 				auto& gameObject = *it;
 				if (gameObject->GetParent() == nullptr) {
@@ -343,20 +343,20 @@ void Scene::RenderHierarchy()
 				}
 			}
 
-			// ‰º•”‚Ì—]”’ƒGƒŠƒAiqƒIƒuƒWƒFƒNƒg‚ğD&D‚·‚é‚ÆeqŠÖŒW‚ğ‰ğœ‚µ‚Äƒ‹[ƒg‚Ö–ß‚·j
+			// ä¸‹éƒ¨ã®ä½™ç™½ã‚¨ãƒªã‚¢ï¼ˆå­ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’D&Dã™ã‚‹ã¨è¦ªå­é–¢ä¿‚ã‚’è§£é™¤ã—ã¦ãƒ«ãƒ¼ãƒˆã¸æˆ»ã™ï¼‰
 			ImVec2 avail = ImGui::GetContentRegionAvail();
 			if (avail.x < 1.0f) avail.x = 1.0f;
 			if (avail.y < 40.0f) avail.y = 40.0f;
 			ImGui::InvisibleButton("##HierarchyRootDropZone", avail);
 			acceptRootUnparentDrop();
 
-			// —]”’ƒGƒŠƒAiInvisibleButtonjã‚Å‚Ì‰EƒNƒŠƒbƒNƒƒjƒ…[
+			// ä½™ç™½ã‚¨ãƒªã‚¢ï¼ˆInvisibleButtonï¼‰ä¸Šã§ã®å³ã‚¯ãƒªãƒƒã‚¯ãƒ¡ãƒ‹ãƒ¥ãƒ¼
 			if (ImGui::BeginPopupContextItem("HierarchyEmptyItemContextPopup")) {
 				drawCreateObjectMenu();
 				ImGui::EndPopup();
 			}
 
-			// ‚»‚Ì‘¼‚Ì‰½‚à‚È‚¢êŠ‚Å‚Ì‰EƒNƒŠƒbƒNƒƒjƒ…[
+			// ãã®ä»–ã®ä½•ã‚‚ãªã„å ´æ‰€ã§ã®å³ã‚¯ãƒªãƒƒã‚¯ãƒ¡ãƒ‹ãƒ¥ãƒ¼
 			if (ImGui::BeginPopupContextWindow("HierarchyEmptyWindowContextPopup",
 				ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems)) {
 				drawCreateObjectMenu();
@@ -365,7 +365,7 @@ void Scene::RenderHierarchy()
 		}
 		ImGui::EndChild();
 
-		// ƒŠƒl[ƒ€—pƒ‚[ƒ_ƒ‹ƒEƒBƒ“ƒhƒE‚Ìˆ—
+		// ãƒªãƒãƒ¼ãƒ ç”¨ãƒ¢ãƒ¼ãƒ€ãƒ«ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®å‡¦ç†
 		if(_openPopup) {
 			ImGui::OpenPopup("Rename Object");
 			_openPopup = false;
@@ -402,7 +402,7 @@ void Scene::RenderInspector()
 	ImGui::Begin("Inspector");
 	{
 		if (_selectedObjId != -1) {
-			//IDIuWFNgÌƒ|C^æ“¾
+	// IDã‹ã‚‰GameObjectã®ãƒã‚¤ãƒ³ã‚¿å–å¾—
 			std::shared_ptr<GameObject> selectedObj = nullptr;
 			for (auto& gameObject : _gameObjects) {
 				if (gameObject->_id == _selectedObjId) {
@@ -485,13 +485,13 @@ void Scene::RenderInspector()
 				Component* componentToRemove = nullptr;
 
 				for (auto& component : selectedObj->_components) {
-					ImGui::PushID(component.get()); //IDÕ“Ë–h~
+						ImGui::PushID(component.get()); // IDè¡çªé˜²æ­¢
 
 					bool open = ImGui::TreeNode(component->GetComponentName().c_str());
 
 					if (ImGui::BeginPopupContextItem()) {
 						if (ImGui::MenuItem("Remove Component")) {
-							componentToRemove = component.get(); //ú«œ\
+						componentToRemove = component.get(); // å‰Šé™¤å¯¾è±¡
 						}
 						ImGui::EndPopup();
 					}
@@ -504,7 +504,7 @@ void Scene::RenderInspector()
 					ImGui::PopID();
 				}
 
-				//[vÉíœ
+				// ãƒ«ãƒ¼ãƒ—å¾Œã«å‰Šé™¤
 				if (componentToRemove) {
 					selectedObj->RemoveComponent(componentToRemove);
 				}

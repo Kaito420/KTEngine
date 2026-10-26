@@ -1,4 +1,4 @@
-//=====================================================================================
+ï»¿//=====================================================================================
 // GameObject.cpp
 // Author:Kaito Aoki
 // Date:2026/02/12
@@ -34,12 +34,12 @@ void GameObject::SetWorldMatrix(const XMMATRIX& worldMat) {
 void GameObject::SetParent(std::shared_ptr<GameObject> newParent, bool worldPositionStays) {
 	if (_parent == newParent) return;
 	if (newParent.get() == this) return;
-	// Ž©g‚ÌŽq‘·‚ðe‚É‚µ‚æ‚¤‚Æ‚µ‚½ê‡‚ÍzŠÂŽQÆ‚É‚È‚é‚½‚ß‹‘”Û
+	// è‡ªèº«ã®å­å­«ã‚’è¦ªã«ã—ã‚ˆã†ã¨ã—ãŸå ´åˆã¯å¾ªç’°å‚ç…§ã«ãªã‚‹ãŸã‚æ‹’å¦
 	if (newParent && this->IsAncestorOf(newParent)) return;
 
 	XMMATRIX oldWorldMat = GetWorldMatrix();
 
-	// ‹Œe‚Ì_childrenƒŠƒXƒg‚©‚çŽ©g‚ðœŠO
+	// æ—§è¦ªã®_childrenãƒªã‚¹ãƒˆã‹ã‚‰è‡ªèº«ã‚’é™¤å¤–
 	if (_parent) {
 		auto& siblings = _parent->_children;
 		siblings.erase(
@@ -52,7 +52,7 @@ void GameObject::SetParent(std::shared_ptr<GameObject> newParent, bool worldPosi
 	_parent = newParent;
 	_parentId = newParent ? (int)newParent->_id : -1;
 
-	// Ve‚Ì_childrenƒŠƒXƒg‚ÖŽ©g‚Ì shared_ptr ‚ð’Ç‰Á
+	// æ–°è¦ªã®_childrenãƒªã‚¹ãƒˆã¸è‡ªèº«ã® shared_ptr ã‚’è¿½åŠ 
 	if (_parent) {
 		auto selfPtr = shared_from_this();
 		auto it = std::find_if(_parent->_children.begin(), _parent->_children.end(),

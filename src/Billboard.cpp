@@ -1,4 +1,4 @@
-#include "Billboard.h"
+﻿#include "Billboard.h"
 #include "GameObject.h"
 #include "Manager.h"
 #include "Scene.h"
@@ -42,7 +42,7 @@ void Billboard::Render() const
 	cmdList->IASetVertexBuffers(0, 1, &vbView);
 
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-	// PSOバインチE
+	// PSOバインド
 	{
 		std::string vsId = "UnlitTextureVS";
 		std::string psId = "UnlitTexturePS";

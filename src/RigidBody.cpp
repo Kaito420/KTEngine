@@ -1,4 +1,4 @@
-//=====================================================================================
+ï»¿//=====================================================================================
 // RigidBody.cpp
 // Author:Kaito Aoki
 // Date:2025/09/11
@@ -59,7 +59,7 @@ void RigidBody::CheckSleep(float dt) {
 void RigidBody::Integrate(float dt){
 	if (!_owner || dt <= 0.0f) return;
 
-	// ƒ[ƒ‹ƒh‹óŠÔ‚ÌŠµ«ƒeƒ“ƒ\ƒ‹‚É•ÏŠ·iisKinematic ‚ª true ‚Å‚à‚±‚ÌŒvŽZ‚Ís‚¤j
+	// ãƒ¯ãƒ¼ãƒ«ãƒ‰ç©ºé–“ã®æ…£æ€§ãƒ†ãƒ³ã‚½ãƒ«ã«å¤‰æ›ï¼ˆisKinematic ãŒ true ã§ã‚‚ã“ã®è¨ˆç®—ã¯è¡Œã†ï¼‰
 	_orientation = _owner->GetWorldQuaternion();
 	KTMATRIX3 R = _orientation.ToMatrix().ToMatrix3();
 	_inertiaTensorWorldInv = R * _inertiaTensorBodyInv * R.Transpose();
@@ -76,30 +76,30 @@ void RigidBody::Integrate(float dt){
 	if (_useGravity)
 		_velocity.y += _gravity * _gravityScale * dt;
 
-	// ‰Á‘¬“x‚ÌŒvŽZ a = F/m
+	// åŠ é€Ÿåº¦ã®è¨ˆç®— a = F/m
 	KTVECTOR3 acceleration = _forceAccum * _invMass;
 	_velocity += acceleration * dt;
 
-	// ƒtƒŒ[ƒ€ƒŒ[ƒgEƒTƒuƒXƒeƒbƒv”‚É”ñˆË‘¶‚ÈŒ¸Ši60FPSŠî€‚ÌŒ¸Š—¦‚ðŽw”•ÏŠ·j
+	// ãƒ•ãƒ¬ãƒ¼ãƒ ãƒ¬ãƒ¼ãƒˆãƒ»ã‚µãƒ–ã‚¹ãƒ†ãƒƒãƒ—æ•°ã«éžä¾å­˜ãªæ¸›è¡°ï¼ˆ60FPSåŸºæº–ã®æ¸›è¡°çŽ‡ã‚’æŒ‡æ•°å¤‰æ›ï¼‰
 	float stepScale = dt * 60.0f;
 	_velocity *= powf(Clamp(_linearDamping, 0.0f, 1.0f), stepScale);
 
-	// ˆÊ’u‚ÌXV
+	// ä½ç½®ã®æ›´æ–°
 	_owner->SetWorldPosition(_owner->GetWorldPosition() + _velocity * dt);
 
-	// Šp‰Á‘¬“x‚ÌŒvŽZ = Inverse * ƒgƒ‹ƒN
+	// è§’åŠ é€Ÿåº¦ã®è¨ˆç®— = Inverse * ãƒˆãƒ«ã‚¯
 	KTVECTOR3 angularAcceleration = _inertiaTensorWorldInv * _torqueAccum;
 	_angularVelocity += angularAcceleration * dt;
 
-	// Šp‘¬“x‚ÌŒ¸Š
+	// è§’é€Ÿåº¦ã®æ¸›è¡°
 	_angularVelocity *= powf(Clamp(_angularDamping, 0.0f, 1.0f), stepScale);
 
-	// Žp¨‚ÌXV
+	// å§¿å‹¢ã®æ›´æ–°
 	KTQUATERNION omegaQuat(_angularVelocity.x, _angularVelocity.y, _angularVelocity.z, 0.0f);
 	KTQUATERNION dq = (omegaQuat * _orientation) * 0.5f;
 	_orientation = (_orientation + dq * dt).Normalize();
 
-	// Žp¨‚Ì”½‰f
+	// å§¿å‹¢ã®åæ˜ 
 	_owner->SetWorldQuaternion(_orientation);
 }
 

@@ -1,4 +1,4 @@
-#ifndef _SHADERMANAGER_H
+﻿#ifndef _SHADERMANAGER_H
 #define _SHADERMANAGER_H
 
 #include <map>

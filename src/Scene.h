@@ -1,4 +1,4 @@
-//=====================================================================================
+﻿//=====================================================================================
 // Scene.h
 // Author:Kaito Aoki
 // Date:2025/07/04
@@ -26,7 +26,7 @@ protected:
 	int _selectedObjId = -1;
 	int _dragSrcIndex = -1;
 
-	bool _openPopup = false;		//�|�b�v�A�b�v���J�����}
+	bool _openPopup = false;		// ポップアップを開くかどうか
 	int _renameTargetId = -1;		
 	char _renameBuffer[256] = "";
 
@@ -51,7 +51,7 @@ public:
 	void OnLoaded();
 
 	/// <summary>
-	/// �Q�[���I�u�W�F�N�g��ǉ�����
+	/// ゲームオブジェクトを追加する
 	/// </summary>
 	template <typename T, typename... Args>
 	T* AddGameObject(Args&&... args) {
@@ -67,7 +67,7 @@ public:
 	}
 	
 	/// <summary>
-	/// �Q�[���I�u�W�F�N�g�̖��O����
+	/// ゲームオブジェクトの名前検索
 	/// </summary>
 	template <typename T>
 	T* FindGameObjectByName(const std::string& name) {

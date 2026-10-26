@@ -1,4 +1,4 @@
-#include "Sphere.h"
+﻿#include "Sphere.h"
 #include "GameObject.h"
 #include <imgui.h>
 #include "Texture.h"
@@ -182,7 +182,7 @@ void Sphere::Render()const {
 	cmdList->IASetIndexBuffer(&ibView);
 
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	// PSOバインチE
+	// PSOバインド
 	{
 		std::string vsId = "VertexDirectionalLightingVS";
 		std::string psId = "VertexDirectionalLightingPS";

@@ -1,4 +1,4 @@
-#include "SceneResult.h"
+﻿#include "SceneResult.h"
 #include "Camera.h"
 #include "Square.h"
 #include "Texture.h"

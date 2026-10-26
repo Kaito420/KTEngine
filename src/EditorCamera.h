@@ -1,4 +1,4 @@
-#ifndef _EDITOR_CAMERA_H
+﻿#ifndef _EDITOR_CAMERA_H
 #define _EDITOR_CAMERA_H
 
 #include <DirectXMath.h>

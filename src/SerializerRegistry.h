@@ -1,4 +1,4 @@
-//=====================================================================================
+﻿//=====================================================================================
 // SerializerRegistry.h
 // Author:Kaito Aoki
 // Date:2026/02/12
@@ -9,17 +9,17 @@
 
 void RegisterAllComponents();
 
-//Cereal�̌^�o�^
+//Cerealの型登録
 #include <cereal/types/polymorphic.hpp>
 
-//�o�^�������V�[��
+//登録したいシーン
 #include "Scene.h"
 #include "SceneTitle.h"
 #include "SceneGame.h"
 #include "SceneResult.h"
 #include "ScenePhysicsTest.h"
 
-//�}�N����`�ɂ��V�[���̓o�^
+//マクロ定義によるシーンの登録
 CEREAL_REGISTER_TYPE(Scene);
 CEREAL_REGISTER_TYPE(SceneTitle);
 CEREAL_REGISTER_POLYMORPHIC_RELATION(Scene, SceneTitle);
@@ -31,8 +31,8 @@ CEREAL_REGISTER_TYPE(ScenePhysicsTest);
 CEREAL_REGISTER_POLYMORPHIC_RELATION(Scene, ScenePhysicsTest);
 
 
-//�o�^�������I�u�W�F�N�g
-//=====�G���W���ɕK�{�̃I�u�W�F�N�g=====
+//登録したいオブジェクト
+//=====エンジンに必須のオブジェクト=====
 #include "GameObject.h"
 #include "Camera.h"
 #include "Sky.h"
@@ -41,13 +41,13 @@ CEREAL_REGISTER_POLYMORPHIC_RELATION(Scene, ScenePhysicsTest);
 #include "SphereObject.h"
 #include "CapsuleObject.h"
 
-//=====�Q�[���p�ɍ쐬�����I�u�W�F�N�g=====
+//=====ゲーム用に作成したオブジェクト=====
 #include "Block.h"
 #include "Explosion.h"
 #include "FadeObject.h"
 
-//�}�N����`�ɂ��I�u�W�F�N�g�̓o�^
-//=====�G���W���ɕK�{�̃I�u�W�F�N�g=====
+//マクロ定義によるオブジェクトの登録
+//=====エンジンに必須のオブジェクト=====
 CEREAL_REGISTER_TYPE(GameObject);
 
 CEREAL_REGISTER_TYPE(Camera);
@@ -68,7 +68,7 @@ CEREAL_REGISTER_POLYMORPHIC_RELATION(GameObject, SphereObject);
 CEREAL_REGISTER_TYPE(CapsuleObject);
 CEREAL_REGISTER_POLYMORPHIC_RELATION(GameObject, CapsuleObject);
 
-//=====�Q�[���p�ɍ쐬�����I�u�W�F�N�g=====
+//=====ゲーム用に作成したオブジェクト=====
 CEREAL_REGISTER_TYPE(Block);
 CEREAL_REGISTER_POLYMORPHIC_RELATION(GameObject, Block);
 
@@ -79,8 +79,8 @@ CEREAL_REGISTER_TYPE(FadeObject);
 CEREAL_REGISTER_POLYMORPHIC_RELATION(GameObject, FadeObject);
 
 
-//�o�^�������R���|�[�l���g
-//=====�G���W���ɕK�{�̃R���|�[�l���g=====
+//登録したいコンポーネント
+//=====エンジンに必須のコンポーネント=====
 #include "Component.h"
 #include "RigidBody.h"
 #include "Collider.h"
@@ -99,7 +99,7 @@ CEREAL_REGISTER_POLYMORPHIC_RELATION(GameObject, FadeObject);
 #include "Wave.h"
 #include "FractalGenerator.h"
 
-//=====�Q�[���p�ɍ쐬�����R���|�[�l���g=====
+//=====ゲーム用に作成したコンポーネント=====
 #include "BlockSpawner.h"
 #include "CubeKiller.h"
 #include "KillY.h"
@@ -107,9 +107,9 @@ CEREAL_REGISTER_POLYMORPHIC_RELATION(GameObject, FadeObject);
 #include "ResultManager.h"
 #include "TitleManager.h"
 
-//�}�N����`�ɂ��R���|�[�l���g�̓o�^
+//マクロ定義によるコンポーネントの登録
 
-//=====�G���W���ɕK�{�̃R���|�[�l���g=====
+//=====エンジンに必須のコンポーネント=====
 CEREAL_REGISTER_TYPE(Component);
 
 CEREAL_REGISTER_TYPE(RigidBody);
@@ -166,7 +166,7 @@ CEREAL_REGISTER_POLYMORPHIC_RELATION(Component, Wave);
 CEREAL_REGISTER_TYPE(FractalGenerator);
 CEREAL_REGISTER_POLYMORPHIC_RELATION(Component, FractalGenerator);
 
-//=====�Q�[���p�ɍ쐬�����R���|�[�l���g=====
+//=====ゲーム用に作成したコンポーネント=====
 CEREAL_REGISTER_TYPE(BlockSpawner);
 CEREAL_REGISTER_POLYMORPHIC_RELATION(Component, BlockSpawner);
 

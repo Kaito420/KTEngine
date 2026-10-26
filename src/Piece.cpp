@@ -1,11 +1,11 @@
-#include "Piece.h"
+ï»¿#include "Piece.h"
 #include "GameObject.h"
 #include "Manager.h"
 #include "Scene.h"
 #include "Explosion.h"
 
 
-void Piece::Awake() {//ƒ‰ƒ“ƒ_ƒ€‚ÉŽí—Þ‚ðŒˆ’èiƒfƒoƒbƒO—p‚ÉŽí—Þ‚ðŒ¸‚ç‚µ‚Ä‚¢‚éj
+void Piece::Awake() {//ãƒ©ãƒ³ãƒ€ãƒ ã«ç¨®é¡žã‚’æ±ºå®šï¼ˆãƒ‡ãƒãƒƒã‚°ç”¨ã«ç¨®é¡žã‚’æ¸›ã‚‰ã—ã¦ã„ã‚‹ï¼‰
 	_type = (Type)(rand() % (Type::Sun) + 1);
 	//_type = Type::Earth;
 }
@@ -13,7 +13,7 @@ void Piece::Awake() {//ƒ‰ƒ“ƒ_ƒ€‚ÉŽí—Þ‚ðŒˆ’èiƒfƒoƒbƒO—p‚ÉŽí—Þ‚ðŒ¸‚ç‚µ‚Ä‚¢‚éj
 void Piece::OnCollisionEnter(Collider* other)
 {
 	if (other->GetOwner()->GetComponent<Piece>()) {
-		if (_type == other->GetOwner()->GetComponent<Piece>()->_type) {//“¯‚¶Ží—Þ‚È‚çÁ‚¦‚é
+		if (_type == other->GetOwner()->GetComponent<Piece>()->_type) {//åŒã˜ç¨®é¡žãªã‚‰æ¶ˆãˆã‚‹
 			_owner->Destroy();
 			other->GetOwner()->Destroy();
 		}

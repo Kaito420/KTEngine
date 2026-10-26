@@ -1,4 +1,4 @@
-//=====================================================================================
+﻿//=====================================================================================
 // Light.cpp
 // Author:Kaito Aoki
 // Date:2026/01/29
@@ -8,7 +8,7 @@
 #include "imgui.h"
 
 void Light::Awake(){
-	_executeInEditor = true;	// エチE��ターで実衁E
+	_executeInEditor = true;	// エディターで実行
 	_lightData.Enable = true;
 	_lightData.Direction = XMFLOAT4(0.0f, -1.0f, -1.0f, 0.0f);
 	_lightData.Ambient = XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f);

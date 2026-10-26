@@ -1,4 +1,4 @@
-#include "ResultManager.h"
+﻿#include "ResultManager.h"
 #include "Manager.h"
 #include "Scene.h"
 #include "Input.h"

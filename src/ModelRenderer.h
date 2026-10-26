@@ -1,4 +1,4 @@
-//=====================================================================================
+ï»¿//=====================================================================================
 // ModelRenderer.h
 // Author:Kaito Aoki
 // Date:2025/09/14
@@ -9,7 +9,7 @@
 
 #include "Renderer.h"
 
-// ƒ}ƒeƒŠƒAƒ‹\‘¢‘Ì
+// ãƒãƒ†ãƒªã‚¢ãƒ«æ§‹é€ ä½“
 struct MODEL_MATERIAL
 {
 	char						Name[256];
@@ -20,7 +20,7 @@ struct MODEL_MATERIAL
 };
 
 
-// ƒTƒuƒZƒbƒg\‘¢‘Ì
+// ã‚µãƒ–ã‚»ãƒƒãƒˆæ§‹é€ ä½“
 struct SUBSET
 {
 	unsigned int	StartIndex;
@@ -32,7 +32,7 @@ struct SUBSET
 #include <vector>
 #include <string>
 
-// ƒ{[ƒ“ŠK‘wE‹tƒoƒCƒ“ƒhs—ñî•ñ
+// ãƒœãƒ¼ãƒ³éšå±¤ãƒ»é€†ãƒã‚¤ãƒ³ãƒ‰è¡Œåˆ—æƒ…å ±
 struct BoneInfo
 {
 	std::string Name;
@@ -41,7 +41,7 @@ struct BoneInfo
 	XMFLOAT4X4 DefaultLocalTransform;
 };
 
-// ƒL[ƒtƒŒ[ƒ€\‘¢‘Ì
+// ã‚­ãƒ¼ãƒ•ãƒ¬ãƒ¼ãƒ æ§‹é€ ä½“
 struct KeyframeVec3
 {
 	float Time = 0.0f;
@@ -54,7 +54,7 @@ struct KeyframeQuat
 	XMFLOAT4 Value = { 0.0f, 0.0f, 0.0f, 1.0f };
 };
 
-// 1ƒ{[ƒ“‚ ‚½‚è‚ÌƒAƒjƒ[ƒVƒ‡ƒ“ƒgƒ‰ƒbƒN
+// 1ãƒœãƒ¼ãƒ³ã‚ãŸã‚Šã®ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ãƒˆãƒ©ãƒƒã‚¯
 struct BoneAnimationTrack
 {
 	int BoneIndex = -1;
@@ -64,7 +64,7 @@ struct BoneAnimationTrack
 	std::vector<KeyframeVec3> Scales;
 };
 
-// ƒAƒjƒ[ƒVƒ‡ƒ“ƒNƒŠƒbƒvi1‚Â‚Ìƒ‚[ƒVƒ‡ƒ“ƒf[ƒ^j
+// ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ã‚¯ãƒªãƒƒãƒ—ï¼ˆ1ã¤ã®ãƒ¢ãƒ¼ã‚·ãƒ§ãƒ³ãƒ‡ãƒ¼ã‚¿ï¼‰
 struct AnimationClip
 {
 	std::string Name;
@@ -73,7 +73,7 @@ struct AnimationClip
 	std::vector<BoneAnimationTrack> Tracks;
 };
 
-// ƒIƒuƒWƒFƒNƒgƒf[ƒ^\‘¢‘Ì
+// ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆãƒ‡ãƒ¼ã‚¿æ§‹é€ ä½“
 struct MODEL_OBJ
 {
 	Vertex* VertexArray;

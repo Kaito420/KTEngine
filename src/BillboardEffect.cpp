@@ -1,4 +1,4 @@
-#include "BillboardEffect.h"
+﻿#include "BillboardEffect.h"
 #include "Texture.h"
 #include "Manager.h"
 #include "Scene.h"
@@ -104,7 +104,7 @@ void BillboardEffect::Render() const
 	cmdList->IASetVertexBuffers(0, 1, &vbView);
 
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-	// PSOバインチE
+	// PSOバインド
 	{
 		std::string vsId = "UnlitTextureVS";
 		std::string psId = "UnlitTexturePS";

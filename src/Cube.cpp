@@ -1,4 +1,4 @@
-#include "Cube.h"
+﻿#include "Cube.h"
 #include "GameObject.h"
 #include "ShaderManager.h"
 #include "Shader.h"
@@ -12,37 +12,37 @@ void Cube::Awake() {
 	_vertexBuffer = Renderer::CreateVertexBuffer(sizeof(Vertex), 24);
 
 	Vertex v[] = {
-		// ÓE
+	// 前面 (-Z)
 		{ { -0.5f,  0.5f, -0.5f },{0.0f, 0.0f, -1.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 0.0f} },
 		{ {  0.5f,  0.5f, -0.5f },{0.0f, 0.0f, -1.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {1.0f, 0.0f} },
 		{ { -0.5f, -0.5f, -0.5f },{0.0f, 0.0f, -1.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 1.0f} },
 		{ {  0.5f, -0.5f, -0.5f },{0.0f, 0.0f, -1.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {1.0f, 1.0f} },
 
-		// ÉE
+	// 右面 (+X)
 		{ { 0.5f,  0.5f, -0.5f },{1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 0.0f} },
 		{ { 0.5f,  0.5f,  0.5f },{1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, {1.0f, 0.0f} },
 		{ { 0.5f, -0.5f, -0.5f },{1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 1.0f} },
 		{ { 0.5f, -0.5f,  0.5f },{1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, {1.0f, 1.0f} },
 
-		// ́E
+	// 背面 (+Z)
 		{ { 0.5f,  0.5f, -0.5f },{0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 0.0f} },
 		{ { -0.5f, 0.5f, -0.5f },{0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 1.0f, 1.0f}, {1.0f, 0.0f} },
 		{ { -0.5f, 0.5f,  0.5f },{0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 1.0f} },
 		{ { 0.5f,  0.5f,  0.5f },{0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 1.0f, 1.0f}, {1.0f, 1.0f} },
 
-		// ́E
+	// 左面 (-X)
 		{ { -0.5f,  0.5f, 0.5f },{0.0f, 0.0f, 1.0f}, {0.0f, 1.0f, 0.0f, 1.0f}, {0.0f, 0.0f} },
 		{ { -0.5f, -0.5f, 0.5f },{0.0f, 0.0f, 1.0f}, {0.0f, 1.0f, 0.0f, 1.0f}, {1.0f, 0.0f} },
 		{ {  0.5f,  0.5f, 0.5f },{0.0f, 0.0f, 1.0f}, {0.0f, 1.0f, 0.0f, 1.0f}, {0.0f, 1.0f} },
 		{ {  0.5f, -0.5f, 0.5f },{0.0f, 0.0f, 1.0f}, {0.0f, 1.0f, 0.0f, 1.0f}, {1.0f, 1.0f} },
 
-		// ́E
+	// 上面 (+Y)
 		{ { -0.5f,  0.5f, -0.5f },{-1.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 0.0f, 1.0f}, {0.0f, 0.0f} },
 		{ { -0.5f, -0.5f, -0.5f },{-1.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 0.0f, 1.0f}, {1.0f, 0.0f} },
 		{ { -0.5f,  0.5f,  0.5f },{-1.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 0.0f, 1.0f}, {0.0f, 1.0f} },
 		{ { -0.5f, -0.5f,  0.5f },{-1.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 0.0f, 1.0f}, {1.0f, 1.0f} },
 
-		// ́E
+	// 下面 (-Y)
 		{ {  0.5f, -0.5f, -0.5f },{0.0f, -1.0f, 0.0f}, {0.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f} },
 		{ { -0.5f, -0.5f,  0.5f },{0.0f, -1.0f, 0.0f}, {0.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 0.0f} },
 		{ { -0.5f, -0.5f, -0.5f },{0.0f, -1.0f, 0.0f}, {0.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 1.0f} },
@@ -81,14 +81,14 @@ void Cube::Render()const {
 	if (!cmdList) return;
 
 	if (Renderer::IsShadowPass()) {
-		// _obt@r[݁E
+		// 頂点バッファビュー設定
 		D3D12_VERTEX_BUFFER_VIEW vbView = {};
 		vbView.BufferLocation = _vertexBuffer->Resource->GetGPUVirtualAddress();
 		vbView.StrideInBytes = _vertexBuffer->Stride;
 		vbView.SizeInBytes = _vertexBuffer->Stride * _vertexBuffer->Size;
 		cmdList->IASetVertexBuffers(0, 1, &vbView);
 
-		// CfbNXobt@r[݁E
+		// インデックスバッファビュー設定
 		D3D12_INDEX_BUFFER_VIEW ibView = {};
 		ibView.BufferLocation = _indexBuffer->Resource->GetGPUVirtualAddress();
 		ibView.SizeInBytes = sizeof(unsigned int) * _indexBuffer->Size;
@@ -107,14 +107,14 @@ void Cube::Render()const {
 	if (Renderer::IsGeometryPass() && blendMode != 0) return;
 	if (!Renderer::IsGeometryPass() && blendMode == 0) return;
 
-	// _obt@r[݁E
+	// 頂点バッファビュー設定
 	D3D12_VERTEX_BUFFER_VIEW vbView = {};
 	vbView.BufferLocation = _vertexBuffer->Resource->GetGPUVirtualAddress();
 	vbView.StrideInBytes = _vertexBuffer->Stride;
 	vbView.SizeInBytes = _vertexBuffer->Stride * _vertexBuffer->Size;
 	cmdList->IASetVertexBuffers(0, 1, &vbView);
 
-	// CfbNXobt@r[݁E
+	// インデックスバッファビュー設定
 	D3D12_INDEX_BUFFER_VIEW ibView = {};
 	ibView.BufferLocation = _indexBuffer->Resource->GetGPUVirtualAddress();
 	ibView.SizeInBytes = sizeof(unsigned int) * _indexBuffer->Size;
@@ -122,7 +122,7 @@ void Cube::Render()const {
 	cmdList->IASetIndexBuffer(&ibView);
 
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	// PSOバインチE
+	// PSOバインド
 	{
 		std::string vsId = "VertexDirectionalLightingVS";
 		std::string psId = "VertexDirectionalLightingPS";

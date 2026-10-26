@@ -1,4 +1,4 @@
-//=====================================================================================
+﻿//=====================================================================================
 // Collider.cpp
 // Author:Kaito Aoki
 // Date:2025/09/08
@@ -16,47 +16,47 @@
 #include "Shader.h"
 
 void ClosestPointSegSeg(const KTVECTOR3& s1, const KTVECTOR3& e1, const KTVECTOR3& s2, const KTVECTOR3& e2, KTVECTOR3& c1, KTVECTOR3& c2){
-	float s, t;//}ρE
+	float s, t; // パラメータ
 
-	KTVECTOR3 d1 = e1 - s1;	//̕xNg
+	KTVECTOR3 d1 = e1 - s1;	// 線分1の方向ベクトル
 	KTVECTOR3 d2 = e2 - s2;
-	KTVECTOR3 r = s1 - s2;	//n_m̃xNgi21j
+	KTVECTOR3 r = s1 - s2;	// 始点間のベクトル(s2->s1)
 
-	float lenSqD1 = d1.MagnitudeSqr();//́E
+	float lenSqD1 = d1.MagnitudeSqr(); // 線分1の長さの2乗
 	float lenSqD2 = d2.MagnitudeSqr();
 	float f = Dot(d2, r);
 
 	const float EPSILON = 1e-6f;
 
-	if (lenSqD1 <= EPSILON && lenSqD2 <= EPSILON) {//_ɑމĂꍇ
+	if (lenSqD1 <= EPSILON && lenSqD2 <= EPSILON) { // 両方とも点に退化した場合
 		s = t = 0.0f;
 		c1 = s1;
 		c2 = s2;
 		return;
 	}
-	if (lenSqD1 <= EPSILON) {	//1_ɑމĂꍇ
+	if (lenSqD1 <= EPSILON) {	// 線分1が点に退化した場合
 		s = 0.0f;
 		t = Clamp(f / lenSqD2, 0.0f, 1.0f);
 	}
-	else {	//1͓_ȁE
+	else {	// 線分1は点ではない
 		float c = Dot(d1, r);
-		if (lenSqD2 <= EPSILON) {	//2_ɑށE
+		if (lenSqD2 <= EPSILON) {	// 線分2が点に退化
 			t = 0.0f;
 			s = Clamp(-c / lenSqD1, 0.0f, 1.0f);
 		}
-		else {	//ǂ̂܁E
-			float b = Dot(d1, d2);	//̕xNgḿE
-			float denom = lenSqD1 * lenSqD2 - b * b;	//Ň́E
+		else {	// 通常の場合
+			float b = Dot(d1, d2);	// 方向ベクトル同士の内積
+			float denom = lenSqD1 * lenSqD2 - b * b;	// 行列式の分母
 
-			if (denom != 0.0f) {//słȂꍇ
+			if (denom != 0.0f) { // 平行でない場合
 				s = Clamp((b * f - c * lenSqD2) / denom, 0.0f, 1.0f);
 			}
-			else {//͕s
+			else { // 平行な場合
 				s = 0.0f;
 			}
 			t = (b * s + f) / lenSqD2;
 
-			//t0~1oꍁE�ČvZ
+	// tを0~1にクランプしてsを再計算
 			if (t < 0.0f) {
 				t = 0.0f;
 				s = Clamp(-c / lenSqD1, 0.0f, 1.0f);
@@ -105,7 +105,7 @@ void ColliderSphere::Update(){
 
 void ColliderSphere::SyncTransform(){
 	if (!_owner) return;
-	//_owner->GetWorldScale()̈ԑ傫l𔽉f
+	// _owner->GetWorldScale()の最大値を反映
 	float tempScale = _owner->GetWorldScale().x;
 	if (tempScale < _owner->GetWorldScale().y) {
 		tempScale = _owner->GetWorldScale().y;
@@ -113,7 +113,7 @@ void ColliderSphere::SyncTransform(){
 	if (tempScale < _owner->GetWorldScale().z) {
 		tempScale = _owner->GetWorldScale().z;
 	}
-	//ځiSphereMesh甼a𔽉fj
+	// SphereMeshの半径を反映
 	Sphere* sp;
 	if (sp = _owner->GetComponent<Sphere>()) {
 		_radius = sp->GetRadius() * tempScale;
@@ -142,26 +142,26 @@ bool ColliderSphere::CheckVSSphere(const ColliderSphere* other, CollisionManifol
 	outCollisionManifold.a = const_cast<ColliderSphere*>(other);
 	outCollisionManifold.b = const_cast<ColliderSphere*>(this);
 
-	//SԂ́E
+	// 中心間の距離の2乗
 	float distanceSqr = (this->_owner->GetWorldPosition() -
 		other->_owner->GetWorldPosition()).MagnitudeSqr();
 
-	//a̘áE
+	// 半径の和の2乗
 	float radiusSumSqr = (this->_radius + other->_radius) * (this->_radius + other->_radius);
 
-	if (distanceSqr <= radiusSumSqr) {//āE
+	if (distanceSqr <= radiusSumSqr) { // 衝突している
 		outCollisionManifold.penetrationDepth = sqrtf(radiusSumSqr) - sqrtf(distanceSqr);
 		outCollisionManifold.normal = (other->_owner->GetWorldPosition() -
 			this->_owner->GetWorldPosition()).Normalize();
-		KTVECTOR3 cpa;//A̐ڐG_
+		KTVECTOR3 cpa; // Aの接触点
 		cpa = other->_owner->GetWorldPosition() -
 			_radius * outCollisionManifold.normal;
 
-		KTVECTOR3 cpb;//B̐ڐG_
+		KTVECTOR3 cpb; // Bの接触点
 		cpb = this->_owner->GetWorldPosition() +
 			_radius * outCollisionManifold.normal;
 
-		ContactPoint cp;//ڐG_m̒_Փˉɗp
+		ContactPoint cp; // 接触点情報の構築用
 		cp.position = (cpa + cpb) / 2.0f;
 		cp.penetration = outCollisionManifold.penetrationDepth;
 		outCollisionManifold.contacts.push_back(cp);
@@ -180,8 +180,8 @@ bool ColliderSphere::CheckVSOBB(const ColliderBox* other, CollisionManifold& out
 	outCollisionManifold.a = const_cast<ColliderBox*>(other);
 	outCollisionManifold.b = const_cast<ColliderSphere*>(this);
 
-	KTVECTOR3 bPos = other->GetOwner()->GetWorldPosition();	//OBB̍W
-	KTVECTOR3 cPos = this->_owner->GetWorldPosition();		//Sphere̍W
+	KTVECTOR3 bPos = other->GetOwner()->GetWorldPosition();	// OBBのワールド座標
+	KTVECTOR3 cPos = this->_owner->GetWorldPosition();		// Sphereのワールド座標
 
 	KTVECTOR3 BToC = cPos - bPos;
 	float q[3];
@@ -198,7 +198,7 @@ bool ColliderSphere::CheckVSOBB(const ColliderBox* other, CollisionManifold& out
 		c[1] * other->_axis[1] + c[2] * other->_axis[2];
 
 	KTVECTOR3 diff = closestPoint - cPos;
-	// ���������_�덷�ɂ������ȉ����������̐؂�̂āi�^�ォ��̗������ɉ�]��U������̂�h�~�j
+	// 浮動小数点誤差による微小な横方向成分の切り捨て（真上からの落下時に回転を誘発するのを防止）
 	if (fabsf(diff.x) < 1e-5f) diff.x = 0.0f;
 	if (fabsf(diff.y) < 1e-5f) diff.y = 0.0f;
 	if (fabsf(diff.z) < 1e-5f) diff.z = 0.0f;
@@ -213,7 +213,7 @@ bool ColliderSphere::CheckVSOBB(const ColliderBox* other, CollisionManifold& out
 			outCollisionManifold.normal = diff / dist;
 		}
 		else {
-			// ���̒��S��OBB�����ɓ��荞��ł���ꍇ�A�ł��߂��ʂ։����o���@�����Z�o
+			// 球の中心がOBB内部に入り込んでいる場合、最も近い面へ押し出す法線を算出
 			float minDist = FLT_MAX;
 			KTVECTOR3 normalLocal(0.0f, -1.0f, 0.0f);
 			float dx = other->_extents.x - fabsf(q[0]);
@@ -230,7 +230,7 @@ bool ColliderSphere::CheckVSOBB(const ColliderBox* other, CollisionManifold& out
 				other->_axis[2] * normalLocal.z).Normalize();
 		}
 
-		// �������̔����Ȑ��l�덷���N���[���A�b�v
+		// 軸方向の微小な数値誤差をクリーンアップ
 		if (fabsf(outCollisionManifold.normal.x) < 1e-5f) outCollisionManifold.normal.x = 0.0f;
 		if (fabsf(outCollisionManifold.normal.y) < 1e-5f) outCollisionManifold.normal.y = 0.0f;
 		if (fabsf(outCollisionManifold.normal.z) < 1e-5f) outCollisionManifold.normal.z = 0.0f;
@@ -339,10 +339,10 @@ bool ColliderBox::CheckVSOBB(const ColliderBox* other, CollisionManifold& manifo
 	manifold.a = const_cast<ColliderBox*>(other);
 	manifold.b = const_cast<ColliderBox*>(this);
 
-	float minOverlap = FLT_MAX;	//ŏ̏dȁE
-	KTVECTOR3 bestAxis;			//ŏ̏dȂ莲
+	float minOverlap = FLT_MAX;	// 最小重複量
+	KTVECTOR3 bestAxis;			// 最小重複軸（分離軸）
 
-	//eɂēeă`FbN
+	// 各軸について重複チェック
 	//SAT
 	for (int i = 0; i < 3; i++) {
 		float overlap = 0.0f;
@@ -359,7 +359,7 @@ bool ColliderBox::CheckVSOBB(const ColliderBox* other, CollisionManifold& manifo
 		}
 	}
 
-	//OςłŁEmF
+	// 外積軸の重複確認
 	for (int i = 0; i < 3; i++) {
 		for (int j = 0; j < 3; j++) {
 			KTVECTOR3 axis = Cross(_axis[i], other->_axis[j]);
@@ -374,7 +374,7 @@ bool ColliderBox::CheckVSOBB(const ColliderBox* other, CollisionManifold& manifo
 		}
 	}
 
-	//ՓˏXV
+	// 衝突法線の設定
 
 	KTVECTOR3 centerDelta = other->_center - _center;
 	if (Dot(centerDelta, bestAxis) < 0.0f)
@@ -385,17 +385,17 @@ bool ColliderBox::CheckVSOBB(const ColliderBox* other, CollisionManifold& manifo
 	manifold.penetrationDepth = minOverlap;
 
 
-	//Փ˓_̌vZ
+	// 衝突点の計算
 	FixedList<KTVECTOR3, 16> contactPolygon = ComputeContactPolygon(this, other, manifold.normal);
 	if (!contactPolygon.empty()) {
 		for (auto& p : contactPolygon) {
 			ContactPoint cp;
 			cp.position = p;
-			cp.penetration = minOverlap;	//Ƃ肠lA萳mɂȂʂɎZo
+	cp.penetration = minOverlap;	// めり込み量
 			manifold.contacts.push_back(cp);
 		}
 	}
-	else {//Nbvŏꍇ̏iŋߖT_j
+	else { // クリップできなかった場合の最近傍点
 		KTVECTOR3 pointOnA = _center + manifold.normal * (_extents.x + _extents.y + _extents.z);
 		KTVECTOR3 pointOnB = other->_center - manifold.normal * (other->_extents.x + other->_extents.y + other->_extents.z);
 		ContactPoint cp;
@@ -404,7 +404,7 @@ bool ColliderBox::CheckVSOBB(const ColliderBox* other, CollisionManifold& manifo
 		manifold.contacts.push_back(cp);
 	}
 	
-	//SĂ̎ŏdȂĂ̂ŏՓ˂āE
+	// 全ての軸で重複しているので衝突している
 	return true;
 }
 
@@ -423,13 +423,13 @@ bool ColliderBox::OverlapOnAxis(const ColliderBox* other, const KTVECTOR3& axis)
 
 	KTVECTOR3 L = axis.Normalize();
 
-	//g̓e
+	// 自身の軸
 	float centerA = Dot(_center, L);
 	float rA = _extents.x * fabs(Dot(_axis[0], L)) +
 		_extents.y * fabs(Dot(_axis[1], L)) +
 		_extents.z * fabs(Dot(_axis[2], L));
 
-	//̓e
+	// 相手の軸
 	float centerB = Dot(other->_center, L);
 	float rB = other->_extents.x * fabs(Dot(other->_axis[0], L)) +
 		other->_extents.y * fabs(Dot(other->_axis[1], L)) +
@@ -438,7 +438,7 @@ bool ColliderBox::OverlapOnAxis(const ColliderBox* other, const KTVECTOR3& axis)
 	//S
 	float distance = fabs(centerA - centerB);
 
-	//̗L
+	// 外積軸
 	return distance <= (rA + rB);
 
 }
@@ -452,13 +452,13 @@ bool ColliderBox::OverlapOnAxis(const ColliderBox* other, const KTVECTOR3& axis,
 
 	KTVECTOR3 L = axis.Normalize();
 
-	//g̓e
+	// 自身の軸
 	float centerA = Dot(_center, L);
 	float rA = _extents.x * fabs(Dot(_axis[0], L)) +
 		_extents.y * fabs(Dot(_axis[1], L)) +
 		_extents.z * fabs(Dot(_axis[2], L));
 
-	//̓e
+	// 相手の軸
 	float centerB = Dot(other->_center, L);
 	float rB = other->_extents.x * fabs(Dot(other->_axis[0], L)) +
 		other->_extents.y * fabs(Dot(other->_axis[1], L)) +
@@ -468,14 +468,14 @@ bool ColliderBox::OverlapOnAxis(const ColliderBox* other, const KTVECTOR3& axis,
 	float distance = fabs(centerA - centerB);
 	outOverlap = (rA + rB) - distance;
 
-	//̗L
+	// 外積軸
 	return distance <= (rA + rB);
 }
 
 FixedList<KTVECTOR3, 4> ColliderBox::GetFaceVertices(const ColliderBox* box, int axisIndex, int sign){
 	FixedList<KTVECTOR3, 4> verts;
 
-	// extents ̊eo
+	// extents の各成分
 	float ex = box->_extents.x;
 	float ey = box->_extents.y;
 	float ez = box->_extents.z;
@@ -485,7 +485,7 @@ FixedList<KTVECTOR3, 4> ColliderBox::GetFaceVertices(const ColliderBox* box, int
 	// face center
 	KTVECTOR3 faceCenter = box->_center + box->_axis[axisIndex] * (extent * (float)sign);
 
-	// face ̃[J2
+	// face の頂点2つ
 	int iu = (axisIndex + 1) % 3;
 	int iv = (axisIndex + 2) % 3;
 
@@ -544,11 +544,11 @@ FixedList<KTVECTOR3, 16> ColliderBox::ClipPolygonAgainstPlane(const FixedList<KT
 		bool inB = inside(B);
 
 		if (inA && inB) {
-			//  -> B ǁE
+	// 頂点Bを追加
 			out.push_back(B);
 		}
 		else if (inA && !inB) {
-			// A inside, B outside -> _ǁE
+	// A inside, B outside -> 交点を追加
 			float da = Dot(plane.n, A) - plane.d;
 			float db = Dot(plane.n, B) - plane.d;
 			float t = da / (da - db); // da/(da-db)
@@ -565,7 +565,7 @@ FixedList<KTVECTOR3, 16> ColliderBox::ClipPolygonAgainstPlane(const FixedList<KT
 			out.push_back(B);
 		}
 		else {
-			// O -> ȁE
+	// 出力頂点リストへコピー
 		}
 	}
 
@@ -574,8 +574,8 @@ FixedList<KTVECTOR3, 16> ColliderBox::ClipPolygonAgainstPlane(const FixedList<KT
 
 
 FixedList<KTVECTOR3, 16> ColliderBox::ComputeContactPolygon(const ColliderBox* refBox, const ColliderBox* incBox, const KTVECTOR3& collisionNormal){
-	//Qƃ{bNXirefBoxjюQƖʂ́E
-	//QƁEbestAxis ɍł߁E(abs dot ŁE I
+	// 基準ボックス(refBox)と基準面の特定
+	// 基準面: bestAxis に最も近い面 (abs dot が最大)
 	int refAxis = 0;
 	float bestDot = fabs(Dot(refBox->_axis[0], collisionNormal));
 	for (int i = 1; i < 3; ++i) {
@@ -583,29 +583,29 @@ FixedList<KTVECTOR3, 16> ColliderBox::ComputeContactPolygon(const ColliderBox* r
 		if (d > bestDot) { bestDot = d; refAxis = i; }
 	}
 
-	//@ƎAt
+	// 基準面の法線
 	float s = Dot(collisionNormal, refBox->_axis[refAxis]);
 	int refSign = (s >= 0.0f) ? +1 : -1;
 
-	//|S = QƖʁE_
+	// 基準面の頂点
 	FixedList<KTVECTOR3, 16> poly;
 	auto initalVerts =  GetFaceVertices(refBox, refAxis, refSign);
 
-	//^���邽߂ɃRs[
+	// 計算用の一時配列にコピー
 	for(const auto& v : initalVerts){
 		poly.push_back(v);
 	}
 
-	//CVfg{bNX(incBox)6ʂ擾
+	// 入射ボックス(incBox)の面を取得
 	FixedList<Plane, 8> incPlanes = GetOBBPlanes(incBox);
 
-	//polyeʂŏɃNbv
+	// 多角形を基準面の各面でクリップ
 	for (const Plane& pl : incPlanes) {
 		poly = ClipPolygonAgainstPlane(poly, pl);
 		if (poly.empty()) break;
 	}
 
-	return poly; // ȁEbvŏƁE
+	return poly; // クリップ後の多角形を返す
 }
 
 KTMATRIX3 ColliderBox::ComputeLocalInertiaTensor(float mass)
@@ -658,13 +658,13 @@ void ColliderCapsule::Update() {
 
 void ColliderCapsule::SyncTransform() {
 	if (!_owner) return;
-	//GameObject̏ōXV
-	// _owner->GetWorldScale() ̈ԑ傫l𔽉fic݂h߂̋ϓXP[j
+	// GameObjectのTransform更新
+	// _owner->GetWorldScale() の一番大きい値を反映（均等スケール）
 	float tempScaleRad = _owner->GetWorldScale().x;
 	float tempScaleHeight = _owner->GetWorldScale().y;
 	if (tempScaleRad < _owner->GetWorldScale().z) tempScaleRad = _owner->GetWorldScale().z;
 
-	// ځiCapsuleR|[lgjp[^𔽉f
+	// 見た目（Capsuleコンポーネント）パラメータを反映
 	Capsule* cap = _owner->GetComponent<Capsule>();
 	if (cap) {
 		_radius = cap->_radius * tempScaleRad;
@@ -675,19 +675,19 @@ void ColliderCapsule::SyncTransform() {
 		_height = tempScaleHeight * 2.0f;
 	}
 
-	//AABB̍XV
+	// AABBの更新
 	float halfCylHeight = (std::max)(0.0f, _height - 2.0f * _radius) * 0.5f;
 
-	//JvŽ݁EiUpxNgj擾
+	// カプセルの軸（Upベクトル）取得
 	KTVECTOR3 up = _owner->GetUp();
 
-	//eiX, Y, Zjɑ΂ĂǂꂾLтĂ邩vZAa𑫁E
+	// 各軸(X, Y, Z)の射影長さを計算し半径を加算
 	KTVECTOR3 extents;
 	extents.x = std::abs(up.x) * halfCylHeight + _radius;
 	extents.y = std::abs(up.y) * halfCylHeight + _radius;
 	extents.z = std::abs(up.z) * halfCylHeight + _radius;
 
-	//AABB̍ŏlƍőlXV
+	// AABBの最小値と最大値を更新
 	_aabb.min = _owner->GetWorldPosition() - extents;
 	_aabb.max = _owner->GetWorldPosition() + extents;
 
@@ -717,7 +717,7 @@ bool ColliderCapsule::CheckVSCapsule(const ColliderCapsule* other, CollisionMani
 	KTVECTOR3 s2 = capsuleB->GetWorldPosition() - upB * (cylinderHeightB * 0.5f);
 	KTVECTOR3 e2 = capsuleB->GetWorldPosition() + upB * (cylinderHeightB * 0.5f);
 
-	//ŋߖT_2_߁E
+	// 線分間の最近接点2点を求める
 	KTVECTOR3 closestPointA, closestPointB;
 	ClosestPointSegSeg(s1, e1, s2, e2, closestPointA, closestPointB);
 
@@ -725,7 +725,7 @@ bool ColliderCapsule::CheckVSCapsule(const ColliderCapsule* other, CollisionMani
 	float distSq = diff.MagnitudeSqr();
 	float radiusSum = this->_radius + other->_radius;
 
-	if (distSq < radiusSum * radiusSum) {//ՁE
+	if (distSq < radiusSum * radiusSum) { // 衝突している
 		outCollisionManifold.hasCollision = true;
 		outCollisionManifold.a = const_cast<ColliderCapsule*>(other);
 		outCollisionManifold.b = const_cast<ColliderCapsule*>(this);
@@ -736,7 +736,7 @@ bool ColliderCapsule::CheckVSCapsule(const ColliderCapsule* other, CollisionMani
 		{
 			outCollisionManifold.normal = diff.Normalize();
 		}
-		else {//SɏdȂĂꍇ
+	else { // 完全に重なっている場合
 			outCollisionManifold.normal = KTVECTOR3(0.0f, 1.0f, 0.0f);
 		}
 
@@ -752,7 +752,7 @@ bool ColliderCapsule::CheckVSCapsule(const ColliderCapsule* other, CollisionMani
 }
 
 bool ColliderCapsule::CheckVSSphere(const ColliderSphere* other, CollisionManifold& outCollisionManifold)const {
-	//JvZ̓̎n_(A)ƏI_(B)߁E
+	// カプセルの始点(A)と終点(B)を求める
 	float cylinderHeight = (std::max)(0.0f, this->_height - 2.0f * this->_radius);
 	GameObject* capsuleObj = this->GetOwner();
 	KTVECTOR3 up = capsuleObj->GetUp();
@@ -760,33 +760,33 @@ bool ColliderCapsule::CheckVSSphere(const ColliderSphere* other, CollisionManifo
 	KTVECTOR3 A = capsuleObj->GetWorldPosition() - up * (cylinderHeight * 0.5f);
 	KTVECTOR3 B = capsuleObj->GetWorldPosition() + up * (cylinderHeight * 0.5f);
 
-	//̒S_(C)
+	// 球の中心(C)
 	KTVECTOR3 C = other->GetOwner()->GetWorldPosition();
 
-	//_CAB̍ŋߐړ_(P)vZ
+	// 点Cから線分ABへの最近接点(P)を計算
 	KTVECTOR3 AB = B - A;
 	KTVECTOR3 AC = C - A;
 
 	float t = 0.0f;
 	float abLengthSqr = AB.MagnitudeSqr();
 
-	//_ɑމĂȂ`FbNi[Zh~j
+	// 0除算防止チェック
 	if (abLengthSqr > 1e-6f) {
 		t = Dot(AC, AB) / abLengthSqr;
 	}
 
-	//t0.0`1.0ɃNvĐɁE
+	// tを0.0〜1.0にクランプ
 	t = Clamp(t, 0.0f, 1.0f);
 
-	//ŋߐړ_P
+	// 最近接点P
 	KTVECTOR3 P = A + AB * t;
 
-	//ŋߐړ_PƋ̒SC̋ŏՓˁE
-	KTVECTOR3 diff = C - P; // PCւ̃xNg
+	// 最近接点Pと球の中心Cの衝突判定
+	KTVECTOR3 diff = C - P; // PCﾖのベNg
 	float distSq = diff.MagnitudeSqr();
 	float radiusSum = this->_radius + other->_radius;
 
-	if (distSq <= radiusSum * radiusSum) {//Փ˂āE
+	if (distSq <= radiusSum * radiusSum) { // 衝突している
 		outCollisionManifold.hasCollision = true;
 
 		outCollisionManifold.a = const_cast<ColliderSphere*>(other);
@@ -795,16 +795,16 @@ bool ColliderCapsule::CheckVSSphere(const ColliderSphere* other, CollisionManifo
 		float dist = diff.Magnitude();
 		outCollisionManifold.penetrationDepth = radiusSum - dist;
 
-		//@̌vZ (JvZ狁E�o)
+		// 法線の計算 (カプセルから球へ向かうベクトル)
 		if (dist > 1e-5f) {
 			outCollisionManifold.normal = diff.Normalize(); // K
 		}
 		else {
-			// SɒSdȂĂꍇ͓Kȕɉo
+		// 完全に中心が重なっている場合は適当な法線
 			outCollisionManifold.normal = KTVECTOR3(0.0f, 1.0f, 0.0f);
 		}
 
-		// ڐG_̌vZ (̕\ʏA܂͒_)
+		// 接触点の計算 (球の表面または中間)
 		ContactPoint cp;
 		cp.position = C - outCollisionManifold.normal * other->_radius;
 		cp.penetration = outCollisionManifold.penetrationDepth;
@@ -817,18 +817,18 @@ bool ColliderCapsule::CheckVSSphere(const ColliderSphere* other, CollisionManifo
 }
 
 bool ColliderCapsule::CheckVSOBB(const ColliderBox* other, CollisionManifold& outCollisionManifold)const {
-	//JvZ̓̎n_(A)ƏI_(B)[hԂŌvZ
+	// カプセルの始点(A)と終点(B)をワールド空間で計算
 	float cylinderHeight = (std::max)(0.0f, this->_height - 2.0f * this->_radius);
 	KTVECTOR3 up = this->GetOwner()->GetUp();
 	KTVECTOR3 A = this->GetOwner()->GetWorldPosition() - up * (cylinderHeight * 0.5f);
 	KTVECTOR3 B = this->GetOwner()->GetWorldPosition() + up * (cylinderHeight * 0.5f);
 
-	//OBB̃[JԁiAABBƂĈԁjABρE
+	// OBBのローカル空間（AABBとして扱う）へ線分ABを変換
 	KTVECTOR3 boxPos = other->GetOwner()->GetWorldPosition();
 	KTVECTOR3 dA = A - boxPos;
 	KTVECTOR3 dB = B - boxPos;
 
-	//Box̃[Jgēei]̋tϊj
+	// Boxのローカル空間で軸平行（回転の逆変換）
 	KTVECTOR3 localA(
 		Dot(dA, other->_axis[0]),
 		Dot(dA, other->_axis[1]),
@@ -840,20 +840,20 @@ bool ColliderCapsule::CheckVSOBB(const ColliderBox* other, CollisionManifold& ou
 		Dot(dB, other->_axis[2])
 	);
 
-	//ݎˉe@ (Alternating Projection) ōŋߐړ_T
-	KTVECTOR3 P = (localA + localB) * 0.5f; // ̓_P (l͒_)
-	KTVECTOR3 Q;							// OBB̓_Q
+	// 交互射影法 (Alternating Projection) で最近接点を探索
+	KTVECTOR3 P = (localA + localB) * 0.5f; // 線分の点P (初期値は中点)
+	KTVECTOR3 Q;							// OBB上の点Q
 	KTVECTOR3 ab = localB - localA;
 	float abLenSq = ab.MagnitudeSqr();
 
-	//3񃋁[vΎp͊SɁE
+	// 3回程度の反復で十分な精度に収束
 	for (int i = 0; i < 3; ++i) {
-		// 菇A: PAABBɃNvQ߁E
+		// 手順1: 点PをAABBにクランプして点Qを求める
 		Q.x = Clamp(P.x, -other->_extents.x, other->_extents.x);
 		Q.y = Clamp(P.y, -other->_extents.y, other->_extents.y);
 		Q.z = Clamp(P.z, -other->_extents.z, other->_extents.z);
 
-		// 菇B: QABւ̍ŋߐړ_߂PXV
+		// 手順2: 点Qから線分ABへの最近接点を求めて点Pを更新
 		if (abLenSq > 1e-6f) {
 			float t = Dot(Q - localA, ab) / abLenSq;
 			t = Clamp(t, 0.0f, 1.0f);
@@ -864,13 +864,13 @@ bool ColliderCapsule::CheckVSOBB(const ColliderBox* other, CollisionManifold& ou
 		}
 	}
 
-	//ŌPŏIIQm
+	// 最終判定
 	Q.x = Clamp(P.x, -other->_extents.x, other->_extents.x);
 	Q.y = Clamp(P.y, -other->_extents.y, other->_extents.y);
 	Q.z = Clamp(P.z, -other->_extents.z, other->_extents.z);
 
-	//Փ˔ƃ}jtH[h̍\z
-	KTVECTOR3 PQ = Q - P; // P(Capsule)Q(Box)ւ̃xNg
+	// 衝突マニフォールドの構築
+	KTVECTOR3 PQ = Q - P; // P(Capsule)からQ(Box)へのベクトル
 	float distSq = PQ.MagnitudeSqr();
 
 	if (distSq <= this->_radius * this->_radius) {
@@ -882,13 +882,13 @@ bool ColliderCapsule::CheckVSOBB(const ColliderBox* other, CollisionManifold& ou
 		float dist = 0.0f;
 
 		if (distSq > 1e-6f) {
-			// ʏ̐ڐG
+		// 通常接触
 			dist = sqrtf(distSq);
 			normalLocal = PQ / dist; // K
 		}
 		else {
-			// SBox̓ɂ߂荞łꍇiPQvj
-			// ł߁Eox̖ʂTāA։o@
+		// カプセル中心がBox内部にめり込んでいる場合 (PQがほぼゼロ)
+		// 最も近いBoxの面を見つけて、外側へ押し出す
 			float minDist = FLT_MAX;
 
 			float dx = other->_extents.x - fabs(P.x);
@@ -900,25 +900,25 @@ bool ColliderCapsule::CheckVSOBB(const ColliderBox* other, CollisionManifold& ou
 			float dz = other->_extents.z - fabs(P.z);
 			if (dz < minDist) { minDist = dz; normalLocal = KTVECTOR3(0, 0, (P.z > 0) ? 1 : -1); }
 
-			dist = -minDist; // ߂荞ł̂ŋ̓}CiXƂāE
+		dist = -minDist; // めり込んでいるので符号を反転
 		}
 
 		outCollisionManifold.penetrationDepth = this->_radius - dist;
 
-		// [J@[hԂ̖@ɕρE
+		// ローカルからワールド空間の法線に変換
 		outCollisionManifold.normal =
 			other->_axis[0] * normalLocal.x +
 			other->_axis[1] * normalLocal.y +
 			other->_axis[2] * normalLocal.z;
 
-		// ڐG_̌vZ ([JQ[hԂɖ߁E
+		// 接触点の計算 (ローカルからワールド空間に戻す)
 		KTVECTOR3 Q_world = boxPos +
 			other->_axis[0] * Q.x +
 			other->_axis[1] * Q.y +
 			other->_axis[2] * Q.z;
 
 		ContactPoint cp;
-		cp.position = Q_world; // Box̕\ʂڐG_ƁE
+		cp.position = Q_world; // Boxの表面を接触点とする
 		cp.penetration = outCollisionManifold.penetrationDepth;
 		outCollisionManifold.contacts.push_back(cp);
 
@@ -929,36 +929,36 @@ bool ColliderCapsule::CheckVSOBB(const ColliderBox* other, CollisionManifold& ou
 }
 
 KTMATRIX3 ColliderCapsule::ComputeLocalInertiaTensor(float mass){
-	//~́E
+	// 慣性テンソルの計算
 	float cylinderHeight = (std::max)(0.0f, _height - 2.0f * _radius);
 
-	//aA܂͎ʁEȉ̏ꍇ̓[sԁE
+	// 半径または高さが無効な場合はゼロ行列
 	if (_radius <= 0.001f || mass <= 0.0f) {
 		return KTMATRIX3::Zero();
 	}
 
 	const float PI = 3.14159265359f;
 
-	//̐ς̌vZ
+	// 慣性モーメントの計算
 	float volumeCylinder = PI * _radius * _radius * cylinderHeight;
 	float volumeSphere = (4.0f / 3.0f) * PI * _radius * _radius * _radius;
 	float volumeTotal = volumeCylinder + volumeSphere;
 
 	if (volumeTotal == 0.0f) return KTMATRIX3::Zero();
 
-	//ʂ̕z
+	// 質量の分布
 	float massCylinder = mass * (volumeCylinder / volumeTotal);
 	float massSphere = mass * (volumeSphere / volumeTotal);
 
-	//Yij܂̊[g
+	// Y軸（中心軸）回りの慣性モーメント
 	float iy = (0.5f * massCylinder * _radius * _radius) +
 		(0.4f * massSphere * _radius * _radius);
 
-	//XEZiZj܂̊[g
+	// X軸・Z軸回りの慣性モーメント
 	//~ X/Z 
 	float ixzCylinder = (1.0f / 12.0f) * massCylinder * (3.0f * _radius * _radius + cylinderHeight * cylinderHeight);
 
-	// X/Z is̒藝Kpς݁j
+	// 平行軸の定理適用済み
 	float ixzSphere = massSphere * (0.4f * _radius * _radius +
 		0.5f * cylinderHeight * cylinderHeight +
 		0.375f * cylinderHeight * _radius);
@@ -966,7 +966,7 @@ KTMATRIX3 ColliderCapsule::ComputeLocalInertiaTensor(float mass){
 	float ix = ixzCylinder + ixzSphere;
 	float iz = ix;
 
-	//e\sɂĕԁE
+	// テンソル行列として返す
 	return KTMATRIX3(
 		ix, 0.0f, 0.0f,
 		0.0f, iy, 0.0f,

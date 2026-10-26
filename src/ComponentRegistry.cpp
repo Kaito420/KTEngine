@@ -1,4 +1,4 @@
-//=====================================================================================
+ï»¿//=====================================================================================
 // ComponentRegistry.cpp
 // Author:Kaito Aoki
 // Date:2026/02/17
@@ -8,18 +8,18 @@
 #include "imgui.h"
 #include <algorithm>
 
-//Ã“Iƒƒ“ƒo‚Ì’è‹`
+//é™çš„ãƒ¡ãƒ³ãƒã®å®šç¾©
 std::map<std::string, ComponentRegistry::CreatorFunc> ComponentRegistry::_creators;
 
 void ComponentRegistry::RenderAddComponentMenu(GameObject* target){
 
-	//ƒ{ƒ^ƒ“‚ª‰Ÿ‚³‚ê‚½‚çƒ|ƒbƒvƒAƒbƒv‚ğŠJ‚­
+	//ãƒœã‚¿ãƒ³ãŒæŠ¼ã•ã‚ŒãŸã‚‰ãƒãƒƒãƒ—ã‚¢ãƒƒãƒ—ã‚’é–‹ã
 	if (ImGui::Button("Add Component", ImVec2(-1, 0))) {
 		ImGui::OpenPopup("AddComponentPopup");
 	}
 
 	if (ImGui::BeginPopup("AddComponentPopup")) {
-		//ŠÈˆÕ“I‚ÈŒŸõ‹@”\
+		//ç°¡æ˜“çš„ãªæ¤œç´¢æ©Ÿèƒ½
 		static char filterBuffer[128] = "";
 		ImGui::InputTextWithHint("##Filter", "Search...", filterBuffer, sizeof(filterBuffer));
 
@@ -34,9 +34,9 @@ void ComponentRegistry::RenderAddComponentMenu(GameObject* target){
 				}
 			}
 
-			//ƒƒjƒ…[ƒAƒCƒeƒ€‚ğ•\¦
+			//ãƒ¡ãƒ‹ãƒ¥ãƒ¼ã‚¢ã‚¤ãƒ†ãƒ ã‚’è¡¨ç¤º
 			if (ImGui::Selectable(name.c_str())) {
-				pair.second(target);//‘I‘ğ‚³‚ê‚½‚çAddComponentÀs
+				pair.second(target);//é¸æŠã•ã‚ŒãŸã‚‰AddComponentå®Ÿè¡Œ
 				ImGui::CloseCurrentPopup();
 			}
 		}

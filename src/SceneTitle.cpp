@@ -1,4 +1,4 @@
-#include "SceneTitle.h"
+ï»¿#include "SceneTitle.h"
 #include "Camera.h"
 #include "Square.h"
 #include "Sphere.h"
@@ -12,7 +12,7 @@
 
 void SceneTitle::Initialize()
 {
-	//ƒeƒXƒg—p
+	//ãƒ†ã‚¹ãƒˆç”¨
 	//============================================
 	if (!_physicsSystem)
 		_physicsSystem = new PhysicsSystem();

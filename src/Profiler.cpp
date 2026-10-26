@@ -1,4 +1,4 @@
-//=====================================================================================
+﻿//=====================================================================================
 // Profiler.cpp
 // Author: KTEngine
 // Description: Real-time CPU performance profiler and ImGui visualization

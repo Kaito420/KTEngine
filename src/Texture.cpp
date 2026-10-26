@@ -1,4 +1,4 @@
-#include "Texture.h"
+﻿#include "Texture.h"
 #include "Manager.h"
 #include "Renderer.h"
 #include <cassert>

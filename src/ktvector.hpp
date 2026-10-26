@@ -1,4 +1,4 @@
-//=====================================================================================
+ï»¿//=====================================================================================
 // ktvector.hpp
 // Author:Kaito Aoki
 // Date:2025/06/23
@@ -12,7 +12,7 @@
 #include <stdexcept>
 #include <cereal/cereal.hpp>
 
-#define DT 0.016f // 60fps‘z’è
+#define DT 0.016f // 60fpsæƒ³å®š
 
 template <typename T>
 static T Clamp(T f, T l, T h) {
@@ -90,16 +90,16 @@ public:
         return x * x + y * y;
     }
 
-    float Magnitude()const { //ƒxƒNƒgƒ‹‚Ì‘å‚«‚³
+    float Magnitude()const { //ãƒ™ã‚¯ãƒˆãƒ«ã®å¤§ãã•
         return sqrtf(x * x + y * y);
     }
 
-    KTVECTOR2 Normalize()const { //ƒxƒNƒgƒ‹‚Ì³‹K‰»
+    KTVECTOR2 Normalize()const { //ãƒ™ã‚¯ãƒˆãƒ«ã®æ­£è¦åŒ–
         float len = Magnitude();
         return len == 0.0f ? KTVECTOR2(0.0f, 0.0f) : *this / len;
     }
 
-    friend float Dot(const KTVECTOR2& k1, const KTVECTOR2& k2) { //ƒxƒNƒgƒ‹‚Ì“àÏ
+    friend float Dot(const KTVECTOR2& k1, const KTVECTOR2& k2) { //ãƒ™ã‚¯ãƒˆãƒ«ã®å†…ç©
         return k1.x * k2.x + k1.y * k2.y;
     }
 };
@@ -171,20 +171,20 @@ public:
         return x * x + y * y + z * z;
     }
 
-    float Magnitude()const {  //ƒxƒNƒgƒ‹‚Ì‘å‚«‚³‚ğ‹‚ß‚é
+    float Magnitude()const {  //ãƒ™ã‚¯ãƒˆãƒ«ã®å¤§ãã•ã‚’æ±‚ã‚ã‚‹
         return sqrtf(x * x + y * y + z * z);
     }
 
-    KTVECTOR3 Normalize()const { //ƒxƒNƒgƒ‹‚Ì³‹K‰»
+    KTVECTOR3 Normalize()const { //ãƒ™ã‚¯ãƒˆãƒ«ã®æ­£è¦åŒ–
         float len = Magnitude();
         return len == 0.0f ? KTVECTOR3(0.0f, 0.0f, 0.0f) : *this / len;
     }
 
-    friend float Dot(const KTVECTOR3& k1, const KTVECTOR3& k2) { //ƒxƒNƒgƒ‹‚Ì“àÏ
+    friend float Dot(const KTVECTOR3& k1, const KTVECTOR3& k2) { //ãƒ™ã‚¯ãƒˆãƒ«ã®å†…ç©
         return { k1.x * k2.x + k1.y * k2.y + k1.z * k2.z };
     }
 
-    friend KTVECTOR3 Cross(const KTVECTOR3& k1, const KTVECTOR3& k2) { //ƒxƒNƒgƒ‹‚ÌŠOÏ
+    friend KTVECTOR3 Cross(const KTVECTOR3& k1, const KTVECTOR3& k2) { //ãƒ™ã‚¯ãƒˆãƒ«ã®å¤–ç©
         return { k1.y * k2.z - k1.z * k2.y,
                 k1.z * k2.x - k1.x * k2.z,
                 k1.x * k2.y - k1.y * k2.x
@@ -291,7 +291,7 @@ public:
 };
 
 struct KTMATRIX3 {
-    float m[3][3];  //[row][col]s—Dæ
+    float m[3][3];  //[row][col]è¡Œå„ªå…ˆ
 
     KTMATRIX3() { *this = Identity(); }
 
@@ -384,7 +384,7 @@ struct KTMATRIX4 {
 
     KTMATRIX4() {
         *this = Identity();
-    }//Identity‰Šú‰»
+    }//IdentityåˆæœŸåŒ–
 
     KTMATRIX4(float m00, float m01, float m02, float m03,
         float m10, float m11, float m12, float m13,
@@ -434,12 +434,12 @@ struct KTMATRIX4 {
     }
 
     /// <summary>
-    /// X²ü‚è‚Ì‰ñ“]s—ñ‚ğ•Ô‚·
+    /// Xè»¸å‘¨ã‚Šã®å›è»¢è¡Œåˆ—ã‚’è¿”ã™
     /// </summary>
-    /// <param name="angle">“x”–@</param>
+    /// <param name="angle">åº¦æ•°æ³•</param>
     /// <returns></returns>
     static KTMATRIX4 RotationX(float angle) {
-        float rad = angle * 3.14159265358979323846f / 180.0f; // ŒÊ“x–@‚É•ÏŠ·
+        float rad = angle * 3.14159265358979323846f / 180.0f; // å¼§åº¦æ³•ã«å¤‰æ›
         float c = cosf(rad);
         float s = sinf(rad);
         return KTMATRIX4(
@@ -450,12 +450,12 @@ struct KTMATRIX4 {
         );
     }
     /// <summary>
-    /// Y²ü‚è‚Ì‰ñ“]s—ñ‚ğ•Ô‚·
+    /// Yè»¸å‘¨ã‚Šã®å›è»¢è¡Œåˆ—ã‚’è¿”ã™
     /// </summary>
-    /// <param name="angle">“x”–@</param>
+    /// <param name="angle">åº¦æ•°æ³•</param>
     /// <returns></returns>
     static KTMATRIX4 RotationY(float angle) {
-        float rad = angle * 3.14159265358979323846f / 180.0f; // ŒÊ“x–@‚É•ÏŠ·
+        float rad = angle * 3.14159265358979323846f / 180.0f; // å¼§åº¦æ³•ã«å¤‰æ›
         float c = cosf(rad);
         float s = sinf(rad);
         return KTMATRIX4(
@@ -467,12 +467,12 @@ struct KTMATRIX4 {
     }
 
     /// <summary>
-    /// Z²ü‚è‚Ì‰ñ“]s—ñ‚ğ•Ô‚·
+    /// Zè»¸å‘¨ã‚Šã®å›è»¢è¡Œåˆ—ã‚’è¿”ã™
     /// </summary>
-    /// <param name="angle">“x”–@</param>
+    /// <param name="angle">åº¦æ•°æ³•</param>
     /// <returns></returns>
     static KTMATRIX4 RotationZ(float angle) {
-        float rad = angle * 3.14159265358979323846f / 180.0f; // ŒÊ“x–@‚É•ÏŠ·
+        float rad = angle * 3.14159265358979323846f / 180.0f; // å¼§åº¦æ³•ã«å¤‰æ›
         float c = cosf(rad);
         float s = sinf(rad);
         return KTMATRIX4(
@@ -484,14 +484,14 @@ struct KTMATRIX4 {
     }
 
     /// <summary>
-    /// ”CˆÓ‚Ì²‚ğ’†S‚Æ‚µ‚½‰ñ“]s—ñ‚ğ•Ô‚·
+    /// ä»»æ„ã®è»¸ã‚’ä¸­å¿ƒã¨ã—ãŸå›è»¢è¡Œåˆ—ã‚’è¿”ã™
     /// </summary>
-    /// <param name="axis">”CˆÓ‚Ì²</param>
-    /// <param name="angle">“x”–@</param>
+    /// <param name="axis">ä»»æ„ã®è»¸</param>
+    /// <param name="angle">åº¦æ•°æ³•</param>
     /// <returns></returns>
     static KTMATRIX4 RotationAxis(const KTVECTOR3& axis, float angle) {
         KTVECTOR3 n = axis.Normalize();
-        float rad = angle * 3.14159265358979323846f / 180.0f; // ŒÊ“x–@‚É•ÏŠ·
+        float rad = angle * 3.14159265358979323846f / 180.0f; // å¼§åº¦æ³•ã«å¤‰æ›
         float c = cosf(rad);
         float s = sinf(rad);
         float t = 1 - c;
@@ -535,7 +535,7 @@ struct KTMATRIX4 {
     }
 
     /// <summary>
-    /// ©g‚Ì“]’us—ñ‚ğ•Ô‚·
+    /// è‡ªèº«ã®è»¢ç½®è¡Œåˆ—ã‚’è¿”ã™
     /// </summary>
     /// <returns></returns>
     KTMATRIX4 Transpose() {
@@ -589,7 +589,7 @@ struct KTQUATERNION {
     KTQUATERNION() : x(0), y(0), z(0), w(1) {}
     KTQUATERNION(float x, float y, float z, float w) : x(x), y(y), z(z), w(w) {}
 
-    //Šî–{‘€ì
+    //åŸºæœ¬æ“ä½œ
     KTQUATERNION Normalize()const {
         float len = sqrtf(x * x + y * y + z * z + w * w);
         if (len == 0.0f) return KTQUATERNION(0, 0, 0, 1);
@@ -606,7 +606,7 @@ struct KTQUATERNION {
         return KTQUATERNION(-x / lenSq, -y / lenSq, -z / lenSq, w / lenSq);
     }
 
-    //‰‰Zq
+    //æ¼”ç®—å­
 
     KTQUATERNION operator+(const KTQUATERNION& q)const {
         return KTQUATERNION(x + q.x, y + q.y, z + q.z, w + q.w);
@@ -617,7 +617,7 @@ struct KTQUATERNION {
     }
 
     /// <summary>
-    /// ‰ñ“]‚Ì‡¬
+    /// å›è»¢ã®åˆæˆ
     /// </summary>
     /// <param name="q"></param>
     /// <returns></returns>
@@ -631,7 +631,7 @@ struct KTQUATERNION {
     }
 
     /// <summary>
-    /// ƒxƒNƒgƒ‹‚Ì‰ñ“]
+    /// ãƒ™ã‚¯ãƒˆãƒ«ã®å›è»¢
     /// </summary>
     /// <param name="v"></param>
     /// <returns></returns>
@@ -642,24 +642,24 @@ struct KTQUATERNION {
     }
 
     /// <summary>
-    /// ”CˆÓ‚Ì²‚ğ’†S‚Æ‚µ‚½‰ñ“]‚ğ•\‚·ƒNƒH[ƒ^ƒjƒIƒ“‚ğ•Ô‚·
+    /// ä»»æ„ã®è»¸ã‚’ä¸­å¿ƒã¨ã—ãŸå›è»¢ã‚’è¡¨ã™ã‚¯ã‚©ãƒ¼ã‚¿ãƒ‹ã‚ªãƒ³ã‚’è¿”ã™
     /// </summary>
     /// <param name="axis"></param>
-    /// <param name="angle">“x”–@</param>
+    /// <param name="angle">åº¦æ•°æ³•</param>
     /// <returns></returns>
     static KTQUATERNION FromAxisAngle(const KTVECTOR3& axis, float angle) {
-        float rad = angle * (3.14159265359f / 180.0f);  // “x‚ğƒ‰ƒWƒAƒ“‚É•ÏŠ·
+        float rad = angle * (3.14159265359f / 180.0f);  // åº¦ã‚’ãƒ©ã‚¸ã‚¢ãƒ³ã«å¤‰æ›
         float halfAngle = rad / 2.0f;
         float s = sinf(halfAngle);
         return KTQUATERNION(axis.x * s, axis.y * s, axis.z * s, cosf(halfAngle));
     }
 
     /// <summary>
-    /// ƒIƒCƒ‰[Šp‚©‚çƒNƒH[ƒ^ƒjƒIƒ“‚ğ¶¬
+    /// ã‚ªã‚¤ãƒ©ãƒ¼è§’ã‹ã‚‰ã‚¯ã‚©ãƒ¼ã‚¿ãƒ‹ã‚ªãƒ³ã‚’ç”Ÿæˆ
     /// </summary>
-    /// <param name="pitch">x²‰ñ‚è‚Ì‰ñ“]Špi“x”–@j</param>
-    /// <param name="yaw">y²‰ñ‚è‚Ì‰ñ“]Špi“x”–@j</param>
-    /// <param name="roll">z²‰ñ‚è‚Ì‰ñ“]Špi“x”–@j</param>
+    /// <param name="pitch">xè»¸å›ã‚Šã®å›è»¢è§’ï¼ˆåº¦æ•°æ³•ï¼‰</param>
+    /// <param name="yaw">yè»¸å›ã‚Šã®å›è»¢è§’ï¼ˆåº¦æ•°æ³•ï¼‰</param>
+    /// <param name="roll">zè»¸å›ã‚Šã®å›è»¢è§’ï¼ˆåº¦æ•°æ³•ï¼‰</param>
     /// <returns></returns>
     static KTQUATERNION FromEulerAngles(float pitch, float yaw, float roll) {
         float cy = cosf(yaw * 0.5f * (3.14159265359f / 180.0f));
@@ -679,24 +679,24 @@ struct KTQUATERNION {
     }
 
     /// <summary>
-    /// EulerŠp‚ğæ“¾
+    /// Eulerè§’ã‚’å–å¾—
     /// </summary>
     /// <returns></returns>
     KTVECTOR3 ToEulerAngles()const {
-        //ƒNƒH[ƒ^ƒjƒIƒ“‚©‚çEulerŠp‚Ö•ÏŠ·
+        //ã‚¯ã‚©ãƒ¼ã‚¿ãƒ‹ã‚ªãƒ³ã‹ã‚‰Eulerè§’ã¸å¤‰æ›
         KTVECTOR3 euler;
         KTQUATERNION nq = this->Normalize();
-        // ƒsƒbƒ` (x²‰ñ‚è‚Ì‰ñ“])
+        // ãƒ”ãƒƒãƒ (xè»¸å›ã‚Šã®å›è»¢)
         float sinp = 2.0f * (nq.w * nq.x - nq.y * nq.z);
         if (fabs(sinp) >= 1.0f)
             euler.x = copysignf(90.0f, sinp);
         else
             euler.x = asinf(sinp) * (180.0f / 3.14159265359f);
-        // ƒˆ[ (y²‰ñ‚è‚Ì‰ñ“])
+        // ãƒ¨ãƒ¼ (yè»¸å›ã‚Šã®å›è»¢)
         float siny = 2.0f * (nq.w * nq.y + nq.z * nq.x);
         float cosy = 1.0f - 2.0f * (nq.x * nq.x + nq.y * nq.y);
         euler.y = atan2f(siny, cosy) * (180.0f / 3.14159265359f);
-        // ƒ[ƒ‹ (z²‰ñ‚è‚Ì‰ñ“])
+        // ãƒ­ãƒ¼ãƒ« (zè»¸å›ã‚Šã®å›è»¢)
         float sinr = 2.0f * (nq.w * nq.z + nq.x * nq.y);
         float cosr = 1.0f - 2.0f * (nq.x * nq.x + nq.z * nq.z);
         euler.z = atan2f(sinr, cosr) * (180.0f / 3.14159265359f);
@@ -724,9 +724,9 @@ struct KTQUATERNION {
     }
 
     static KTQUATERNION Slerp(const KTQUATERNION& q1, const KTQUATERNION& q2, float t) {
-        // ƒNƒH[ƒ^ƒjƒIƒ“‚Ì“àÏ‚ğŒvZ
+        // ã‚¯ã‚©ãƒ¼ã‚¿ãƒ‹ã‚ªãƒ³ã®å†…ç©ã‚’è¨ˆç®—
         float dot = q1.x * q2.x + q1.y * q2.y + q1.z * q2.z + q1.w * q2.w;
-        // “àÏ‚ª•‰‚Ìê‡Aq2‚ğ”½“]‚³‚¹‚éiÅ’ZŒo˜H‚ğæ‚é‚½‚ßj
+        // å†…ç©ãŒè² ã®å ´åˆã€q2ã‚’åè»¢ã•ã›ã‚‹ï¼ˆæœ€çŸ­çµŒè·¯ã‚’å–ã‚‹ãŸã‚ï¼‰
         KTQUATERNION q2Copy = q2;
         if (dot < 0.0f) {
             dot = -dot;
@@ -734,7 +734,7 @@ struct KTQUATERNION {
         }
         const float DOT_THRESHOLD = 0.9995f;
         if (dot > DOT_THRESHOLD) {
-            // ƒNƒH[ƒ^ƒjƒIƒ“‚ª”ñí‚É‹ß‚¢ê‡AüŒ`•âŠÔ‚ğg—p
+            // ã‚¯ã‚©ãƒ¼ã‚¿ãƒ‹ã‚ªãƒ³ãŒéå¸¸ã«è¿‘ã„å ´åˆã€ç·šå½¢è£œé–“ã‚’ä½¿ç”¨
             KTQUATERNION result = KTQUATERNION(
                 q1.x + t * (q2Copy.x - q1.x),
                 q1.y + t * (q2Copy.y - q1.y),
@@ -743,13 +743,13 @@ struct KTQUATERNION {
             );
             return result.Normalize();
         }
-        // ƒÆ‚ğŒvZ
-        float theta_0 = acosf(dot);        // ƒÆ_0 = acos(dot)
-        float theta = theta_0 * t;         // ƒÆ = ƒÆ_0 * t
-        float sin_theta = sinf(theta);      // sin(ƒÆ)
-        float sin_theta_0 = sinf(theta_0);  // sin(ƒÆ_0)
-        float s0 = cosf(theta) - dot * sin_theta / sin_theta_0;  // s0 = cos(ƒÆ) - dot * sin(ƒÆ) / sin(ƒÆ_0)
-        float s1 = sin_theta / sin_theta_0;                        // s1 = sin(ƒÆ) / sin(ƒÆ_0)
+        // Î¸ã‚’è¨ˆç®—
+        float theta_0 = acosf(dot);        // Î¸_0 = acos(dot)
+        float theta = theta_0 * t;         // Î¸ = Î¸_0 * t
+        float sin_theta = sinf(theta);      // sin(Î¸)
+        float sin_theta_0 = sinf(theta_0);  // sin(Î¸_0)
+        float s0 = cosf(theta) - dot * sin_theta / sin_theta_0;  // s0 = cos(Î¸) - dot * sin(Î¸) / sin(Î¸_0)
+        float s1 = sin_theta / sin_theta_0;                        // s1 = sin(Î¸) / sin(Î¸_0)
         return KTQUATERNION(
             (s0 * q1.x) + (s1 * q2Copy.x),
             (s0 * q1.y) + (s1 * q2Copy.y),
@@ -759,7 +759,7 @@ struct KTQUATERNION {
     }
 };
 
-//cereal—pƒVƒŠƒAƒ‰ƒCƒYŠÖ”
+//cerealç”¨ã‚·ãƒªã‚¢ãƒ©ã‚¤ã‚ºé–¢æ•°
 
 //KTVECTOR2
 template <class Archive>

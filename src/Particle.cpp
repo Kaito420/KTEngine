@@ -1,4 +1,4 @@
-#include "Particle.h"
+﻿#include "Particle.h"
 #include "Camera.h"
 #include "Manager.h"
 #include "Scene.h"
@@ -98,7 +98,7 @@ void Particle::Render() const
 	}
 
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-	// PSOバインチE
+	// PSOバインド
 	{
 		std::string vsId = "UnlitTextureVS";
 		std::string psId = "UnlitTexturePS";

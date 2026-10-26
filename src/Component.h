@@ -1,4 +1,4 @@
-//=====================================================================================
+﻿//=====================================================================================
 // Component.h
 // Author:Kaito Aoki
 // Date:2025/08/14
@@ -25,9 +25,9 @@ protected:
 	bool _started = false;
 	GameObject* _owner = nullptr;
 public:
-	bool _active = false;//�A�N�e�B�u��ԁitrue:�L��, false:�����j
+	bool _active = false;//アクティブ状態（true:有効, false:無効）
 
-	bool _executeInEditor = false; //�G�f�B�^���[�h�ł����s���邩�ǂ���
+	bool _executeInEditor = false; //エディタモードでも実行するかどうか
 
 	virtual ~Component() {}
 
@@ -41,71 +41,71 @@ public:
 	void SetOwner(GameObject* gameObject) { _owner = gameObject; }
 
 	/// <summary>
-	/// �C���X�^���X��������Ɏ��s�i�R���|�[�l���g�L�������Ɋ֌W�Ȃ��Ă΂��j
+	/// インスタンス生成直後に実行（コンポーネント有効無効に関係なく呼ばれる）
 	/// </summary>
 	virtual void Awake() {}
 
 	/// <summary>
-	/// �ŏ���Update���O�Ɏ��s�i����̂݁A��A�N�e�B�u�̍ۂ͖����j
+	/// 最初のUpdate直前に実行（初回のみ、非アクティブの際は無視）
 	/// </summary>
 	virtual void Start() {}
 
 	/// <summary>
-	/// ���t���[�����s�i��A�N�e�B�u�̍ۂ͖����j
+	/// 毎フレーム実行（非アクティブの際は無視）
 	/// </summary>
 	virtual void Update() {}
 
 	virtual void FixedUpdate() {}
 
 	/// <summary>
-	/// //Update��Ɏ��s�i��A�N�e�B�u�̍ۂ͖����j
+	/// //Update後に実行（非アクティブの際は無視）
 	/// </summary>
 	virtual void LateUpdate() {}
 
 	/// <summary>
-	/// LateUpdate��Ɏ��s�i��A�N�e�B�u�̍ۂ͖����j
+	/// LateUpdate後に実行（非アクティブの際は無視）
 	/// </summary>
 	virtual void Render()const {}
 
 	/// <summary>
-	/// Owner���폜����钼�O�Ɏ��s�i��A�N�e�B�u�̍ۂ͖����j
+	/// Ownerが削除される直前に実行（非アクティブの際は無視）
 	/// </summary>
 	virtual void OnDestroy() {}
 
 	/// <summary>
-	///	�G�f�B�^��ō폜���ꂽ�ꍇ�Ɏ��s�i�V�X�e���ʂ�OnDestroy�ƕ�����K�v�����邽�߁j
+	///	エディタ上で削除された場合に実行（システム面でOnDestroyと分ける必要があるため）
 	/// </summary>
 	virtual void OnDestroyOnEditor() {}
 
 	/// <summary>
-	/// �R���|�[�l���g�̏����C���X�y�N�^�[��ɕ\��
+	/// コンポーネントの情報をインスペクター上に表示
 	/// </summary>
 	virtual void ShowUI() {}
 
 	/// <summary>
-	/// �R���|�[�l���g�̖��O���擾���܂��B
+	/// コンポーネントの名前を取得します。
 	/// </summary>
-	/// <returns>�R���|�[�l���g�̖��O��\�� std::string �^�̒l�B</returns>
+	/// <returns>コンポーネントの名前を表す std::string 型の値。</returns>
 	virtual std::string GetComponentName() { return "default"; }
 
 	/// <summary>
-	/// �Փ˂����������Ƃ��ɌĂяo����鉼�z�֐�
+	/// 衝突が発生したときに呼び出される仮想関数
 	/// </summary>
 	virtual void OnCollisionEnter(Collider* other){}
 
 	/// <summary>
-	/// �Փ˂��Ă����ԂŌĂяo�����֐�
+	/// 衝突している状態で呼び出される関数
 	/// </summary>
 	virtual void OnCollisionStay(Collider* other) {}
 
 	/// <summary>
-	/// �Փ˂��I������Ƃ��ɌĂяo�����֐�
+	/// 衝突が終わったときに呼び出される関数
 	/// </summary>
 	virtual void OnCollisionExit(Collider* other) {}
 
 	template <class Archive>
 	void serialize(Archive& ar) {
-		//_owner�͕ۑ������Ƀ��[�h���ɐe���Đݒ肷��
+		//_ownerは保存せずにロード時に親が再設定する
 		ar(cereal::make_nvp("Active", _active));
 		ar(cereal::make_nvp("ExecuteInEditor", _executeInEditor));
 	}
