@@ -39,6 +39,7 @@ bool Manager::_showGameView = true;
 bool Manager::_showSceneView = true;
 bool Manager::_showPostProcess = true;
 bool Manager::_showGBufferVisualizer = true;
+bool Manager::_showProceduralTextureEditor = false;
 bool Manager::_showProfiler = true;
 bool Manager::_showColliderWireframe = false;
 AspectRatioType Manager::_aspectRatio = AspectRatioType::Aspect_16_9;
@@ -377,6 +378,7 @@ void Manager::RenderMenuBar(){
 			ImGui::Separator();
 			ImGui::MenuItem("Post Process", nullptr, &_showPostProcess);
 			ImGui::MenuItem("G-Buffer Visualizer", nullptr, &_showGBufferVisualizer);
+			ImGui::MenuItem("Procedural Texture Editor", nullptr, &_showProceduralTextureEditor);
 			ImGui::Separator();
 			ImGui::MenuItem("Profiler", nullptr, &_showProfiler);
 			ImGui::Separator();

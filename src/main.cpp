@@ -15,6 +15,7 @@
 #include "Scene.h"
 #include "Input.h"
 #include "PostProcessSystem.h"
+#include "ProceduralTextureEditor.h"
 #include "Profiler.h"
 #include "../resource/resource.h"
 
@@ -353,6 +354,10 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
             // Post Process Settings Window
             if (Manager::IsShowPostProcess()) {
                 PostProcessSystem::RenderUI(&Manager::GetShowPostProcess());
+            }
+
+            if (Manager::IsShowProceduralTextureEditor()) {
+                ProceduralTextureEditor::RenderUI(&Manager::GetShowProceduralTextureEditor());
             }
         }
         ImGuiLayer::End();

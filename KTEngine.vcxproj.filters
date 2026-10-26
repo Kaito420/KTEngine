@@ -222,6 +222,11 @@
     <ClCompile Include="src\Profiler.cpp">
       <Filter>ソース ファイル\Framework</Filter>
     </ClCompile>
+    <ClCompile Include="src\ProceduralTextureEditor.cpp">
+      <Filter>ソース ファイル\Framework</Filter>
+    </ClCompile>
+      <Filter>ソース ファイル\Framework</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ImGuiLayer.h">

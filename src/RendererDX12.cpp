@@ -1530,6 +1530,18 @@ namespace RendererDX12 {
         return index;
     }
 
+    void UpdateShaderResourceView(ID3D12Resource* resource, unsigned int index) {
+        if (!resource) return;
+        D3D12_RESOURCE_DESC resDesc = resource->GetDesc();
+        D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+        srvDesc.Format = resDesc.Format;
+        srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+        srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+        srvDesc.Texture2D.MipLevels = resDesc.MipLevels;
+
+        g_pd3dDevice->CreateShaderResourceView(resource, &srvDesc, GetSrvCpuHandle(index));
+    }
+
     void ReleaseShaderResourceView(unsigned int index) {
         FreeSrvIndex(index);
     }

@@ -89,6 +89,7 @@
     <ClCompile Include="src\Wave.cpp" />
     <ClCompile Include="src\PostProcessSystem.cpp" />
     <ClCompile Include="src\Profiler.cpp" />
+    <ClCompile Include="src\ProceduralTextureEditor.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource\resource.rc" />
@@ -162,6 +163,7 @@
     <ClInclude Include="src\Wave.h" />
     <ClInclude Include="src\PostProcessSystem.h" />
     <ClInclude Include="src\Profiler.h" />
+    <ClInclude Include="src\ProceduralTextureEditor.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="shader\ColorGradingPS.hlsl">

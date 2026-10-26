@@ -8,6 +8,7 @@
 #include "Renderer.h"
 #include "ShaderManager.h"
 #include "Texture.h"
+#include "Manager.h"
 #include <filesystem>
 #include <vector>
 
@@ -154,4 +155,7 @@ void Shader::ShowUI(){
 	ShowTextureCombo("BaseColor Map", _texturePath, [this](const std::string& p) { SetTexturePath(p); });
 	ShowTextureCombo("Normal Map", _normalMapPath, [this](const std::string& p) { SetNormalMapPath(p); });
 	ShowTextureCombo("ARM Map", _armMapPath, [this](const std::string& p) { SetARMMapPath(p); });
+	if (ImGui::Button("Open Procedural Texture Editor...")) {
+		Manager::GetShowProceduralTextureEditor() = true;
+	}
 }

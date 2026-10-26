@@ -167,6 +167,7 @@ namespace RendererDX12 {
     std::unique_ptr<VERTEX_BUFFER> CreateVertexBuffer(unsigned int stride, unsigned int size);
     std::unique_ptr<INDEX_BUFFER> CreateIndexBuffer(unsigned int size);
     unsigned int CreateShaderResourceView(ID3D12Resource* resource);
+    void UpdateShaderResourceView(ID3D12Resource* resource, unsigned int index);
     void ReleaseShaderResourceView(unsigned int index);
     void SetConstant(int slot, const void* data, unsigned int size);
     void SetBoneBuffer(const BONE_BUFFER* boneBuffer);

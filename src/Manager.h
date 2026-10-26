@@ -45,6 +45,7 @@ private:
 	static bool _showSceneView;
 	static bool _showPostProcess;
 	static bool _showGBufferVisualizer;
+	static bool _showProceduralTextureEditor;
 	static bool _showProfiler;
 	static bool _showColliderWireframe;
 	static AspectRatioType _aspectRatio;
@@ -76,6 +77,8 @@ public:
 	static bool& GetShowPostProcess() { return _showPostProcess; }
 	static bool IsShowGBufferVisualizer() { return _showGBufferVisualizer; }
 	static bool& GetShowGBufferVisualizer() { return _showGBufferVisualizer; }
+	static bool IsShowProceduralTextureEditor() { return _showProceduralTextureEditor; }
+	static bool& GetShowProceduralTextureEditor() { return _showProceduralTextureEditor; }
 	static bool IsShowProfiler() { return _showProfiler; }
 	static bool& GetShowProfiler() { return _showProfiler; }
 	static bool IsShowColliderWireframe() { return _showColliderWireframe; }
