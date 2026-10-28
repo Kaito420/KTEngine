@@ -1,4 +1,4 @@
-﻿//=====================================================================================
+//=====================================================================================
 // Manager.cpp
 // Author:Kaito Aoki
 // Date:2025/07/04
@@ -24,6 +24,7 @@
 #include <commdlg.h>
 #include <fstream>
 #include <sstream>
+#include <filesystem>
 #include <cereal/archives/json.hpp>
 #include <cereal/archives/binary.hpp>
 
@@ -50,6 +51,7 @@ bool Manager::_playPending = false;
 bool Manager::_stopPending = false;
 bool Manager::_newScenePending = false;
 std::string Manager::_openScenePendingPath = "";
+std::string Manager::_textEditorPath = "notepad.exe";
 
 //====ヘルパー関数: Windowsのファイル保存ダイアログを開く====
 std::string SaveFileDialog(const char* filter) {
@@ -78,6 +80,7 @@ std::string SaveFileDialog(const char* filter) {
 #include <shellapi.h>
 
 void Manager::LoadEngineConfig() {
+    LoadSettings();
     std::ifstream ifs("engine_config.json");
     if (ifs.is_open()) {
         try {
@@ -288,6 +291,8 @@ void Manager::_OpenSceneInternal(const std::string& filePath){
 
 void Manager::RenderMenuBar(){
 	static bool bShowRestartPopup = false;
+	static bool bShowPreferencePopup = false;
+	static char prefEditorPathBuf[512] = "notepad.exe";
 	if (ImGui::BeginMainMenuBar()) {
 		if (ImGui::BeginMenu("File")) {//Fileメニュー
 
@@ -367,6 +372,10 @@ void Manager::RenderMenuBar(){
                 }
                 ImGui::Separator();
                 ImGui::MenuItem("Show Collider Wireframes", nullptr, &_showColliderWireframe);
+                ImGui::Separator();
+                if (ImGui::MenuItem("Preference...")) {
+                    bShowPreferencePopup = true;
+                }
                 ImGui::EndMenu();
             }
 
@@ -397,6 +406,118 @@ void Manager::RenderMenuBar(){
     if (bShowRestartPopup) {
         ImGui::OpenPopup("Restarting Engine");
         bShowRestartPopup = false;
+    }
+
+    if (bShowPreferencePopup) {
+        strncpy_s(prefEditorPathBuf, _textEditorPath.c_str(), sizeof(prefEditorPathBuf) - 1);
+        ImGui::OpenPopup("Preference");
+        bShowPreferencePopup = false;
+    }
+
+    bool prefOpen = true;
+    if (ImGui::BeginPopupModal("Preference", &prefOpen, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::TextUnformatted("External Text Editor Settings (Setting.json)");
+        ImGui::TextDisabled("Select the default editor used when opening .cpp, .h, .hlsl, .json, .ini files:");
+        ImGui::Spacing();
+
+        // プリセット候補の構築（Windows標準メモ帳 + 自動検出されたエディタ）
+        struct EditorPreset {
+            std::string label;
+            std::string path;
+        };
+        std::vector<EditorPreset> presets;
+        presets.push_back({ "Windows Notepad (notepad.exe) [Default]", "notepad.exe" });
+
+        std::error_code ec;
+        char localAppData[MAX_PATH] = {};
+        if (GetEnvironmentVariableA("LOCALAPPDATA", localAppData, MAX_PATH) > 0) {
+            std::filesystem::path userVsCode = std::filesystem::path(localAppData) / "Programs" / "Microsoft VS Code" / "Code.exe";
+            if (std::filesystem::exists(userVsCode, ec)) {
+                presets.push_back({ "Visual Studio Code (User)", userVsCode.string() });
+            }
+        }
+        std::filesystem::path sysVsCode = "C:\\Program Files\\Microsoft VS Code\\Code.exe";
+        if (std::filesystem::exists(sysVsCode, ec)) {
+            presets.push_back({ "Visual Studio Code (System)", sysVsCode.string() });
+        }
+
+        const char* vsPaths[] = {
+            "C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\Common7\\IDE\\devenv.exe",
+            "C:\\Program Files\\Microsoft Visual Studio\\18\\Professional\\Common7\\IDE\\devenv.exe",
+            "C:\\Program Files\\Microsoft Visual Studio\\18\\Enterprise\\Common7\\IDE\\devenv.exe",
+            "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\devenv.exe",
+            "C:\\Program Files\\Microsoft Visual Studio\\2022\\Professional\\Common7\\IDE\\devenv.exe",
+            "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\Common7\\IDE\\devenv.exe"
+        };
+        for (const char* vp : vsPaths) {
+            if (std::filesystem::exists(vp, ec)) {
+                presets.push_back({ "Visual Studio (devenv.exe)", vp });
+                break;
+            }
+        }
+
+        int currentPresetIdx = -1;
+        for (int i = 0; i < (int)presets.size(); ++i) {
+            if (_stricmp(prefEditorPathBuf, presets[i].path.c_str()) == 0) {
+                currentPresetIdx = i;
+                break;
+            }
+        }
+        std::string comboPreview = (currentPresetIdx >= 0)
+            ? presets[currentPresetIdx].label
+            : "Custom Editor (.exe)";
+
+        ImGui::SetNextItemWidth(420.0f);
+        if (ImGui::BeginCombo("Preset Editor", comboPreview.c_str())) {
+            for (int i = 0; i < (int)presets.size(); ++i) {
+                bool isSelected = (currentPresetIdx == i);
+                if (ImGui::Selectable(presets[i].label.c_str(), isSelected)) {
+                    strncpy_s(prefEditorPathBuf, presets[i].path.c_str(), sizeof(prefEditorPathBuf) - 1);
+                }
+                if (isSelected) {
+                    ImGui::SetItemDefaultFocus();
+                }
+            }
+            ImGui::EndCombo();
+        }
+
+        ImGui::Spacing();
+        ImGui::TextUnformatted("Editor Executable Path:");
+        ImGui::SetNextItemWidth(340.0f);
+        ImGui::InputText("##PrefEditorPath", prefEditorPathBuf, sizeof(prefEditorPathBuf));
+        ImGui::SameLine();
+        if (ImGui::Button("Browse...", ImVec2(75.0f, 0.0f))) {
+            OPENFILENAMEA ofn = {};
+            CHAR szFile[MAX_PATH] = {};
+            ofn.lStructSize = sizeof(ofn);
+            ofn.hwndOwner = GetActiveWindow();
+            ofn.lpstrFile = szFile;
+            ofn.nMaxFile = sizeof(szFile);
+            ofn.lpstrFilter = "Executable Files (*.exe)\0*.exe\0All Files (*.*)\0*.*\0";
+            ofn.nFilterIndex = 1;
+            ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
+            if (GetOpenFileNameA(&ofn) == TRUE) {
+                strncpy_s(prefEditorPathBuf, ofn.lpstrFile, sizeof(prefEditorPathBuf) - 1);
+            }
+        }
+
+        if (ImGui::Button("Reset to Default (notepad.exe)")) {
+            strncpy_s(prefEditorPathBuf, "notepad.exe", sizeof(prefEditorPathBuf) - 1);
+        }
+
+        ImGui::Separator();
+        if (ImGui::Button("Save", ImVec2(120.0f, 28.0f))) {
+            std::string newPath = prefEditorPathBuf;
+            if (newPath.empty()) newPath = "notepad.exe";
+            SetTextEditorPath(newPath);
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel", ImVec2(120.0f, 28.0f))) {
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::EndPopup();
     }
 
     if (ImGui::BeginPopupModal("Restarting Engine", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
@@ -651,5 +772,131 @@ bool Manager::LoadHotReloadSnapshot(const std::string& filePath, HWND hwnd) {
 	}
 	catch (...) {
 		return false;
+	}
+}
+
+
+namespace {
+	std::filesystem::path FindSettingJsonPath() {
+		namespace fs = std::filesystem;
+		std::error_code ec;
+		std::vector<fs::path> candidates;
+
+		fs::path cwd = fs::current_path(ec);
+		if (!ec && !cwd.empty()) {
+			fs::path p = cwd;
+			for (int i = 0; i < 4 && !p.empty(); ++i) {
+				candidates.push_back(p);
+				if (!p.has_parent_path() || p == p.parent_path()) break;
+				p = p.parent_path();
+			}
+		}
+
+		char exePathBuf[MAX_PATH] = {};
+		if (GetModuleFileNameA(NULL, exePathBuf, MAX_PATH) > 0) {
+			fs::path p = fs::path(exePathBuf).parent_path();
+			for (int i = 0; i < 4 && !p.empty(); ++i) {
+				candidates.push_back(p);
+				if (!p.has_parent_path() || p == p.parent_path()) break;
+				p = p.parent_path();
+			}
+		}
+
+		for (const auto& dir : candidates) {
+			if (!dir.empty() && fs::exists(dir / "KTEngine.vcxproj", ec)) {
+				return dir / "Setting.json";
+			}
+		}
+		return fs::path("Setting.json");
+	}
+}
+
+void Manager::LoadSettings() {
+	std::filesystem::path settingPath = FindSettingJsonPath();
+	std::ifstream ifs(settingPath);
+	if (!ifs.is_open()) {
+		ifs.open("Setting.json");
+	}
+
+	if (ifs.is_open()) {
+		try {
+			cereal::JSONInputArchive ar(ifs);
+			ar(cereal::make_nvp("TextEditorPath", _textEditorPath));
+		}
+		catch (...) {}
+		if (_textEditorPath.empty()) {
+			_textEditorPath = "notepad.exe";
+		}
+	} else {
+		_textEditorPath = "notepad.exe";
+		SaveSettings();
+	}
+}
+
+void Manager::SaveSettings() {
+	if (_textEditorPath.empty()) {
+		_textEditorPath = "notepad.exe";
+	}
+
+	std::filesystem::path settingPath = FindSettingJsonPath();
+	{
+		std::ofstream ofs(settingPath);
+		if (ofs.is_open()) {
+			cereal::JSONOutputArchive ar(ofs);
+			ar(cereal::make_nvp("TextEditorPath", _textEditorPath));
+		}
+	}
+
+	// カレントディレクトリの Setting.json にも同期保存
+	std::error_code ec;
+	if (!std::filesystem::equivalent(settingPath, "Setting.json", ec)) {
+		std::ofstream ofsLocal("Setting.json");
+		if (ofsLocal.is_open()) {
+			cereal::JSONOutputArchive ar(ofsLocal);
+			ar(cereal::make_nvp("TextEditorPath", _textEditorPath));
+		}
+	}
+}
+
+void Manager::SetTextEditorPath(const std::string& path) {
+	_textEditorPath = path.empty() ? "notepad.exe" : path;
+	SaveSettings();
+}
+
+void Manager::OpenInTextEditor(const std::string& filePath) {
+	if (filePath.empty()) return;
+
+	std::error_code ec;
+	std::filesystem::path fullTargetPath = std::filesystem::weakly_canonical(filePath, ec);
+	std::string targetStr = (!ec && !fullTargetPath.empty()) ? fullTargetPath.string() : filePath;
+
+	std::string editorExe = _textEditorPath.empty() ? "notepad.exe" : _textEditorPath;
+
+	// フルパス指定されたカスタムエディタが存在しない場合は標準メモ帳にフォールバック
+	std::filesystem::path editorPathObj(editorExe);
+	if (editorPathObj.is_absolute() && !std::filesystem::exists(editorPathObj, ec)) {
+		editorExe = "notepad.exe";
+	}
+
+	std::string stem = std::filesystem::path(editorExe).stem().string();
+	std::string cmdLine;
+	if (_stricmp(stem.c_str(), "devenv") == 0) {
+		cmdLine = "\"" + editorExe + "\" /edit \"" + targetStr + "\"";
+	} else {
+		cmdLine = "\"" + editorExe + "\" \"" + targetStr + "\"";
+	}
+
+	STARTUPINFOA si = {};
+	si.cb = sizeof(STARTUPINFOA);
+	PROCESS_INFORMATION pi = {};
+	std::vector<char> cmdBuf(cmdLine.begin(), cmdLine.end());
+	cmdBuf.push_back('\0');
+
+	if (CreateProcessA(nullptr, cmdBuf.data(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi)) {
+		CloseHandle(pi.hProcess);
+		CloseHandle(pi.hThread);
+	} else {
+		// CreateProcessA で開けなかった場合の安全フォールバック (notepad.exe)
+		ShellExecuteA(NULL, "open", "notepad.exe", ("\"" + targetStr + "\"").c_str(), NULL, SW_SHOWNORMAL);
 	}
 }

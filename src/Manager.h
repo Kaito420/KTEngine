@@ -56,6 +56,7 @@ private:
 	static bool _stopPending;
 	static bool _newScenePending;
 	static std::string _openScenePendingPath;
+	static std::string _textEditorPath;
 
 	static void _OpenSceneInternal(const std::string& filePath);
 
@@ -131,6 +132,12 @@ public:
 
 	static bool SaveHotReloadSnapshot(const std::string& filePath, HWND hwnd);
 	static bool LoadHotReloadSnapshot(const std::string& filePath, HWND hwnd);
+
+	static void LoadSettings();
+	static void SaveSettings();
+	static const std::string& GetTextEditorPath() { return _textEditorPath; }
+	static void SetTextEditorPath(const std::string& path);
+	static void OpenInTextEditor(const std::string& filePath);
 };
 
 

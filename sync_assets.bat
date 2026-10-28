@@ -51,6 +51,11 @@ if exist "%ROOT_DIR%\engine.json" (
 if exist "%ROOT_DIR%\imgui.ini" (
     copy /Y "%ROOT_DIR%\imgui.ini" "%DEST_DIR%\" >nul 2>nul
 )
+if exist "%ROOT_DIR%\Setting.json" (
+    copy /Y "%ROOT_DIR%\Setting.json" "%DEST_DIR%\" >nul 2>nul
+)
+    copy /Y "%ROOT_DIR%\imgui.ini" "%DEST_DIR%\" >nul 2>nul
+)
 
 echo [INFO] Synchronization complete.
 exit /b 0

@@ -37,6 +37,7 @@ enum class BrowserIconCategory : int {
 
 class FileBrowser {
 private:
+	fs::path _rootPath;
 	fs::path _currentPath;
 	float _thumbnailSize = 64.0f;
 
@@ -62,6 +63,13 @@ private:
 
 	static bool IsModelExtension(const std::string& ext) {
 		return ext == ".obj" || ext == ".fbx";
+	}
+
+	static bool IsTextEditableExtension(const std::string& ext) {
+		return ext == ".cpp" || ext == ".c" || ext == ".cc" || ext == ".cxx" ||
+		       ext == ".h" || ext == ".hpp" || ext == ".inl" ||
+		       ext == ".hlsl" || ext == ".hlsli" || ext == ".fx" ||
+		       ext == ".json" || ext == ".ini" || ext == ".txt" || ext == ".md" || ext == ".bat";
 	}
 
 	static const char* GetCategoryLabel(BrowserIconCategory cat) {
@@ -624,24 +632,191 @@ private:
 		}
 	}
 
+	void InitRootPath() {
+		std::error_code ec;
+		std::vector<fs::path> candidates;
+
+		fs::path cwd = fs::current_path(ec);
+		if (!ec && !cwd.empty()) {
+			fs::path p = cwd;
+			for (int i = 0; i < 5 && !p.empty(); ++i) {
+				candidates.push_back(p);
+				if (!p.has_parent_path() || p == p.parent_path()) break;
+				p = p.parent_path();
+			}
+		}
+
+		char exePathBuf[MAX_PATH] = {};
+		if (GetModuleFileNameA(NULL, exePathBuf, MAX_PATH) > 0) {
+			fs::path p = fs::path(exePathBuf).parent_path();
+			for (int i = 0; i < 5 && !p.empty(); ++i) {
+				candidates.push_back(p);
+				if (!p.has_parent_path() || p == p.parent_path()) break;
+				p = p.parent_path();
+			}
+		}
+
+		for (const auto& dir : candidates) {
+			if (!dir.empty() && fs::exists(dir / "KTEngine.vcxproj", ec)) {
+				_rootPath = fs::weakly_canonical(dir, ec);
+				if (ec) _rootPath = dir;
+				break;
+			}
+		}
+
+		if (_rootPath.empty()) {
+			for (const auto& dir : candidates) {
+				if (!dir.empty() && _stricmp(dir.filename().string().c_str(), "KTEngine") == 0) {
+					_rootPath = fs::weakly_canonical(dir, ec);
+					if (ec) _rootPath = dir;
+					break;
+				}
+			}
+		}
+
+		if (_rootPath.empty()) {
+			_rootPath = fs::weakly_canonical(cwd, ec);
+			if (ec) _rootPath = cwd;
+		}
+
+		_currentPath = _rootPath;
+	}
+
+	static bool IsSamePath(const fs::path& a, const fs::path& b) {
+		std::error_code ec;
+		if (fs::equivalent(a, b, ec) && !ec) return true;
+		return fs::weakly_canonical(a, ec) == fs::weakly_canonical(b, ec);
+	}
+
+	static bool IsSameOrSubPath(const fs::path& target, const fs::path& root) {
+		if (IsSamePath(target, root)) return true;
+		std::error_code ec;
+		fs::path normTarget = fs::weakly_canonical(target, ec);
+		if (ec) return false;
+		fs::path normRoot = fs::weakly_canonical(root, ec);
+		if (ec) return false;
+
+		fs::path rel = fs::relative(normTarget, normRoot, ec);
+		if (ec || rel.empty()) return false;
+		auto firstIt = rel.begin();
+		if (firstIt != rel.end() && *firstIt == "..") {
+			return false;
+		}
+		return true;
+	}
+
+	bool CanGoUp() const {
+		if (_rootPath.empty()) return false;
+		if (IsSamePath(_currentPath, _rootPath)) return false;
+		if (!_currentPath.has_parent_path()) return false;
+		fs::path parent = _currentPath.parent_path();
+		if (parent == _currentPath) return false;
+		return IsSameOrSubPath(parent, _rootPath);
+	}
+
+	void ClampCurrentPathToRoot() {
+		std::error_code ec;
+		if (_rootPath.empty()) {
+			InitRootPath();
+		}
+		if (!fs::exists(_currentPath, ec) || !IsSameOrSubPath(_currentPath, _rootPath)) {
+			_currentPath = _rootPath;
+		}
+	}
+
+	void RenderBreadcrumbBar() {
+		std::vector<std::pair<std::string, fs::path>> segments;
+		std::string rootLabel = _rootPath.filename().string();
+		if (rootLabel.empty()) rootLabel = "KTEngine";
+		segments.push_back({ rootLabel, _rootPath });
+
+		std::error_code ec;
+		fs::path rel = fs::relative(_currentPath, _rootPath, ec);
+		if (!ec && !rel.empty() && rel != ".") {
+			fs::path accum = _rootPath;
+			for (const auto& part : rel) {
+				std::string partStr = part.string();
+				if (partStr.empty() || partStr == "." || partStr == "..") continue;
+				accum /= part;
+				segments.push_back({ partStr, accum });
+			}
+		}
+
+		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(7.0f, 3.0f));
+
+		fs::path clickedTarget;
+		bool hasClickedTarget = false;
+
+		for (size_t i = 0; i < segments.size(); ++i) {
+			if (i > 0) {
+				ImGui::SameLine(0.0f, 3.0f);
+				ImGui::AlignTextToFramePadding();
+				ImGui::TextDisabled(">");
+				ImGui::SameLine(0.0f, 3.0f);
+			}
+
+			bool isLast = (i + 1 == segments.size());
+			if (isLast) {
+				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.24f, 0.34f, 0.48f, 0.90f));
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.30f, 0.42f, 0.58f, 1.00f));
+				ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.20f, 0.30f, 0.44f, 1.00f));
+			} else {
+				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.18f, 0.21f, 0.26f, 0.65f));
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.28f, 0.36f, 0.48f, 0.90f));
+				ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.22f, 0.29f, 0.40f, 1.00f));
+			}
+
+			ImGui::PushID(static_cast<int>(i));
+			if (ImGui::Button(segments[i].first.c_str())) {
+				clickedTarget = segments[i].second;
+				hasClickedTarget = true;
+			}
+			if (ImGui::IsItemHovered()) {
+				ImGui::SetTooltip("%s", segments[i].second.string().c_str());
+			}
+			ImGui::PopID();
+			ImGui::PopStyleColor(3);
+		}
+
+		ImGui::PopStyleVar(2);
+
+		if (hasClickedTarget) {
+			_currentPath = clickedTarget;
+			ClampCurrentPathToRoot();
+		}
+	}
+
 public:
 	FileBrowser() {
-		_currentPath = fs::current_path();
+		InitRootPath();
 	}
 
 	void Render() {
 		LoadIconConfig();
 		EnsureDefaultIcons();
+		ClampCurrentPathToRoot();
 
 		ImGui::Begin("Content Browser");
 		{
+			bool canGoUp = CanGoUp();
+			if (!canGoUp) {
+				ImGui::BeginDisabled(true);
+			}
 			if (ImGui::Button("<-")) {
-				if (_currentPath.has_parent_path()) {
+				if (canGoUp && _currentPath.has_parent_path()) {
 					_currentPath = _currentPath.parent_path();
+					ClampCurrentPathToRoot();
 				}
 			}
+			if (!canGoUp) {
+				ImGui::EndDisabled();
+			}
+			if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+				ImGui::SetTooltip(canGoUp ? "Go to parent directory" : "Reached root directory (KTEngine)");
+			}
 			ImGui::SameLine();
-			ImGui::Text("%s", _currentPath.string().c_str());
+			RenderBreadcrumbBar();
 
 			// Right-aligned Icon Settings button & Thumbnail size slider
 			float rightControlsWidth = 230.0f;
@@ -697,18 +872,34 @@ public:
 						clicked = ImGui::Button(isDir ? "DIR" : "FILE", ImVec2(thumbnailSize, thumbnailSize));
 					}
 
-					// Right-click on any image file to quickly assign it as a custom icon
-					if (!isDir && IsImageExtension(extension)) {
-						if (ImGui::BeginPopupContextItem("ImageContextPopup")) {
-							if (ImGui::BeginMenu("Set as Custom Icon for...")) {
-								for (int c = 0; c < (int)BrowserIconCategory::Count; c++) {
-									BrowserIconCategory cat = static_cast<BrowserIconCategory>(c);
-									if (ImGui::MenuItem(GetCategoryLabel(cat))) {
-										_customIconPaths[c] = path.generic_string();
-										SaveIconConfig();
-									}
+					// Right-click context menu for files (Text Editor, Scene Load, Custom Icon assignment)
+					if (!isDir && (IsTextEditableExtension(extension) || IsImageExtension(extension))) {
+						if (ImGui::BeginPopupContextItem("FileContextPopup")) {
+							if (extension == ".json") {
+								if (ImGui::MenuItem("Open Scene")) {
+									Manager::OpenScene(path.string());
 								}
-								ImGui::EndMenu();
+								ImGui::Separator();
+							}
+							if (IsTextEditableExtension(extension)) {
+								if (ImGui::MenuItem("Open in Text Editor")) {
+									Manager::OpenInTextEditor(path.string());
+								}
+							}
+							if (IsImageExtension(extension)) {
+								if (IsTextEditableExtension(extension)) {
+									ImGui::Separator();
+								}
+								if (ImGui::BeginMenu("Set as Custom Icon for...")) {
+									for (int c = 0; c < (int)BrowserIconCategory::Count; c++) {
+										BrowserIconCategory cat = static_cast<BrowserIconCategory>(c);
+										if (ImGui::MenuItem(GetCategoryLabel(cat))) {
+											_customIconPaths[c] = path.generic_string();
+											SaveIconConfig();
+										}
+									}
+									ImGui::EndMenu();
+								}
 							}
 							ImGui::EndPopup();
 						}
@@ -728,6 +919,8 @@ public:
 							if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
 								if (extension == ".json") {
 									Manager::OpenScene(path.string());
+								} else if (IsTextEditableExtension(extension)) {
+									Manager::OpenInTextEditor(path.string());
 								}
 							}
 						}
