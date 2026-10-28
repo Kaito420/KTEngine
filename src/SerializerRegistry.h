@@ -1,4 +1,4 @@
-﻿//=====================================================================================
+//=====================================================================================
 // SerializerRegistry.h
 // Author:Kaito Aoki
 // Date:2026/02/12
@@ -119,10 +119,12 @@ CEREAL_REGISTER_TYPE(Collider);
 CEREAL_REGISTER_TYPE(ColliderBox);
 CEREAL_REGISTER_TYPE(ColliderSphere);
 CEREAL_REGISTER_TYPE(ColliderCapsule);
+CEREAL_REGISTER_TYPE(ColliderMesh);
 CEREAL_REGISTER_POLYMORPHIC_RELATION(Component, Collider);
 CEREAL_REGISTER_POLYMORPHIC_RELATION(Collider, ColliderBox);
 CEREAL_REGISTER_POLYMORPHIC_RELATION(Collider, ColliderSphere);
 CEREAL_REGISTER_POLYMORPHIC_RELATION(Collider, ColliderCapsule);
+CEREAL_REGISTER_POLYMORPHIC_RELATION(Collider, ColliderMesh);
 
 CEREAL_REGISTER_TYPE(Cube);
 CEREAL_REGISTER_POLYMORPHIC_RELATION(Component, Cube);

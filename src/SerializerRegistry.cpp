@@ -1,4 +1,4 @@
-﻿//=====================================================================================
+//=====================================================================================
 // SerializerRegistry.cpp
 // Author:Kaito Aoki
 // Date:2026/02/12
@@ -18,6 +18,7 @@ void RegisterAllComponents() {
 	ComponentRegistry::Register<ColliderBox>("ColliderBox");
 	ComponentRegistry::Register<ColliderSphere>("ColliderSphere");
 	ComponentRegistry::Register<ColliderCapsule>("ColliderCapsule");
+	ComponentRegistry::Register<ColliderMesh>("ColliderMesh");
 	ComponentRegistry::Register<Cube>("Cube");
 	ComponentRegistry::Register<Sphere>("Sphere");
 	ComponentRegistry::Register<Capsule>("Capsule");

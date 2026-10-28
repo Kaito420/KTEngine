@@ -1,4 +1,4 @@
-﻿//=====================================================================================
+//=====================================================================================
 // PhysicsSystem.h
 // Author:Kaito Aoki
 // Date:2025/09/09
@@ -864,6 +864,34 @@ void PhysicsSystem::RenderDebug() {
 				}
 			}
 		}
+		else if (auto* meshCol = dynamic_cast<ColliderMesh*>(col)) {
+			// Mesh Collider wireframe (Convex Hull unique edges)
+			if ((!meshCol->_wireVB || !meshCol->_wireIB) && !meshCol->_uniqueEdges.empty()) {
+				meshCol->BuildWireframeBuffers();
+			}
+			if (meshCol->_wireVB && meshCol->_wireIB && meshCol->_wireIndexCount > 0) {
+				KTVECTOR3 ws = owner->GetWorldScale();
+				KTVECTOR3 wp = owner->GetWorldPosition() + meshCol->GetCenter();
+				XMMATRIX scaleMat = XMMatrixScaling(ws.x, ws.y, ws.z);
+				XMMATRIX transMat = XMMatrixTranslation(wp.x, wp.y, wp.z);
+				XMMATRIX worldMatrix = scaleMat * rotation * transMat;
+				Renderer::SetWorldMatrix(worldMatrix);
+				Renderer::BindShaderConstantsDX12();
+
+				D3D12_VERTEX_BUFFER_VIEW vbView = {};
+				vbView.BufferLocation = meshCol->_wireVB->Resource->GetGPUVirtualAddress();
+				vbView.StrideInBytes = meshCol->_wireVB->Stride;
+				vbView.SizeInBytes = meshCol->_wireVB->Stride * meshCol->_wireVB->Size;
+				cmdList->IASetVertexBuffers(0, 1, &vbView);
+
+				D3D12_INDEX_BUFFER_VIEW ibView = {};
+				ibView.BufferLocation = meshCol->_wireIB->Resource->GetGPUVirtualAddress();
+				ibView.SizeInBytes = sizeof(unsigned int) * meshCol->_wireIndexCount;
+				ibView.Format = DXGI_FORMAT_R32_UINT;
+				cmdList->IASetIndexBuffer(&ibView);
+
+				cmdList->DrawIndexedInstanced(meshCol->_wireIndexCount, 1, 0, 0, 0);
+			}
+		}
 	}
 }
-

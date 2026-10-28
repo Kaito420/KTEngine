@@ -1,4 +1,4 @@
-﻿//=====================================================================================
+//=====================================================================================
 // Collider.cpp
 // Author:Kaito Aoki
 // Date:2025/09/08
@@ -14,6 +14,10 @@
 #include "Texture.h"
 #include "ShaderManager.h"
 #include "Shader.h"
+#include "ModelRenderer.h"
+#include <set>
+#include <cmath>
+#include <algorithm>
 
 void ClosestPointSegSeg(const KTVECTOR3& s1, const KTVECTOR3& e1, const KTVECTOR3& s2, const KTVECTOR3& e2, KTVECTOR3& c1, KTVECTOR3& c2){
 	float s, t; // パラメータ
@@ -121,7 +125,7 @@ void ColliderSphere::SyncTransform(){
 	else
 		_radius = tempScale * 0.5f;
 
-	//AABBXV
+	// AABBの更新
 	_aabb.min = _owner->GetWorldPosition() - KTVECTOR3(_radius, _radius, _radius);
 	_aabb.max = _owner->GetWorldPosition() + KTVECTOR3(_radius, _radius, _radius);
 
@@ -305,7 +309,7 @@ void ColliderBox::Update() {
 
 void ColliderBox::SyncTransform() {
 	if (!_owner) return;
-	//[JXV
+	// ローカル情報の更新
 	_center = _owner->GetWorldPosition();
 	_axis[0] = _owner->GetRight();
 	_axis[1] = _owner->GetUp();
@@ -313,7 +317,7 @@ void ColliderBox::SyncTransform() {
 
 	_extents = _owner->GetWorldScale() * 0.5f;
 
-	//AABBXV
+	// AABBの更新
 	KTVECTOR3 r;
 	r.x = fabsf(_axis[0].x) * _extents.x + fabsf(_axis[1].x) * _extents.y + fabsf(_axis[2].x) * _extents.z;
 	r.y = fabsf(_axis[0].y) * _extents.x + fabsf(_axis[1].y) * _extents.y + fabsf(_axis[2].y) * _extents.z;
@@ -976,4 +980,928 @@ KTMATRIX3 ColliderCapsule::ComputeLocalInertiaTensor(float mass){
 
 void ColliderCapsule::ShowUI(){
 	ImGui::Checkbox("_wasOverlap", &_wasOverlap);
+}
+
+
+//=====================================================================================
+// ColliderMesh 実装 (3D Convex Hull 最外殻メッシュ生成・衝突判定・ワイヤーフレーム構築)
+//=====================================================================================
+
+bool ColliderSphere::CollideWith(ColliderMesh* other, CollisionManifold& outCollisionManifold) {
+	return other->CheckVSSphere(this, outCollisionManifold);
+}
+
+bool ColliderBox::CollideWith(ColliderMesh* other, CollisionManifold& outCollisionManifold) {
+	return other->CheckVSOBB(this, outCollisionManifold);
+}
+
+bool ColliderCapsule::CollideWith(ColliderMesh* other, CollisionManifold& outCollisionManifold) {
+	return other->CheckVSCapsule(this, outCollisionManifold);
+}
+
+namespace {
+	// 点Pから三角形ABC上の最近接点を求める (Ericson, Real-Time Collision Detection)
+	KTVECTOR3 ClosestPointOnTriangle(const KTVECTOR3& p, const KTVECTOR3& a, const KTVECTOR3& b, const KTVECTOR3& c) {
+		KTVECTOR3 ab = b - a;
+		KTVECTOR3 ac = c - a;
+		KTVECTOR3 ap = p - a;
+		float d1 = Dot(ab, ap);
+		float d2 = Dot(ac, ap);
+		if (d1 <= 0.0f && d2 <= 0.0f) return a;
+
+		KTVECTOR3 bp = p - b;
+		float d3 = Dot(ab, bp);
+		float d4 = Dot(ac, bp);
+		if (d3 >= 0.0f && d4 <= d3) return b;
+
+		float vc = d1 * d4 - d3 * d2;
+		if (vc <= 0.0f && d1 >= 0.0f && d3 <= 0.0f) {
+			float v = d1 / (d1 - d3);
+			return a + ab * v;
+		}
+
+		KTVECTOR3 cp = p - c;
+		float d5 = Dot(ab, cp);
+		float d6 = Dot(ac, cp);
+		if (d6 >= 0.0f && d5 <= d6) return c;
+
+		float vb = d5 * d2 - d1 * d6;
+		if (vb <= 0.0f && d2 >= 0.0f && d6 <= 0.0f) {
+			float w = d2 / (d2 - d6);
+			return a + ac * w;
+		}
+
+		float va = d3 * d6 - d5 * d4;
+		if (va <= 0.0f && (d4 - d3) >= 0.0f && (d5 - d6) >= 0.0f) {
+			float w = (d4 - d3) / ((d4 - d3) + (d5 - d6));
+			return b + (c - b) * w;
+		}
+
+		float denom = 1.0f / (va + vb + vc);
+		float v = vb * denom;
+		float w = vc * denom;
+		return a + ab * v + ac * w;
+	}
+
+	// ほぼ平行でない場合のみ方向リストに追加するヘルパー
+	void AddUniqueDirection(std::vector<KTVECTOR3>& list, const KTVECTOR3& dir, float cosThreshold = 0.992f) {
+		float lenSq = dir.MagnitudeSqr();
+		if (lenSq < 1e-6f) return;
+		KTVECTOR3 n = dir / sqrtf(lenSq);
+		for (const auto& existing : list) {
+			if (fabsf(Dot(existing, n)) >= cosThreshold) {
+				return;
+			}
+		}
+		list.push_back(n);
+	}
+}
+
+void ColliderMesh::Awake() {
+	_executeInEditor = true;
+	if (Manager::GetCurrentScene() && Manager::GetCurrentScene()->GetPhysicsSystem()) {
+		Manager::GetCurrentScene()->GetPhysicsSystem()->RegisterCollider(this);
+	}
+	RebuildMesh();
+	SyncTransform();
+}
+
+void ColliderMesh::Start() {
+	if (Manager::GetCurrentScene() && Manager::GetCurrentScene()->GetPhysicsSystem()) {
+		Manager::GetCurrentScene()->GetPhysicsSystem()->RegisterCollider(this);
+	}
+	if (_localVertices.empty()) {
+		RebuildMesh();
+	}
+	SyncTransform();
+}
+
+void ColliderMesh::OnDestroy() {
+	if (Manager::GetCurrentScene() && Manager::GetCurrentScene()->GetPhysicsSystem()) {
+		Manager::GetCurrentScene()->GetPhysicsSystem()->RemoveCollider(this);
+	}
+}
+
+void ColliderMesh::OnDestroyOnEditor() {
+	if (Manager::GetCurrentScene() && Manager::GetCurrentScene()->GetPhysicsSystem()) {
+		Manager::GetCurrentScene()->GetPhysicsSystem()->RemoveCollider(this);
+	}
+}
+
+void ColliderMesh::Update() {
+	if (Manager::GetCurrentScene() && Manager::GetCurrentScene()->GetPhysicsSystem()) {
+		Manager::GetCurrentScene()->GetPhysicsSystem()->RegisterCollider(this);
+	}
+	SyncTransform();
+}
+
+void ColliderMesh::RebuildMesh() {
+	const MODEL* model = nullptr;
+	if (_owner) {
+		ModelRenderer* mr = _owner->GetComponent<ModelRenderer>();
+		if (mr) {
+			model = mr->GetModel();
+		}
+	}
+	_cachedModel = model;
+
+	std::vector<KTVECTOR3> rawPoints;
+	if (model && !model->BaseVertices.empty()) {
+		rawPoints.reserve(model->BaseVertices.size());
+		for (const auto& v : model->BaseVertices) {
+			rawPoints.push_back(KTVECTOR3(v.position.x, v.position.y, v.position.z));
+		}
+	} else {
+		// ModelRendererが未設定の場合は単位立方体の頂点をフォールバックとして使用
+		const float h = 0.5f;
+		rawPoints = {
+			{ -h, -h, -h }, {  h, -h, -h }, {  h,  h, -h }, { -h,  h, -h },
+			{ -h, -h,  h }, {  h, -h,  h }, {  h,  h,  h }, { -h,  h,  h }
+		};
+	}
+
+	BuildConvexHullFromPoints(rawPoints);
+	BuildWireframeBuffers();
+	_hasChangedScale = true;
+}
+
+void ColliderMesh::BuildConvexHullFromPoints(const std::vector<KTVECTOR3>& rawPoints) {
+	_localVertices.clear();
+	_faces.clear();
+	_uniqueEdges.clear();
+	_uniqueFaceNormalsLocal.clear();
+	_uniqueEdgeDirsLocal.clear();
+
+	if (rawPoints.empty()) return;
+
+	// 1. 球面上の多方向への極値頂点抽出（最も外側にある外形頂点のみを高速に選抜）
+	std::vector<KTVECTOR3> sampleDirs;
+	sampleDirs.reserve(72);
+	// 軸方向・対角方向 (26方向)
+	for (int dx = -1; dx <= 1; ++dx) {
+		for (int dy = -1; dy <= 1; ++dy) {
+			for (int dz = -1; dz <= 1; ++dz) {
+				if (dx == 0 && dy == 0 && dz == 0) continue;
+				sampleDirs.push_back(KTVECTOR3((float)dx, (float)dy, (float)dz).Normalize());
+			}
+		}
+	}
+	// フィボナッチ球面上の均等方向 (42方向)
+	const int fibCount = 42;
+	const float goldenRatio = (1.0f + sqrtf(5.0f)) * 0.5f;
+	for (int i = 0; i < fibCount; ++i) {
+		float theta = 2.0f * 3.1415926535f * (float)i / goldenRatio;
+		float phi = acosf(1.0f - 2.0f * ((float)i + 0.5f) / (float)fibCount);
+		sampleDirs.push_back(KTVECTOR3(
+			cosf(theta) * sinf(phi),
+			cosf(phi),
+			sinf(theta) * sinf(phi)
+		));
+	}
+
+	std::vector<KTVECTOR3> pts;
+	pts.reserve(sampleDirs.size());
+
+	KTVECTOR3 minB = rawPoints[0];
+	KTVECTOR3 maxB = rawPoints[0];
+	for (const auto& p : rawPoints) {
+		if (p.x < minB.x) minB.x = p.x;
+		if (p.y < minB.y) minB.y = p.y;
+		if (p.z < minB.z) minB.z = p.z;
+		if (p.x > maxB.x) maxB.x = p.x;
+		if (p.y > maxB.y) maxB.y = p.y;
+		if (p.z > maxB.z) maxB.z = p.z;
+	}
+	KTVECTOR3 span = maxB - minB;
+	float diag = span.Magnitude();
+	float mergeEpsSq = (std::max)(1e-8f, (diag * 0.005f) * (diag * 0.005f));
+
+	for (const auto& d : sampleDirs) {
+		float bestProj = -FLT_MAX;
+		KTVECTOR3 bestPt = rawPoints[0];
+		for (const auto& p : rawPoints) {
+			float proj = Dot(p, d);
+			if (proj > bestProj) {
+				bestProj = proj;
+				bestPt = p;
+			}
+		}
+		bool duplicate = false;
+		for (const auto& existing : pts) {
+			if ((existing - bestPt).MagnitudeSqr() <= mergeEpsSq) {
+				duplicate = true;
+				break;
+			}
+		}
+		if (!duplicate) {
+			pts.push_back(bestPt);
+		}
+	}
+
+	// 2. 初期四面体 (Initial Tetrahedron) の構築
+	int i0 = 0, i1 = 0;
+	float maxDistSq = -1.0f;
+	for (int i = 0; i < (int)pts.size(); ++i) {
+		for (int j = i + 1; j < (int)pts.size(); ++j) {
+			float dSq = (pts[j] - pts[i]).MagnitudeSqr();
+			if (dSq > maxDistSq) {
+				maxDistSq = dSq;
+				i0 = i;
+				i1 = j;
+			}
+		}
+	}
+
+	int i2 = -1;
+	float maxLineDistSq = -1.0f;
+	KTVECTOR3 lineDir = (pts[i1] - pts[i0]).Normalize();
+	for (int i = 0; i < (int)pts.size(); ++i) {
+		if (i == i0 || i == i1) continue;
+		KTVECTOR3 v = pts[i] - pts[i0];
+		KTVECTOR3 perp = v - lineDir * Dot(v, lineDir);
+		float dSq = perp.MagnitudeSqr();
+		if (dSq > maxLineDistSq) {
+			maxLineDistSq = dSq;
+			i2 = i;
+		}
+	}
+
+	int i3 = -1;
+	float maxPlaneDist = -1.0f;
+	if (i2 >= 0) {
+		KTVECTOR3 baseN = Cross(pts[i1] - pts[i0], pts[i2] - pts[i0]).Normalize();
+		for (int i = 0; i < (int)pts.size(); ++i) {
+			if (i == i0 || i == i1 || i == i2) continue;
+			float d = fabsf(Dot(pts[i] - pts[i0], baseN));
+			if (d > maxPlaneDist) {
+				maxPlaneDist = d;
+				i3 = i;
+			}
+		}
+	}
+
+	// 平面等の退化モデルの場合はローカルAABBから直方体凸包を生成
+	if (pts.size() < 4 || i2 < 0 || i3 < 0 || maxPlaneDist < 1e-4f) {
+		KTVECTOR3 c = (minB + maxB) * 0.5f;
+		KTVECTOR3 e = (maxB - minB) * 0.5f;
+		if (e.x < 0.02f) e.x = 0.02f;
+		if (e.y < 0.02f) e.y = 0.02f;
+		if (e.z < 0.02f) e.z = 0.02f;
+		pts = {
+			{ c.x - e.x, c.y - e.y, c.z - e.z },
+			{ c.x + e.x, c.y - e.y, c.z - e.z },
+			{ c.x + e.x, c.y + e.y, c.z - e.z },
+			{ c.x - e.x, c.y + e.y, c.z - e.z },
+			{ c.x - e.x, c.y - e.y, c.z + e.z },
+			{ c.x + e.x, c.y - e.y, c.z + e.z },
+			{ c.x + e.x, c.y + e.y, c.z + e.z },
+			{ c.x - e.x, c.y + e.y, c.z + e.z }
+		};
+		i0 = 0; i1 = 1; i2 = 2; i3 = 4;
+	}
+
+	// 3. 3D Quickhull アルゴリズムによる最外殻メッシュ構築
+	struct QHFace {
+		int v[3];
+		KTVECTOR3 normal;
+		bool active = true;
+	};
+
+	KTVECTOR3 interiorCenter = (pts[i0] + pts[i1] + pts[i2] + pts[i3]) * 0.25f;
+
+	auto makeFace = [&](int a, int b, int c) -> QHFace {
+		KTVECTOR3 n = Cross(pts[b] - pts[a], pts[c] - pts[a]);
+		if (Dot(n, pts[a] - interiorCenter) < 0.0f) {
+			std::swap(b, c);
+			n = -n;
+		}
+		return QHFace{ { a, b, c }, n.Normalize(), true };
+	};
+
+	std::vector<QHFace> qhFaces;
+	qhFaces.push_back(makeFace(i0, i1, i2));
+	qhFaces.push_back(makeFace(i0, i2, i3));
+	qhFaces.push_back(makeFace(i0, i3, i1));
+	qhFaces.push_back(makeFace(i1, i3, i2));
+
+	std::vector<bool> usedPt(pts.size(), false);
+	usedPt[i0] = usedPt[i1] = usedPt[i2] = usedPt[i3] = true;
+
+	const float hullEps = (std::max)(1e-4f, diag * 0.003f);
+
+	for (int iter = 0; iter < 64; ++iter) {
+		int bestPtIdx = -1;
+		float farthestDist = hullEps;
+
+		for (size_t fIdx = 0; fIdx < qhFaces.size(); ++fIdx) {
+			const auto& f = qhFaces[fIdx];
+			if (!f.active) continue;
+			for (int p = 0; p < (int)pts.size(); ++p) {
+				if (usedPt[p]) continue;
+				float dist = Dot(f.normal, pts[p] - pts[f.v[0]]);
+				if (dist > farthestDist) {
+					farthestDist = dist;
+					bestPtIdx = p;
+				}
+			}
+		}
+
+		if (bestPtIdx < 0) break;
+		usedPt[bestPtIdx] = true;
+
+		// bestPtIdx から見える面を特定
+		std::vector<bool> visible(qhFaces.size(), false);
+		int visibleCount = 0;
+		for (size_t fIdx = 0; fIdx < qhFaces.size(); ++fIdx) {
+			if (!qhFaces[fIdx].active) continue;
+			if (Dot(qhFaces[fIdx].normal, pts[bestPtIdx] - pts[qhFaces[fIdx].v[0]]) > 1e-5f) {
+				visible[fIdx] = true;
+				visibleCount++;
+			}
+		}
+		if (visibleCount == 0) continue;
+
+		// 地平線エッジ（Horizon Edges: 可視面と非可視面の境界エッジ）を抽出
+		struct DirectedEdge { int u, v; };
+		std::vector<DirectedEdge> visibleEdges;
+		for (size_t fIdx = 0; fIdx < qhFaces.size(); ++fIdx) {
+			if (!visible[fIdx]) continue;
+			const auto& f = qhFaces[fIdx];
+			visibleEdges.push_back({ f.v[0], f.v[1] });
+			visibleEdges.push_back({ f.v[1], f.v[2] });
+			visibleEdges.push_back({ f.v[2], f.v[0] });
+		}
+
+		std::vector<DirectedEdge> horizonEdges;
+		for (const auto& e : visibleEdges) {
+			bool hasOppositeInVisible = false;
+			for (const auto& o : visibleEdges) {
+				if (o.u == e.v && o.v == e.u) {
+					hasOppositeInVisible = true;
+					break;
+				}
+			}
+			if (!hasOppositeInVisible) {
+				horizonEdges.push_back(e);
+			}
+		}
+
+		if (horizonEdges.empty()) continue;
+
+		for (size_t fIdx = 0; fIdx < qhFaces.size(); ++fIdx) {
+			if (visible[fIdx]) {
+				qhFaces[fIdx].active = false;
+			}
+		}
+
+		for (const auto& he : horizonEdges) {
+			qhFaces.push_back(makeFace(he.u, he.v, bestPtIdx));
+		}
+	}
+
+	// 4. 有効な三角形面と使用頂点の再インデックス化
+	std::vector<int> oldToNew(pts.size(), -1);
+	for (const auto& f : qhFaces) {
+		if (!f.active) continue;
+		for (int k = 0; k < 3; ++k) {
+			int oldIdx = f.v[k];
+			if (oldToNew[oldIdx] < 0) {
+				oldToNew[oldIdx] = (int)_localVertices.size();
+				_localVertices.push_back(pts[oldIdx]);
+			}
+		}
+	}
+
+	std::set<std::pair<int, int>> edgeSet;
+	for (const auto& f : qhFaces) {
+		if (!f.active) continue;
+		int a = oldToNew[f.v[0]];
+		int b = oldToNew[f.v[1]];
+		int c = oldToNew[f.v[2]];
+		if (a == b || b == c || c == a) continue;
+
+		HullFace hf;
+		hf.v0 = a;
+		hf.v1 = b;
+		hf.v2 = c;
+		hf.localNormal = f.normal;
+		_faces.push_back(hf);
+
+		AddUniqueDirection(_uniqueFaceNormalsLocal, f.normal);
+
+		int tri[3] = { a, b, c };
+		for (int k = 0; k < 3; ++k) {
+			int u = tri[k];
+			int v = tri[(k + 1) % 3];
+			if (u > v) std::swap(u, v);
+			edgeSet.insert({ u, v });
+		}
+	}
+
+	_uniqueEdges.assign(edgeSet.begin(), edgeSet.end());
+	for (const auto& e : _uniqueEdges) {
+		AddUniqueDirection(_uniqueEdgeDirsLocal, _localVertices[e.second] - _localVertices[e.first]);
+		if (_uniqueEdgeDirsLocal.size() >= 16) break; // SAT高速化のため主要16方向までに制限
+	}
+
+	// ローカル中心とローカルハーフサイズを算出
+	if (!_localVertices.empty()) {
+		KTVECTOR3 lMin = _localVertices[0];
+		KTVECTOR3 lMax = _localVertices[0];
+		for (const auto& v : _localVertices) {
+			if (v.x < lMin.x) lMin.x = v.x;
+			if (v.y < lMin.y) lMin.y = v.y;
+			if (v.z < lMin.z) lMin.z = v.z;
+			if (v.x > lMax.x) lMax.x = v.x;
+			if (v.y > lMax.y) lMax.y = v.y;
+			if (v.z > lMax.z) lMax.z = v.z;
+		}
+		_localCenter = (lMin + lMax) * 0.5f;
+		_localHalfExtents = (lMax - lMin) * 0.5f;
+	}
+}
+
+void ColliderMesh::BuildWireframeBuffers() {
+	_wireVB.reset();
+	_wireIB.reset();
+	_wireIndexCount = 0;
+
+	if (_localVertices.empty() || _uniqueEdges.empty() || !Renderer::GetDeviceDX12()) {
+		return;
+	}
+
+	std::vector<Vertex> gpuVerts(_localVertices.size());
+	for (size_t i = 0; i < _localVertices.size(); ++i) {
+		gpuVerts[i].position = XMFLOAT3(_localVertices[i].x, _localVertices[i].y, _localVertices[i].z);
+		gpuVerts[i].normal = XMFLOAT3(0.0f, 1.0f, 0.0f);
+		gpuVerts[i].color = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+		gpuVerts[i].uv = XMFLOAT2(0.0f, 0.0f);
+	}
+
+	std::vector<unsigned int> gpuIndices;
+	gpuIndices.reserve(_uniqueEdges.size() * 2);
+	for (const auto& edge : _uniqueEdges) {
+		gpuIndices.push_back((unsigned int)edge.first);
+		gpuIndices.push_back((unsigned int)edge.second);
+	}
+	_wireIndexCount = (unsigned int)gpuIndices.size();
+
+	_wireVB = Renderer::CreateVertexBuffer(sizeof(Vertex), (unsigned int)gpuVerts.size());
+	if (_wireVB && _wireVB->Resource) {
+		void* data = nullptr;
+		if (SUCCEEDED(_wireVB->Resource->Map(0, nullptr, &data))) {
+			memcpy(data, gpuVerts.data(), sizeof(Vertex) * gpuVerts.size());
+			_wireVB->Resource->Unmap(0, nullptr);
+		}
+	}
+
+	_wireIB = Renderer::CreateIndexBuffer(_wireIndexCount);
+	if (_wireIB && _wireIB->Resource) {
+		void* data = nullptr;
+		if (SUCCEEDED(_wireIB->Resource->Map(0, nullptr, &data))) {
+			memcpy(data, gpuIndices.data(), sizeof(unsigned int) * gpuIndices.size());
+			_wireIB->Resource->Unmap(0, nullptr);
+		}
+	}
+}
+
+void ColliderMesh::SyncTransform() {
+	if (!_owner) return;
+
+	// ModelRenderer のモデルが変化していたら自動再構築
+	ModelRenderer* mr = _owner->GetComponent<ModelRenderer>();
+	const MODEL* currentModel = mr ? mr->GetModel() : nullptr;
+	if (_localVertices.empty() || currentModel != _cachedModel) {
+		RebuildMesh();
+	}
+	if (_wireIndexCount == 0 && !_uniqueEdges.empty() && Renderer::GetDeviceDX12()) {
+		BuildWireframeBuffers();
+	}
+
+	KTVECTOR3 pos = _owner->GetWorldPosition() + _center;
+	KTVECTOR3 scale = _owner->GetWorldScale();
+	KTVECTOR3 right = _owner->GetRight();
+	KTVECTOR3 up = _owner->GetUp();
+	KTVECTOR3 forward = _owner->GetForward();
+
+	auto transformPoint = [&](const KTVECTOR3& lp) -> KTVECTOR3 {
+		return pos
+			+ right * (lp.x * scale.x)
+			+ up * (lp.y * scale.y)
+			+ forward * (lp.z * scale.z);
+	};
+
+	float invScaleX = (fabsf(scale.x) > 1e-6f) ? (1.0f / scale.x) : 1.0f;
+	float invScaleY = (fabsf(scale.y) > 1e-6f) ? (1.0f / scale.y) : 1.0f;
+	float invScaleZ = (fabsf(scale.z) > 1e-6f) ? (1.0f / scale.z) : 1.0f;
+
+	auto transformNormal = [&](const KTVECTOR3& ln) -> KTVECTOR3 {
+		return (right * (ln.x * invScaleX)
+			+ up * (ln.y * invScaleY)
+			+ forward * (ln.z * invScaleZ)).Normalize();
+	};
+
+	auto transformEdgeDir = [&](const KTVECTOR3& ld) -> KTVECTOR3 {
+		return (right * (ld.x * scale.x)
+			+ up * (ld.y * scale.y)
+			+ forward * (ld.z * scale.z)).Normalize();
+	};
+
+	_worldCenter = transformPoint(_localCenter);
+
+	_worldVertices.resize(_localVertices.size());
+	KTVECTOR3 wMin(FLT_MAX, FLT_MAX, FLT_MAX);
+	KTVECTOR3 wMax(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+
+	for (size_t i = 0; i < _localVertices.size(); ++i) {
+		KTVECTOR3 wp = transformPoint(_localVertices[i]);
+		_worldVertices[i] = wp;
+		if (wp.x < wMin.x) wMin.x = wp.x;
+		if (wp.y < wMin.y) wMin.y = wp.y;
+		if (wp.z < wMin.z) wMin.z = wp.z;
+		if (wp.x > wMax.x) wMax.x = wp.x;
+		if (wp.y > wMax.y) wMax.y = wp.y;
+		if (wp.z > wMax.z) wMax.z = wp.z;
+	}
+
+	_aabb.min = wMin;
+	_aabb.max = wMax;
+
+	_worldFaceNormals.resize(_uniqueFaceNormalsLocal.size());
+	for (size_t i = 0; i < _uniqueFaceNormalsLocal.size(); ++i) {
+		_worldFaceNormals[i] = transformNormal(_uniqueFaceNormalsLocal[i]);
+	}
+
+	_worldEdgeDirs.resize(_uniqueEdgeDirsLocal.size());
+	for (size_t i = 0; i < _uniqueEdgeDirsLocal.size(); ++i) {
+		_worldEdgeDirs[i] = transformEdgeDir(_uniqueEdgeDirsLocal[i]);
+	}
+
+	if ((_oldScale - scale).MagnitudeSqr() > 1e-6f) {
+		_hasChangedScale = true;
+	} else {
+		_hasChangedScale = false;
+	}
+	_oldScale = scale;
+}
+
+bool ColliderMesh::CheckVSSphere(const ColliderSphere* other, CollisionManifold& outCollisionManifold) const {
+	if (!this->_aabb.CheckOverlap(other->_aabb)) return false;
+	if (_worldVertices.empty() || _faces.empty()) return false;
+
+	KTVECTOR3 sphereCenter = other->GetOwner()->GetWorldPosition();
+	float radius = other->_radius;
+
+	float minDistSq = FLT_MAX;
+	KTVECTOR3 closestPt = _worldCenter;
+	float maxSignedPlaneDist = -FLT_MAX;
+	KTVECTOR3 leastPenetratingNormal(0.0f, 1.0f, 0.0f);
+
+	for (const auto& f : _faces) {
+		const KTVECTOR3& a = _worldVertices[f.v0];
+		const KTVECTOR3& b = _worldVertices[f.v1];
+		const KTVECTOR3& c = _worldVertices[f.v2];
+
+		KTVECTOR3 fn = Cross(b - a, c - a);
+		if (Dot(fn, a - _worldCenter) < 0.0f) fn = -fn;
+		fn = fn.Normalize();
+
+		float signedDist = Dot(fn, sphereCenter - a);
+		if (signedDist > maxSignedPlaneDist) {
+			maxSignedPlaneDist = signedDist;
+			leastPenetratingNormal = fn;
+		}
+
+		KTVECTOR3 pt = ClosestPointOnTriangle(sphereCenter, a, b, c);
+		float dSq = (sphereCenter - pt).MagnitudeSqr();
+		if (dSq < minDistSq) {
+			minDistSq = dSq;
+			closestPt = pt;
+		}
+	}
+
+	bool insideHull = (maxSignedPlaneDist <= 0.0f);
+	if (!insideHull && minDistSq > radius * radius) {
+		return false;
+	}
+
+	outCollisionManifold.hasCollision = true;
+	outCollisionManifold.a = const_cast<ColliderSphere*>(other);
+	outCollisionManifold.b = const_cast<ColliderMesh*>(this);
+
+	if (insideHull) {
+		outCollisionManifold.normal = leastPenetratingNormal;
+		outCollisionManifold.penetrationDepth = radius - maxSignedPlaneDist;
+		ContactPoint cp;
+		cp.position = sphereCenter - leastPenetratingNormal * maxSignedPlaneDist;
+		cp.penetration = outCollisionManifold.penetrationDepth;
+		outCollisionManifold.contacts.push_back(cp);
+	} else {
+		float dist = sqrtf(minDistSq);
+		KTVECTOR3 diff = sphereCenter - closestPt;
+		outCollisionManifold.normal = (dist > 1e-6f) ? (diff / dist) : leastPenetratingNormal;
+		outCollisionManifold.penetrationDepth = radius - dist;
+		ContactPoint cp;
+		cp.position = closestPt;
+		cp.penetration = outCollisionManifold.penetrationDepth;
+		outCollisionManifold.contacts.push_back(cp);
+	}
+
+	return true;
+}
+
+bool ColliderMesh::CheckVSCapsule(const ColliderCapsule* other, CollisionManifold& outCollisionManifold) const {
+	if (!this->_aabb.CheckOverlap(other->_aabb)) return false;
+	if (_worldVertices.empty() || _faces.empty()) return false;
+
+	float radius = other->GetRadius();
+	float cylH = (std::max)(0.0f, other->GetHeight() - 2.0f * radius);
+	KTVECTOR3 up = other->GetOwner()->GetUp();
+	KTVECTOR3 segA = other->GetOwner()->GetWorldPosition() - up * (cylH * 0.5f);
+	KTVECTOR3 segB = other->GetOwner()->GetWorldPosition() + up * (cylH * 0.5f);
+
+	// カプセル中心線分上の代表点と各三角形の最短距離を評価
+	float bestDistSq = FLT_MAX;
+	KTVECTOR3 bestSegPt = segA;
+	KTVECTOR3 bestMeshPt = _worldCenter;
+
+	const int SAMPLES = 5;
+	for (int s = 0; s <= SAMPLES; ++s) {
+		float t = (float)s / (float)SAMPLES;
+		KTVECTOR3 p = segA + (segB - segA) * t;
+		for (const auto& f : _faces) {
+			KTVECTOR3 q = ClosestPointOnTriangle(p, _worldVertices[f.v0], _worldVertices[f.v1], _worldVertices[f.v2]);
+			// さらにqから線分ABへの最近接点で精密化
+			KTVECTOR3 ab = segB - segA;
+			float abLenSq = ab.MagnitudeSqr();
+			float u = (abLenSq > 1e-6f) ? Clamp(Dot(q - segA, ab) / abLenSq, 0.0f, 1.0f) : 0.0f;
+			KTVECTOR3 pRefined = segA + ab * u;
+			KTVECTOR3 qRefined = ClosestPointOnTriangle(pRefined, _worldVertices[f.v0], _worldVertices[f.v1], _worldVertices[f.v2]);
+
+			float dSq = (pRefined - qRefined).MagnitudeSqr();
+			if (dSq < bestDistSq) {
+				bestDistSq = dSq;
+				bestSegPt = pRefined;
+				bestMeshPt = qRefined;
+			}
+		}
+	}
+
+	// bestSegPt が凸包内部に入っているかもチェック
+	float maxSignedPlaneDist = -FLT_MAX;
+	KTVECTOR3 leastPenetratingNormal(0.0f, 1.0f, 0.0f);
+	for (const auto& f : _faces) {
+		const KTVECTOR3& a = _worldVertices[f.v0];
+		const KTVECTOR3& b = _worldVertices[f.v1];
+		const KTVECTOR3& c = _worldVertices[f.v2];
+		KTVECTOR3 fn = Cross(b - a, c - a);
+		if (Dot(fn, a - _worldCenter) < 0.0f) fn = -fn;
+		fn = fn.Normalize();
+		float sd = Dot(fn, bestSegPt - a);
+		if (sd > maxSignedPlaneDist) {
+			maxSignedPlaneDist = sd;
+			leastPenetratingNormal = fn;
+		}
+	}
+
+	bool insideHull = (maxSignedPlaneDist <= 0.0f);
+	if (!insideHull && bestDistSq > radius * radius) {
+		return false;
+	}
+
+	outCollisionManifold.hasCollision = true;
+	outCollisionManifold.a = const_cast<ColliderCapsule*>(other);
+	outCollisionManifold.b = const_cast<ColliderMesh*>(this);
+
+	if (insideHull) {
+		outCollisionManifold.normal = leastPenetratingNormal;
+		outCollisionManifold.penetrationDepth = radius - maxSignedPlaneDist;
+		ContactPoint cp;
+		cp.position = bestSegPt - leastPenetratingNormal * maxSignedPlaneDist;
+		cp.penetration = outCollisionManifold.penetrationDepth;
+		outCollisionManifold.contacts.push_back(cp);
+	} else {
+		float dist = sqrtf(bestDistSq);
+		KTVECTOR3 diff = bestSegPt - bestMeshPt;
+		outCollisionManifold.normal = (dist > 1e-6f) ? (diff / dist) : leastPenetratingNormal;
+		outCollisionManifold.penetrationDepth = radius - dist;
+		ContactPoint cp;
+		cp.position = bestMeshPt;
+		cp.penetration = outCollisionManifold.penetrationDepth;
+		outCollisionManifold.contacts.push_back(cp);
+	}
+
+	return true;
+}
+
+namespace {
+	// 2つの凸多面体頂点群のSAT（分離軸定理）共通ソルバー
+	bool SolveConvexPolyhedraSAT(
+		Collider* colA_other,
+		const std::vector<KTVECTOR3>& vertsA,
+		const KTVECTOR3& centerA,
+		const std::vector<KTVECTOR3>& normalsA,
+		const std::vector<KTVECTOR3>& edgesA,
+		Collider* colB_self,
+		const std::vector<KTVECTOR3>& vertsB,
+		const KTVECTOR3& centerB,
+		const std::vector<KTVECTOR3>& normalsB,
+		const std::vector<KTVECTOR3>& edgesB,
+		CollisionManifold& outManifold)
+	{
+		float minOverlap = FLT_MAX;
+		KTVECTOR3 bestAxis(0.0f, 1.0f, 0.0f);
+
+		auto testAxis = [&](const KTVECTOR3& rawAxis) -> bool {
+			float lenSq = rawAxis.MagnitudeSqr();
+			if (lenSq < 1e-6f) return true;
+			KTVECTOR3 axis = rawAxis / sqrtf(lenSq);
+
+			float minA = FLT_MAX, maxA = -FLT_MAX;
+			for (const auto& v : vertsA) {
+				float p = Dot(v, axis);
+				if (p < minA) minA = p;
+				if (p > maxA) maxA = p;
+			}
+
+			float minB = FLT_MAX, maxB = -FLT_MAX;
+			for (const auto& v : vertsB) {
+				float p = Dot(v, axis);
+				if (p < minB) minB = p;
+				if (p > maxB) maxB = p;
+			}
+
+			if (maxA < minB || maxB < minA) {
+				return false; // 分離軸発見
+			}
+
+			float overlap = (std::min)(maxA, maxB) - (std::max)(minA, minB);
+			if (overlap < minOverlap) {
+				minOverlap = overlap;
+				bestAxis = axis;
+			}
+			return true;
+		};
+
+		for (const auto& n : normalsB) {
+			if (!testAxis(n)) return false;
+		}
+		for (const auto& n : normalsA) {
+			if (!testAxis(n)) return false;
+		}
+		for (const auto& eB : edgesB) {
+			for (const auto& eA : edgesA) {
+				KTVECTOR3 crossAxis = Cross(eB, eA);
+				if (crossAxis.MagnitudeSqr() < 1e-5f) continue;
+				if (!testAxis(crossAxis)) return false;
+			}
+		}
+
+		// 法線向きを B(self) -> A(other) に揃える
+		if (Dot(centerA - centerB, bestAxis) < 0.0f) {
+			bestAxis = -bestAxis;
+		}
+		if (fabsf(bestAxis.x) < 1e-5f) bestAxis.x = 0.0f;
+		if (fabsf(bestAxis.y) < 1e-5f) bestAxis.y = 0.0f;
+		if (fabsf(bestAxis.z) < 1e-5f) bestAxis.z = 0.0f;
+		bestAxis = bestAxis.Normalize();
+
+		outManifold.hasCollision = true;
+		outManifold.a = colA_other;
+		outManifold.b = colB_self;
+		outManifold.normal = bestAxis;
+		outManifold.penetrationDepth = minOverlap;
+
+		// 接触点の抽出（Aの最深頂点群とBの最深頂点群から安定した接触点を生成）
+		float minProjA = FLT_MAX;
+		for (const auto& v : vertsA) {
+			float p = Dot(v, bestAxis);
+			if (p < minProjA) minProjA = p;
+		}
+		float maxProjB = -FLT_MAX;
+		for (const auto& v : vertsB) {
+			float p = Dot(v, bestAxis);
+			if (p > maxProjB) maxProjB = p;
+		}
+
+		const float contactEps = 0.04f;
+		std::vector<KTVECTOR3> supportA;
+		for (const auto& v : vertsA) {
+			if (Dot(v, bestAxis) <= minProjA + contactEps) {
+				supportA.push_back(v);
+			}
+		}
+		std::vector<KTVECTOR3> supportB;
+		for (const auto& v : vertsB) {
+			if (Dot(v, bestAxis) >= maxProjB - contactEps) {
+				supportB.push_back(v);
+			}
+		}
+
+		const std::vector<KTVECTOR3>& chosen = (supportA.size() <= supportB.size() && !supportA.empty()) ? supportA : supportB;
+		int maxContacts = (std::min)((int)chosen.size(), 4);
+		for (int i = 0; i < maxContacts; ++i) {
+			ContactPoint cp;
+			cp.position = chosen[i];
+			cp.penetration = minOverlap;
+			outManifold.contacts.push_back(cp);
+		}
+
+		if (outManifold.contacts.empty()) {
+			ContactPoint cp;
+			cp.position = (centerA + centerB) * 0.5f;
+			cp.penetration = minOverlap;
+			outManifold.contacts.push_back(cp);
+		}
+
+		return true;
+	}
+}
+
+bool ColliderMesh::CheckVSOBB(const ColliderBox* other, CollisionManifold& outCollisionManifold) const {
+	if (!this->_aabb.CheckOverlap(other->_aabb)) return false;
+	if (_worldVertices.empty()) return false;
+
+	KTVECTOR3 bCenter = other->GetOwner()->GetWorldPosition();
+	KTVECTOR3 ax0 = other->_axis[0] * other->_extents.x;
+	KTVECTOR3 ax1 = other->_axis[1] * other->_extents.y;
+	KTVECTOR3 ax2 = other->_axis[2] * other->_extents.z;
+
+	std::vector<KTVECTOR3> boxVerts = {
+		bCenter - ax0 - ax1 - ax2,
+		bCenter + ax0 - ax1 - ax2,
+		bCenter + ax0 + ax1 - ax2,
+		bCenter - ax0 + ax1 - ax2,
+		bCenter - ax0 - ax1 + ax2,
+		bCenter + ax0 - ax1 + ax2,
+		bCenter + ax0 + ax1 + ax2,
+		bCenter - ax0 + ax1 + ax2
+	};
+	std::vector<KTVECTOR3> boxAxes = {
+		other->_axis[0],
+		other->_axis[1],
+		other->_axis[2]
+	};
+
+	return SolveConvexPolyhedraSAT(
+		const_cast<ColliderBox*>(other),
+		boxVerts,
+		bCenter,
+		boxAxes,
+		boxAxes,
+		const_cast<ColliderMesh*>(this),
+		_worldVertices,
+		_worldCenter,
+		_worldFaceNormals,
+		_worldEdgeDirs,
+		outCollisionManifold
+	);
+}
+
+bool ColliderMesh::CheckVSMesh(const ColliderMesh* other, CollisionManifold& outCollisionManifold) const {
+	if (!this->_aabb.CheckOverlap(other->_aabb)) return false;
+	if (_worldVertices.empty() || other->_worldVertices.empty()) return false;
+
+	return SolveConvexPolyhedraSAT(
+		const_cast<ColliderMesh*>(other),
+		other->_worldVertices,
+		other->_worldCenter,
+		other->_worldFaceNormals,
+		other->_worldEdgeDirs,
+		const_cast<ColliderMesh*>(this),
+		_worldVertices,
+		_worldCenter,
+		_worldFaceNormals,
+		_worldEdgeDirs,
+		outCollisionManifold
+	);
+}
+
+KTMATRIX3 ColliderMesh::ComputeLocalInertiaTensor(float mass) {
+	if (mass <= 0.0f || !_owner) return KTMATRIX3::Zero();
+	KTVECTOR3 s = _owner->GetWorldScale();
+	float ex = (std::max)(0.05f, _localHalfExtents.x * s.x);
+	float ey = (std::max)(0.05f, _localHalfExtents.y * s.y);
+	float ez = (std::max)(0.05f, _localHalfExtents.z * s.z);
+
+	float ix = (1.0f / 12.0f) * mass * (ey * ey + ez * ez) * 4.0f;
+	float iy = (1.0f / 12.0f) * mass * (ex * ex + ez * ez) * 4.0f;
+	float iz = (1.0f / 12.0f) * mass * (ex * ex + ey * ey) * 4.0f;
+	return KTMATRIX3(
+		ix, 0.0f, 0.0f,
+		0.0f, iy, 0.0f,
+		0.0f, 0.0f, iz
+	);
+}
+
+void ColliderMesh::ShowUI() {
+	ImGui::Checkbox("_wasOverlap", &_wasOverlap);
+	ImGui::DragFloat3("Center Offset", &_center.x, 0.05f);
+	ImGui::Text("Convex Hull Vertices: %d", (int)_localVertices.size());
+	ImGui::Text("Convex Hull Faces:    %d", (int)_faces.size());
+	ImGui::Text("Wireframe Edges:      %d", (int)_uniqueEdges.size());
+	if (ImGui::Button("Rebuild Mesh Collider")) {
+		RebuildMesh();
+		SyncTransform();
+	}
 }

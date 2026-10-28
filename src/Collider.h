@@ -1,4 +1,4 @@
-﻿//=====================================================================================
+//=====================================================================================
 // Collider.h
 // Author:Kaito Aoki
 // Date:2025/09/08
@@ -19,6 +19,8 @@
 class ColliderBox;
 class ColliderSphere;
 class ColliderCapsule;
+class ColliderMesh;
+struct MODEL;
 
 template <typename T, int Capacity>
 class FixedList {
@@ -137,12 +139,14 @@ public:
 	virtual bool CollideWith(ColliderBox* other, CollisionManifold& outCollisionManifold) = 0;
 	virtual bool CollideWith(ColliderSphere* other, CollisionManifold& outCollisionManifold) = 0;
 	virtual bool CollideWith(ColliderCapsule* other, CollisionManifold& outCollisionManifold) = 0;
+	virtual bool CollideWith(ColliderMesh* other, CollisionManifold& outCollisionManifold) = 0;
 
 	virtual void SyncTransform() = 0;
 
 	virtual KTMATRIX3 ComputeLocalInertiaTensor(float mass) = 0;
 
 	std::string GetComponentName() { return "Collider"; }
+	const KTVECTOR3& GetCenter() const { return _center; }
 
 	template <class Archive>
 	void serialize(Archive& ar) {
@@ -187,6 +191,7 @@ public:
 	bool CheckVSSphere(const ColliderSphere* other, CollisionManifold& outCollisionManifold)const;
 	bool CheckVSOBB(const ColliderBox* other, CollisionManifold& outCollisionManifold)const;
 	bool CheckVSCapsule(const ColliderCapsule* other, CollisionManifold& outCollisionManifold)const;
+	bool CollideWith(ColliderMesh* other, CollisionManifold& outCollisionManifold) override;
 
 	KTMATRIX3 ComputeLocalInertiaTensor(float mass)override;
 
@@ -237,6 +242,7 @@ public:
 	bool CheckVSOBB(const ColliderBox* other, CollisionManifold& outCollisionManifold)const;
 	bool CheckVSSphere(const ColliderSphere* other, CollisionManifold& outCollisionManifold)const;
 	bool CheckVSCapsule(const ColliderCapsule* other, CollisionManifold& outCollisionManifold)const;
+	bool CollideWith(ColliderMesh* other, CollisionManifold& outCollisionManifold) override;
 
 	bool OverlapOnAxis(const ColliderBox* other, const KTVECTOR3& axis)const;
 
@@ -302,6 +308,7 @@ public:
 	bool CheckVSSphere(const ColliderSphere* other, CollisionManifold& outCollisionManifold)const;
 	bool CheckVSOBB(const ColliderBox* other, CollisionManifold& outCollisionManifold)const;
 	bool CheckVSCapsule(const ColliderCapsule* other, CollisionManifold& outCollisionManifold)const;
+	bool CollideWith(ColliderMesh* other, CollisionManifold& outCollisionManifold) override;
 	
 	KTMATRIX3 ComputeLocalInertiaTensor(float mass)override;
 
@@ -316,6 +323,88 @@ public:
 		ar(cereal::make_nvp("Radius", _radius));
 	}
 
+};
+
+class ColliderMesh : public Collider {
+	friend class cereal::access;
+public:
+	struct HullFace {
+		int v0 = 0;
+		int v1 = 0;
+		int v2 = 0;
+		KTVECTOR3 localNormal = { 0.0f, 1.0f, 0.0f };
+	};
+
+private:
+	const MODEL* _cachedModel = nullptr;
+	KTVECTOR3 _oldScale = { 0.0f, 0.0f, 0.0f };
+
+public:
+	std::vector<KTVECTOR3> _localVertices;
+	std::vector<HullFace> _faces;
+	std::vector<std::pair<int, int>> _uniqueEdges;
+	std::vector<KTVECTOR3> _uniqueFaceNormalsLocal;
+	std::vector<KTVECTOR3> _uniqueEdgeDirsLocal;
+	KTVECTOR3 _localCenter = { 0.0f, 0.0f, 0.0f };
+	KTVECTOR3 _localHalfExtents = { 0.5f, 0.5f, 0.5f };
+
+	// World space cache updated in SyncTransform()
+	std::vector<KTVECTOR3> _worldVertices;
+	std::vector<KTVECTOR3> _worldFaceNormals;
+	std::vector<KTVECTOR3> _worldEdgeDirs;
+	KTVECTOR3 _worldCenter = { 0.0f, 0.0f, 0.0f };
+
+	// GPU Wireframe Edge Buffers
+	std::unique_ptr<VERTEX_BUFFER> _wireVB;
+	std::unique_ptr<INDEX_BUFFER> _wireIB;
+	unsigned int _wireIndexCount = 0;
+
+	void Awake() override;
+	void Start() override;
+	void OnDestroy() override;
+	void OnDestroyOnEditor() override;
+	void Update() override;
+	void SyncTransform() override;
+
+	void RebuildMesh();
+	void BuildConvexHullFromPoints(const std::vector<KTVECTOR3>& rawPoints);
+	void BuildWireframeBuffers();
+
+	bool Collide(Collider* other, CollisionManifold& outCollisionManifold) override {
+		return other->CollideWith(this, outCollisionManifold);
+	}
+
+	bool CollideWith(ColliderBox* other, CollisionManifold& outCollisionManifold) override {
+		return CheckVSOBB(other, outCollisionManifold);
+	}
+
+	bool CollideWith(ColliderSphere* other, CollisionManifold& outCollisionManifold) override {
+		return CheckVSSphere(other, outCollisionManifold);
+	}
+
+	bool CollideWith(ColliderCapsule* other, CollisionManifold& outCollisionManifold) override {
+		return CheckVSCapsule(other, outCollisionManifold);
+	}
+
+	bool CollideWith(ColliderMesh* other, CollisionManifold& outCollisionManifold) override {
+		return CheckVSMesh(other, outCollisionManifold);
+	}
+
+	bool CheckVSSphere(const ColliderSphere* other, CollisionManifold& outCollisionManifold) const;
+	bool CheckVSOBB(const ColliderBox* other, CollisionManifold& outCollisionManifold) const;
+	bool CheckVSCapsule(const ColliderCapsule* other, CollisionManifold& outCollisionManifold) const;
+	bool CheckVSMesh(const ColliderMesh* other, CollisionManifold& outCollisionManifold) const;
+
+	KTMATRIX3 ComputeLocalInertiaTensor(float mass) override;
+
+	std::string GetComponentName() override { return "ColliderMesh"; }
+
+	void ShowUI() override;
+
+	template <class Archive>
+	void serialize(Archive& ar) {
+		ar(cereal::base_class<Collider>(this));
+	}
 };
 
 #endif // !_COLLIDER_H_
