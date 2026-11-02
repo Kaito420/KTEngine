@@ -1,4 +1,4 @@
-//=====================================================================================
+﻿//=====================================================================================
 // Collider.h
 // Author:Kaito Aoki
 // Date:2025/09/08
@@ -105,7 +105,7 @@ void ClosestPointSegSeg(const KTVECTOR3& s1, const KTVECTOR3& e1,
 class Collider : public Component{
 	friend class cereal::access;
 protected:
-	KTVECTOR3 _center;
+	KTVECTOR3 _center = { 0.0f, 0.0f, 0.0f };
 
 public:
 	AABB _aabb;
@@ -147,6 +147,7 @@ public:
 
 	std::string GetComponentName() { return "Collider"; }
 	const KTVECTOR3& GetCenter() const { return _center; }
+	virtual KTVECTOR3 GetWorldCenter() const;
 
 	template <class Archive>
 	void serialize(Archive& ar) {
@@ -398,6 +399,7 @@ public:
 	KTMATRIX3 ComputeLocalInertiaTensor(float mass) override;
 
 	std::string GetComponentName() override { return "ColliderMesh"; }
+	KTVECTOR3 GetWorldCenter() const override { return _worldCenter; }
 
 	void ShowUI() override;
 

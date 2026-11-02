@@ -1,4 +1,4 @@
-//=====================================================================================
+﻿//=====================================================================================
 // Collider.cpp
 // Author:Kaito Aoki
 // Date:2025/09/08
@@ -15,6 +15,7 @@
 #include "ShaderManager.h"
 #include "Shader.h"
 #include "ModelRenderer.h"
+#include "RigidBody.h"
 #include <set>
 #include <cmath>
 #include <algorithm>
@@ -73,6 +74,10 @@ void ClosestPointSegSeg(const KTVECTOR3& s1, const KTVECTOR3& e1, const KTVECTOR
 	}
 	c1 = s1 + d1 * s;
 	c2 = s2 + d2 * t;
+}
+
+KTVECTOR3 Collider::GetWorldCenter() const {
+	return _owner ? _owner->GetWorldPosition() : _center;
 }
 
 void ColliderSphere::Awake(){
@@ -380,7 +385,12 @@ bool ColliderBox::CheckVSOBB(const ColliderBox* other, CollisionManifold& manifo
 
 	// 衝突法線の設定
 
-	KTVECTOR3 centerDelta = other->_center - _center;
+	RigidBody* rbA = other->GetOwner() ? other->GetOwner()->GetComponent<RigidBody>() : nullptr;
+	RigidBody* rbB = _owner ? _owner->GetComponent<RigidBody>() : nullptr;
+	KTVECTOR3 vA = (rbA && !rbA->IsSleeping() && !rbA->_isKinematic) ? rbA->_velocity : KTVECTOR3(0.0f, 0.0f, 0.0f);
+	KTVECTOR3 vB = (rbB && !rbB->IsSleeping() && !rbB->_isKinematic) ? rbB->_velocity : KTVECTOR3(0.0f, 0.0f, 0.0f);
+	KTVECTOR3 prevCenterDelta = (other->_center - vA * (1.0f / 60.0f)) - (_center - vB * (1.0f / 60.0f));
+	KTVECTOR3 centerDelta = (prevCenterDelta.MagnitudeSqr() > 1e-6f) ? prevCenterDelta : (other->_center - _center);
 	if (Dot(centerDelta, bestAxis) < 0.0f)
 		bestAxis = -bestAxis;
 
@@ -1552,9 +1562,17 @@ bool ColliderMesh::CheckVSSphere(const ColliderSphere* other, CollisionManifold&
 	KTVECTOR3 sphereCenter = other->GetOwner()->GetWorldPosition();
 	float radius = other->_radius;
 
+	RigidBody* rbSphere = other->GetOwner() ? other->GetOwner()->GetComponent<RigidBody>() : nullptr;
+	RigidBody* rbMesh = _owner ? _owner->GetComponent<RigidBody>() : nullptr;
+	KTVECTOR3 vSphere = (rbSphere && !rbSphere->IsSleeping() && !rbSphere->_isKinematic) ? rbSphere->_velocity : KTVECTOR3(0.0f, 0.0f, 0.0f);
+	KTVECTOR3 vMesh = (rbMesh && !rbMesh->IsSleeping() && !rbMesh->_isKinematic) ? rbMesh->_velocity : KTVECTOR3(0.0f, 0.0f, 0.0f);
+	KTVECTOR3 relVel = vSphere - vMesh;
+	KTVECTOR3 prevSphereCenter = sphereCenter - relVel * (1.0f / 60.0f);
+
 	float minDistSq = FLT_MAX;
 	KTVECTOR3 closestPt = _worldCenter;
 	float maxSignedPlaneDist = -FLT_MAX;
+	float bestApproachScore = -FLT_MAX;
 	KTVECTOR3 leastPenetratingNormal(0.0f, 1.0f, 0.0f);
 
 	for (const auto& f : _faces) {
@@ -1569,6 +1587,14 @@ bool ColliderMesh::CheckVSSphere(const ColliderSphere* other, CollisionManifold&
 		float signedDist = Dot(fn, sphereCenter - a);
 		if (signedDist > maxSignedPlaneDist) {
 			maxSignedPlaneDist = signedDist;
+		}
+		// 高速侵入時に裏側の面へ抜けるのを防ぐため、移動前の球中心での平面距離も加味して脱出面を選択
+		float prevSignedDist = Dot(fn, prevSphereCenter - a);
+		float score = (relVel.MagnitudeSqr() > 0.25f && Dot(fn, relVel) < 0.0f)
+			? (std::max)(signedDist, prevSignedDist)
+			: signedDist;
+		if (score > bestApproachScore) {
+			bestApproachScore = score;
 			leastPenetratingNormal = fn;
 		}
 
@@ -1590,16 +1616,23 @@ bool ColliderMesh::CheckVSSphere(const ColliderSphere* other, CollisionManifold&
 	outCollisionManifold.b = const_cast<ColliderMesh*>(this);
 
 	if (insideHull) {
+		float planeDist = -FLT_MAX;
+		for (const auto& v : _worldVertices) {
+			float p = Dot(leastPenetratingNormal, v);
+			if (p > planeDist) planeDist = p;
+		}
+		float sphereProj = Dot(leastPenetratingNormal, sphereCenter);
+		float pen = (std::max)(0.0f, (planeDist - sphereProj) + radius);
 		outCollisionManifold.normal = leastPenetratingNormal;
-		outCollisionManifold.penetrationDepth = radius - maxSignedPlaneDist;
+		outCollisionManifold.penetrationDepth = pen;
 		ContactPoint cp;
-		cp.position = sphereCenter - leastPenetratingNormal * maxSignedPlaneDist;
-		cp.penetration = outCollisionManifold.penetrationDepth;
+		cp.position = sphereCenter + leastPenetratingNormal * (planeDist - sphereProj);
+		cp.penetration = pen;
 		outCollisionManifold.contacts.push_back(cp);
 	} else {
 		float dist = sqrtf(minDistSq);
 		KTVECTOR3 diff = sphereCenter - closestPt;
-		outCollisionManifold.normal = (dist > 1e-6f) ? (diff / dist) : leastPenetratingNormal;
+		outCollisionManifold.normal = (dist > 1e-5f) ? (diff / dist) : leastPenetratingNormal;
 		outCollisionManifold.penetrationDepth = radius - dist;
 		ContactPoint cp;
 		cp.position = closestPt;
@@ -1620,18 +1653,23 @@ bool ColliderMesh::CheckVSCapsule(const ColliderCapsule* other, CollisionManifol
 	KTVECTOR3 segA = other->GetOwner()->GetWorldPosition() - up * (cylH * 0.5f);
 	KTVECTOR3 segB = other->GetOwner()->GetWorldPosition() + up * (cylH * 0.5f);
 
-	// カプセル中心線分上の代表点と各三角形の最短距離を評価
+	RigidBody* rbCap = other->GetOwner() ? other->GetOwner()->GetComponent<RigidBody>() : nullptr;
+	RigidBody* rbMesh = _owner ? _owner->GetComponent<RigidBody>() : nullptr;
+	KTVECTOR3 vCap = (rbCap && !rbCap->IsSleeping() && !rbCap->_isKinematic) ? rbCap->_velocity : KTVECTOR3(0.0f, 0.0f, 0.0f);
+	KTVECTOR3 vMesh = (rbMesh && !rbMesh->IsSleeping() && !rbMesh->_isKinematic) ? rbMesh->_velocity : KTVECTOR3(0.0f, 0.0f, 0.0f);
+	KTVECTOR3 relVel = vCap - vMesh;
+
+	// カプセル中心線分と各三角形・各エッジの最短距離を評価
 	float bestDistSq = FLT_MAX;
 	KTVECTOR3 bestSegPt = segA;
 	KTVECTOR3 bestMeshPt = _worldCenter;
 
-	const int SAMPLES = 5;
+	const int SAMPLES = 6;
 	for (int s = 0; s <= SAMPLES; ++s) {
 		float t = (float)s / (float)SAMPLES;
 		KTVECTOR3 p = segA + (segB - segA) * t;
 		for (const auto& f : _faces) {
 			KTVECTOR3 q = ClosestPointOnTriangle(p, _worldVertices[f.v0], _worldVertices[f.v1], _worldVertices[f.v2]);
-			// さらにqから線分ABへの最近接点で精密化
 			KTVECTOR3 ab = segB - segA;
 			float abLenSq = ab.MagnitudeSqr();
 			float u = (abLenSq > 1e-6f) ? Clamp(Dot(q - segA, ab) / abLenSq, 0.0f, 1.0f) : 0.0f;
@@ -1647,8 +1685,22 @@ bool ColliderMesh::CheckVSCapsule(const ColliderCapsule* other, CollisionManifol
 		}
 	}
 
-	// bestSegPt が凸包内部に入っているかもチェック
+	// メッシュのユニークエッジとカプセル軸線分の最近接点も評価（エッジ同士の衝突漏れ防止）
+	for (const auto& edge : _uniqueEdges) {
+		KTVECTOR3 cSeg, cEdge;
+		ClosestPointSegSeg(segA, segB, _worldVertices[edge.first], _worldVertices[edge.second], cSeg, cEdge);
+		float dSq = (cSeg - cEdge).MagnitudeSqr();
+		if (dSq < bestDistSq) {
+			bestDistSq = dSq;
+			bestSegPt = cSeg;
+			bestMeshPt = cEdge;
+		}
+	}
+
+	// bestSegPt が凸包内部に入っているかもチェック（高速移動時の接近方向を考慮）
+	KTVECTOR3 prevSegPt = bestSegPt - relVel * (1.0f / 60.0f);
 	float maxSignedPlaneDist = -FLT_MAX;
+	float bestApproachScore = -FLT_MAX;
 	KTVECTOR3 leastPenetratingNormal(0.0f, 1.0f, 0.0f);
 	for (const auto& f : _faces) {
 		const KTVECTOR3& a = _worldVertices[f.v0];
@@ -1660,6 +1712,13 @@ bool ColliderMesh::CheckVSCapsule(const ColliderCapsule* other, CollisionManifol
 		float sd = Dot(fn, bestSegPt - a);
 		if (sd > maxSignedPlaneDist) {
 			maxSignedPlaneDist = sd;
+		}
+		float prevSd = Dot(fn, prevSegPt - a);
+		float score = (relVel.MagnitudeSqr() > 0.25f && Dot(fn, relVel) < 0.0f)
+			? (std::max)(sd, prevSd)
+			: sd;
+		if (score > bestApproachScore) {
+			bestApproachScore = score;
 			leastPenetratingNormal = fn;
 		}
 	}
@@ -1674,21 +1733,50 @@ bool ColliderMesh::CheckVSCapsule(const ColliderCapsule* other, CollisionManifol
 	outCollisionManifold.b = const_cast<ColliderMesh*>(this);
 
 	if (insideHull) {
+		float planeDist = -FLT_MAX;
+		for (const auto& v : _worldVertices) {
+			float p = Dot(leastPenetratingNormal, v);
+			if (p > planeDist) planeDist = p;
+		}
+		float segProj = Dot(leastPenetratingNormal, bestSegPt);
+		float pen = (std::max)(0.0f, (planeDist - segProj) + radius);
 		outCollisionManifold.normal = leastPenetratingNormal;
-		outCollisionManifold.penetrationDepth = radius - maxSignedPlaneDist;
+		outCollisionManifold.penetrationDepth = pen;
 		ContactPoint cp;
-		cp.position = bestSegPt - leastPenetratingNormal * maxSignedPlaneDist;
-		cp.penetration = outCollisionManifold.penetrationDepth;
+		cp.position = bestSegPt + leastPenetratingNormal * (planeDist - segProj);
+		cp.penetration = pen;
 		outCollisionManifold.contacts.push_back(cp);
 	} else {
 		float dist = sqrtf(bestDistSq);
 		KTVECTOR3 diff = bestSegPt - bestMeshPt;
-		outCollisionManifold.normal = (dist > 1e-6f) ? (diff / dist) : leastPenetratingNormal;
+		outCollisionManifold.normal = (dist > 1e-5f) ? (diff / dist) : leastPenetratingNormal;
 		outCollisionManifold.penetrationDepth = radius - dist;
 		ContactPoint cp;
 		cp.position = bestMeshPt;
 		cp.penetration = outCollisionManifold.penetrationDepth;
 		outCollisionManifold.contacts.push_back(cp);
+
+		// カプセルが横向きに接地している場合、もう一方の端点も接触していれば2点目の接触点を追加して傾きを防ぐ
+		KTVECTOR3 endPts[2] = { segA, segB };
+		for (int i = 0; i < 2; ++i) {
+			if ((endPts[i] - bestSegPt).MagnitudeSqr() < 0.01f) continue;
+			float endMinSq = FLT_MAX;
+			KTVECTOR3 endMeshPt = bestMeshPt;
+			for (const auto& f : _faces) {
+				KTVECTOR3 q = ClosestPointOnTriangle(endPts[i], _worldVertices[f.v0], _worldVertices[f.v1], _worldVertices[f.v2]);
+				float dSq = (endPts[i] - q).MagnitudeSqr();
+				if (dSq < endMinSq) {
+					endMinSq = dSq;
+					endMeshPt = q;
+				}
+			}
+			if (endMinSq <= radius * radius) {
+				ContactPoint cp2;
+				cp2.position = endMeshPt;
+				cp2.penetration = (std::max)(0.0f, radius - sqrtf(endMinSq));
+				outCollisionManifold.contacts.push_back(cp2);
+			}
+		}
 	}
 
 	return true;
@@ -1709,10 +1797,20 @@ namespace {
 		const std::vector<KTVECTOR3>& edgesB,
 		CollisionManifold& outManifold)
 	{
+		// 相対速度と1ステップ前の予測中心位置（高速衝突で中心を追い越した際の法線逆転を防止）
+		RigidBody* rbA = (colA_other && colA_other->GetOwner()) ? colA_other->GetOwner()->GetComponent<RigidBody>() : nullptr;
+		RigidBody* rbB = (colB_self && colB_self->GetOwner()) ? colB_self->GetOwner()->GetComponent<RigidBody>() : nullptr;
+		KTVECTOR3 vA = (rbA && !rbA->IsSleeping() && !rbA->_isKinematic) ? rbA->_velocity : KTVECTOR3(0.0f, 0.0f, 0.0f);
+		KTVECTOR3 vB = (rbB && !rbB->IsSleeping() && !rbB->_isKinematic) ? rbB->_velocity : KTVECTOR3(0.0f, 0.0f, 0.0f);
+		KTVECTOR3 relVel = vA - vB;
+		constexpr float LOOKBACK_DT = 1.0f / 60.0f;
+		KTVECTOR3 currCenterDelta = centerA - centerB;
+		KTVECTOR3 prevCenterDelta = (centerA - vA * LOOKBACK_DT) - (centerB - vB * LOOKBACK_DT);
+
 		float minOverlap = FLT_MAX;
 		KTVECTOR3 bestAxis(0.0f, 1.0f, 0.0f);
 
-		auto testAxis = [&](const KTVECTOR3& rawAxis) -> bool {
+		auto testAxis = [&](const KTVECTOR3& rawAxis, bool isEdgeCrossAxis) -> bool {
 			float lenSq = rawAxis.MagnitudeSqr();
 			if (lenSq < 1e-6f) return true;
 			KTVECTOR3 axis = rawAxis / sqrtf(lenSq);
@@ -1735,30 +1833,62 @@ namespace {
 				return false; // 分離軸発見
 			}
 
-			float overlap = (std::min)(maxA, maxB) - (std::max)(minA, minB);
-			if (overlap < minOverlap) {
+			// 真の最小分離距離 (Minimum Translation Distance):
+			// dPos: Aを +axis 方向へ押し出す距離 (maxB - minA)
+			// dNeg: Aを -axis 方向へ押し出す距離 (maxA - minB)
+			float dPos = maxB - minA;
+			float dNeg = maxA - minB;
+
+			float prevProj = Dot(prevCenterDelta, axis);
+			float currProj = Dot(currCenterDelta, axis);
+			float relVelProj = Dot(relVel, axis);
+
+			float overlap = 0.0f;
+			KTVECTOR3 orientedAxis = axis;
+
+			// 高速衝突によって1フレーム内で中心座標が交差した場合、移動前の進行方向側の表面へ押し戻す
+			if (prevProj * currProj < 0.0f && fabsf(relVelProj) > 0.5f) {
+				if (prevProj >= 0.0f) {
+					overlap = dPos;
+					orientedAxis = axis;
+				} else {
+					overlap = dNeg;
+					orientedAxis = -axis;
+				}
+			} else if (dPos <= dNeg) {
+				overlap = dPos;
+				orientedAxis = axis;
+			} else {
+				overlap = dNeg;
+				orientedAxis = -axis;
+			}
+
+			// エッジ外積軸は数値誤差で面法線とほぼ同値になることがあるため、面法線より明確に浅い場合のみ採用
+			float effectiveOverlap = isEdgeCrossAxis ? (overlap * 1.04f + 0.002f) : overlap;
+			if (effectiveOverlap < minOverlap) {
 				minOverlap = overlap;
-				bestAxis = axis;
+				bestAxis = orientedAxis;
 			}
 			return true;
 		};
 
 		for (const auto& n : normalsB) {
-			if (!testAxis(n)) return false;
+			if (!testAxis(n, false)) return false;
 		}
 		for (const auto& n : normalsA) {
-			if (!testAxis(n)) return false;
+			if (!testAxis(n, false)) return false;
 		}
 		for (const auto& eB : edgesB) {
 			for (const auto& eA : edgesA) {
 				KTVECTOR3 crossAxis = Cross(eB, eA);
 				if (crossAxis.MagnitudeSqr() < 1e-5f) continue;
-				if (!testAxis(crossAxis)) return false;
+				if (!testAxis(crossAxis, true)) return false;
 			}
 		}
 
-		// 法線向きを B(self) -> A(other) に揃える
-		if (Dot(centerA - centerB, bestAxis) < 0.0f) {
+		// 法線向きを B(self) -> A(other) に最終確認（移動前の相対中心を優先）
+		KTVECTOR3 refDelta = (prevCenterDelta.MagnitudeSqr() > 1e-6f) ? prevCenterDelta : currCenterDelta;
+		if (Dot(refDelta, bestAxis) < 0.0f) {
 			bestAxis = -bestAxis;
 		}
 		if (fabsf(bestAxis.x) < 1e-5f) bestAxis.x = 0.0f;
@@ -1766,13 +1896,7 @@ namespace {
 		if (fabsf(bestAxis.z) < 1e-5f) bestAxis.z = 0.0f;
 		bestAxis = bestAxis.Normalize();
 
-		outManifold.hasCollision = true;
-		outManifold.a = colA_other;
-		outManifold.b = colB_self;
-		outManifold.normal = bestAxis;
-		outManifold.penetrationDepth = minOverlap;
-
-		// 接触点の抽出（Aの最深頂点群とBの最深頂点群から安定した接触点を生成）
+		// 正しい向きに揃えた bestAxis 上での A の最小投影値と B の最大投影値を再計算
 		float minProjA = FLT_MAX;
 		for (const auto& v : vertsA) {
 			float p = Dot(v, bestAxis);
@@ -1783,33 +1907,201 @@ namespace {
 			float p = Dot(v, bestAxis);
 			if (p > maxProjB) maxProjB = p;
 		}
+		minOverlap = (std::max)(0.0f, maxProjB - minProjA);
 
-		const float contactEps = 0.04f;
+		outManifold.hasCollision = true;
+		outManifold.a = colA_other;
+		outManifold.b = colB_self;
+		outManifold.normal = bestAxis;
+		outManifold.penetrationDepth = minOverlap;
+
+		// 法線に直交する接平面基底 (tangentU, tangentV) を構築
+		KTVECTOR3 tangentU = (fabsf(bestAxis.y) < 0.9f)
+			? Cross(bestAxis, KTVECTOR3(0.0f, 1.0f, 0.0f)).Normalize()
+			: Cross(bestAxis, KTVECTOR3(1.0f, 0.0f, 0.0f)).Normalize();
+		KTVECTOR3 tangentV = Cross(bestAxis, tangentU).Normalize();
+
+		const float contactEps = (std::max)(0.04f, minOverlap + 0.02f);
+
+		// A と B の接触面付近の頂点群から、接平面 (u, v) 上での各バウンディング領域を算出
+		float minUA = FLT_MAX, maxUA = -FLT_MAX, minVA = FLT_MAX, maxVA = -FLT_MAX;
 		std::vector<KTVECTOR3> supportA;
 		for (const auto& v : vertsA) {
 			if (Dot(v, bestAxis) <= minProjA + contactEps) {
 				supportA.push_back(v);
+				float u = Dot(v, tangentU);
+				float w = Dot(v, tangentV);
+				if (u < minUA) minUA = u;
+				if (u > maxUA) maxUA = u;
+				if (w < minVA) minVA = w;
+				if (w > maxVA) maxVA = w;
 			}
 		}
+
+		float minUB = FLT_MAX, maxUB = -FLT_MAX, minVB = FLT_MAX, maxVB = -FLT_MAX;
 		std::vector<KTVECTOR3> supportB;
 		for (const auto& v : vertsB) {
 			if (Dot(v, bestAxis) >= maxProjB - contactEps) {
 				supportB.push_back(v);
+				float u = Dot(v, tangentU);
+				float w = Dot(v, tangentV);
+				if (u < minUB) minUB = u;
+				if (u > maxUB) maxUB = u;
+				if (w < minVB) minVB = w;
+				if (w > maxVB) maxVB = w;
 			}
 		}
 
-		const std::vector<KTVECTOR3>& chosen = (supportA.size() <= supportB.size() && !supportA.empty()) ? supportA : supportB;
-		int maxContacts = (std::min)((int)chosen.size(), 4);
-		for (int i = 0; i < maxContacts; ++i) {
-			ContactPoint cp;
-			cp.position = chosen[i];
-			cp.penetration = minOverlap;
-			outManifold.contacts.push_back(cp);
+		// 接平面上での A と B の共通接触領域 (クリッピング領域)
+		float clipMinU = (std::max)(minUA, minUB);
+		float clipMaxU = (std::min)(maxUA, maxUB);
+		float clipMinV = (std::max)(minVA, minVB);
+		float clipMaxV = (std::min)(maxVA, maxVB);
+		if (clipMinU > clipMaxU) {
+			float midU = (clipMinU + clipMaxU) * 0.5f;
+			clipMinU = clipMaxU = midU;
+		}
+		if (clipMinV > clipMaxV) {
+			float midV = (clipMinV + clipMaxV) * 0.5f;
+			clipMinV = clipMaxV = midV;
+		}
+
+		struct CandidateContact {
+			KTVECTOR3 pos;
+			float u;
+			float v;
+			float penetration;
+		};
+		std::vector<CandidateContact> candidates;
+		float contactPlaneProj = (minProjA + maxProjB) * 0.5f;
+
+		auto addCandidate = [&](float u, float v, float pen) {
+			// 共通接触領域内にクランプ（巨大な床の四隅がそのまま接触点になるのを防ぐ）
+			float cu = Clamp(u, clipMinU, clipMaxU);
+			float cv = Clamp(v, clipMinV, clipMaxV);
+			float cpen = Clamp(pen, 0.0f, minOverlap);
+			if (cpen <= 0.0f) cpen = minOverlap;
+
+			// 接平面上でほぼ同位置の重複候補を統合（より深い方を残す）
+			for (auto& existing : candidates) {
+				float du = existing.u - cu;
+				float dv = existing.v - cv;
+				if (du * du + dv * dv < 1e-4f) {
+					if (cpen > existing.penetration) {
+						existing.penetration = cpen;
+					}
+					return;
+				}
+			}
+
+			KTVECTOR3 worldPt = bestAxis * contactPlaneProj + tangentU * cu + tangentV * cv;
+			candidates.push_back({ worldPt, cu, cv, cpen });
+		};
+
+		for (const auto& v : supportA) {
+			float p = Dot(v, bestAxis);
+			float pen = (std::max)(0.0f, maxProjB - p);
+			addCandidate(Dot(v, tangentU), Dot(v, tangentV), pen);
+		}
+		for (const auto& v : supportB) {
+			float p = Dot(v, bestAxis);
+			float pen = (std::max)(0.0f, p - minProjA);
+			addCandidate(Dot(v, tangentU), Dot(v, tangentV), pen);
+		}
+
+		// 候補点が4点を超える場合は、最大広がり（Support Polygon面積最大化）を持つ4点を選出
+		if (candidates.size() <= 4) {
+			for (const auto& c : candidates) {
+				ContactPoint cp;
+				cp.position = c.pos;
+				cp.penetration = c.penetration;
+				outManifold.contacts.push_back(cp);
+			}
+		} else {
+			int idx[4] = { 0, -1, -1, -1 };
+			// 1点目: 最も貫通が深い（または端にある）点
+			float bestScore0 = -FLT_MAX;
+			float centerU = (clipMinU + clipMaxU) * 0.5f;
+			float centerV = (clipMinV + clipMaxV) * 0.5f;
+			for (int i = 0; i < (int)candidates.size(); ++i) {
+				float distSq = (candidates[i].u - centerU) * (candidates[i].u - centerU) +
+					(candidates[i].v - centerV) * (candidates[i].v - centerV);
+				float score = candidates[i].penetration * 10.0f + distSq;
+				if (score > bestScore0) {
+					bestScore0 = score;
+					idx[0] = i;
+				}
+			}
+
+			// 2点目: 1点目から接平面上で最も遠い点
+			float maxDistSq1 = -1.0f;
+			for (int i = 0; i < (int)candidates.size(); ++i) {
+				if (i == idx[0]) continue;
+				float du = candidates[i].u - candidates[idx[0]].u;
+				float dv = candidates[i].v - candidates[idx[0]].v;
+				float dSq = du * du + dv * dv;
+				if (dSq > maxDistSq1) {
+					maxDistSq1 = dSq;
+					idx[1] = i;
+				}
+			}
+
+			// 3点目: 線分(0-1)との2D三角形面積が最大になる点
+			float maxArea2 = -1.0f;
+			if (idx[1] >= 0) {
+				float u01 = candidates[idx[1]].u - candidates[idx[0]].u;
+				float v01 = candidates[idx[1]].v - candidates[idx[0]].v;
+				for (int i = 0; i < (int)candidates.size(); ++i) {
+					if (i == idx[0] || i == idx[1]) continue;
+					float u0i = candidates[i].u - candidates[idx[0]].u;
+					float v0i = candidates[i].v - candidates[idx[0]].v;
+					float area = fabsf(u01 * v0i - v01 * u0i);
+					if (area > maxArea2) {
+						maxArea2 = area;
+						idx[2] = i;
+					}
+				}
+			}
+
+			// 4点目: 既存の3辺から最も離れた外側の点
+			float maxArea3 = -1.0f;
+			if (idx[2] >= 0) {
+				int tri[3] = { idx[0], idx[1], idx[2] };
+				for (int i = 0; i < (int)candidates.size(); ++i) {
+					if (i == idx[0] || i == idx[1] || i == idx[2]) continue;
+					float minEdgeDist = FLT_MAX;
+					for (int e = 0; e < 3; ++e) {
+						int a = tri[e];
+						int b = tri[(e + 1) % 3];
+						float eu = candidates[b].u - candidates[a].u;
+						float ev = candidates[b].v - candidates[a].v;
+						float pu = candidates[i].u - candidates[a].u;
+						float pv = candidates[i].v - candidates[a].v;
+						float area = fabsf(eu * pv - ev * pu);
+						if (area < minEdgeDist) minEdgeDist = area;
+					}
+					if (minEdgeDist > maxArea3) {
+						maxArea3 = minEdgeDist;
+						idx[3] = i;
+					}
+				}
+			}
+
+			for (int k = 0; k < 4; ++k) {
+				if (idx[k] >= 0) {
+					ContactPoint cp;
+					cp.position = candidates[idx[k]].pos;
+					cp.penetration = candidates[idx[k]].penetration;
+					outManifold.contacts.push_back(cp);
+				}
+			}
 		}
 
 		if (outManifold.contacts.empty()) {
 			ContactPoint cp;
-			cp.position = (centerA + centerB) * 0.5f;
+			cp.position = bestAxis * contactPlaneProj
+				+ tangentU * ((clipMinU + clipMaxU) * 0.5f)
+				+ tangentV * ((clipMinV + clipMaxV) * 0.5f);
 			cp.penetration = minOverlap;
 			outManifold.contacts.push_back(cp);
 		}

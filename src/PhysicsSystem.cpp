@@ -1,4 +1,4 @@
-//=====================================================================================
+﻿//=====================================================================================
 // PhysicsSystem.h
 // Author:Kaito Aoki
 // Date:2025/09/09
@@ -44,7 +44,17 @@ void PhysicsSystem::Step(float fixedDt) {
 		}
 	}
 
-	int subSteps = (_subSteps > 0) ? _subSteps : 1;
+	int baseSubSteps = (_subSteps > 0) ? _subSteps : 1;
+	float maxSpeedSq = 0.0f;
+	for (auto* rb : _rigidBodys) {
+		if (rb && rb->GetActive() && rb->GetOwner() && rb->GetOwner()->GetActive() && !rb->_isKinematic && rb->_invMass > 0.0f && !rb->IsSleeping()) {
+			float vSq = rb->_velocity.MagnitudeSqr();
+			if (vSq > maxSpeedSq) maxSpeedSq = vSq;
+		}
+	}
+	constexpr float MAX_STEP_DISP = 0.12f;
+	int adaptiveSubSteps = (int)ceilf((sqrtf(maxSpeedSq) * fixedDt) / MAX_STEP_DISP);
+	int subSteps = (std::min)(16, (std::max)(baseSubSteps, adaptiveSubSteps));
 	float subDt = fixedDt / (float)subSteps;
 
 	for (int s = 0; s < subSteps; ++s) {
@@ -219,8 +229,8 @@ void PhysicsSystem::StepSub(float subDt, PhysicsMetrics& metrics, bool isLastSub
 			else if (rbB) e = rbB->_restitution;
 
 			for (auto& cp : manifold.contacts) {
-				KTVECTOR3 rA = cp.position - manifold.a->GetOwner()->GetWorldPosition();
-				KTVECTOR3 rB = cp.position - manifold.b->GetOwner()->GetWorldPosition();
+				KTVECTOR3 rA = cp.position - manifold.a->GetWorldCenter();
+				KTVECTOR3 rB = cp.position - manifold.b->GetWorldCenter();
 
 				KTVECTOR3 vA = rbA ? rbA->_velocity + Cross(rbA->_angularVelocity, rA) : KTVECTOR3(0, 0, 0);
 				KTVECTOR3 vB = rbB ? rbB->_velocity + Cross(rbB->_angularVelocity, rB) : KTVECTOR3(0, 0, 0);
@@ -228,10 +238,19 @@ void PhysicsSystem::StepSub(float subDt, PhysicsMetrics& metrics, bool isLastSub
 				float vRel = Dot(rv, manifold.normal);
 
 				if (vRel <= -1.0f) {
-					cp.velocityBias = -e * vRel;
+					constexpr float BAUMGARTE_SLOP = 0.005f;
+					constexpr float BAUMGARTE_BETA = 0.2f;
+					float penBias = (subDt > 1e-6f && cp.penetration > BAUMGARTE_SLOP)
+						? (std::min)(3.0f, (BAUMGARTE_BETA / subDt) * (cp.penetration - BAUMGARTE_SLOP))
+						: 0.0f;
+					cp.velocityBias = (std::max)(-e * vRel, penBias);
 				}
 				else {
-					cp.velocityBias = 0.0f;
+					constexpr float BAUMGARTE_SLOP = 0.005f;
+					constexpr float BAUMGARTE_BETA = 0.2f;
+					cp.velocityBias = (subDt > 1e-6f && cp.penetration > BAUMGARTE_SLOP)
+						? (std::min)(3.0f, (BAUMGARTE_BETA / subDt) * (cp.penetration - BAUMGARTE_SLOP))
+						: 0.0f;
 				}
 			}
 		}
@@ -371,7 +390,7 @@ void PhysicsSystem::ResolveCollision(CollisionManifold& manifold)
 	if (!rbA && !rbB) return; // 両方静的ならスキップ
 
 	// 小さな隙間（slop）を残して過剰補正を防ぐ
-	float slop = 0.02f;
+	float slop = 0.005f;
 	float percent = 0.4f; // 0.2〜0.8の範囲で調整
 
 	// 有効質量の計算
@@ -387,7 +406,13 @@ void PhysicsSystem::ResolveCollision(CollisionManifold& manifold)
 		float pen = (std::max)(0.0f, contact.penetration - slop);
 		correction += manifold.normal * (pen / invMassSum);
 	}
-	correction = correction / (float)manifold.contacts.size();
+	float maxPen = manifold.penetrationDepth;
+	for (const auto& contact : manifold.contacts) {
+		if (contact.penetration > maxPen) maxPen = contact.penetration;
+	}
+	float effectivePen = (std::max)(0.0f, maxPen - slop);
+	percent = (effectivePen > 0.05f) ? 0.85f : 0.65f;
+	correction = manifold.normal * (effectivePen / invMassSum);
 	if (rbA && !rbA->IsSleeping()) {
 		rbA->_positionCorrection += correction * invMassA * percent;
 	}
@@ -407,8 +432,8 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold, float dt)
 
 	for (auto& contact : manifold.contacts) { // 法線方向
 
-		KTVECTOR3 rA = contact.position - manifold.a->GetOwner()->GetWorldPosition();
-		KTVECTOR3 rB = contact.position - manifold.b->GetOwner()->GetWorldPosition();
+		KTVECTOR3 rA = contact.position - manifold.a->GetWorldCenter();
+		KTVECTOR3 rB = contact.position - manifold.b->GetWorldCenter();
 
 		// 速度修正
 		KTVECTOR3 vA = rbA ? rbA->_velocity + Cross(rbA->_angularVelocity, rA) : KTVECTOR3(0.0f, 0.0f, 0.0f);
@@ -417,7 +442,7 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold, float dt)
 		KTVECTOR3 rV = vA - vB; // B->Aの相対速度
 		float relVelAlongNormal = Dot(rV, manifold.normal); // manifold.normal => B->A方向
 		// 離れていく場合はスキップ(B->A方向で一致→内積が正の値の場合離れていく) && 法線インパルスが0以下の場合スキップ
-		if (relVelAlongNormal > 0.0f && contact.normalImpulseSum <= 0.0f)continue;
+		if (relVelAlongNormal > contact.velocityBias && contact.normalImpulseSum <= 0.0f)continue;
 
 		// 有効質量
 		KTVECTOR3 rnA = rbA ? Cross(rA, manifold.normal) : KTVECTOR3(0.0f, 0.0f, 0.0f);
@@ -472,8 +497,8 @@ void PhysicsSystem::ResolveInpulse(CollisionManifold& manifold, float dt)
 	}
 
 	for (auto& contact : manifold.contacts) { // 接線方向
-		KTVECTOR3 rA = contact.position - manifold.a->GetOwner()->GetWorldPosition();
-		KTVECTOR3 rB = contact.position - manifold.b->GetOwner()->GetWorldPosition();
+		KTVECTOR3 rA = contact.position - manifold.a->GetWorldCenter();
+		KTVECTOR3 rB = contact.position - manifold.b->GetWorldCenter();
 
 		// 速度修正
 		KTVECTOR3 vA = rbA ? rbA->_velocity + Cross(rbA->_angularVelocity, rA) : KTVECTOR3(0.0f, 0.0f, 0.0f);
@@ -582,8 +607,8 @@ void PhysicsSystem::ApplyWarmStarting(){
 					newContact.tangentImpulseSum = bestOldContact->tangentImpulseSum * WARM_START_FACTOR;
 
 		// 引き継いだインパルスを事前に速度に適用
-					KTVECTOR3 rA = newContact.position - newManifold.a->GetOwner()->GetWorldPosition();
-					KTVECTOR3 rB = newContact.position - newManifold.b->GetOwner()->GetWorldPosition();
+					KTVECTOR3 rA = newContact.position - newManifold.a->GetWorldCenter();
+					KTVECTOR3 rB = newContact.position - newManifold.b->GetWorldCenter();
 
 		// 法線方向のインパルス復元
 					KTVECTOR3 applyImpulse = newContact.normalImpulseSum * newManifold.normal;
