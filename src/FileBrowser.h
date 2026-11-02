@@ -1,4 +1,4 @@
-﻿//=====================================================================================
+//=====================================================================================
 // FileBrowser.h
 // Author:Kaito Aoki
 // Date:2025/06/23
@@ -870,6 +870,20 @@ public:
 						ImGui::PopStyleColor(3);
 					} else {
 						clicked = ImGui::Button(isDir ? "DIR" : "FILE", ImVec2(thumbnailSize, thumbnailSize));
+					}
+
+					// Drag & Drop source for files (Textures, etc.)
+					if (!isDir && ImGui::BeginDragDropSource(ImGuiDragDropFlags_None)) {
+						std::error_code ec;
+						fs::path relPath = fs::relative(path, _rootPath, ec);
+						std::string assetPath = (!ec && !relPath.empty()) ? relPath.generic_string() : path.generic_string();
+						ImGui::SetDragDropPayload("DND_ASSET_PATH", assetPath.c_str(), assetPath.size() + 1);
+						if (texSrv != nullptr) {
+							ImGui::Image(texSrv, ImVec2(32.0f, 32.0f));
+							ImGui::SameLine();
+						}
+						ImGui::Text("%s", filename.c_str());
+						ImGui::EndDragDropSource();
 					}
 
 					// Right-click context menu for files (Text Editor, Scene Load, Custom Icon assignment)

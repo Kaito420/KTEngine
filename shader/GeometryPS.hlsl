@@ -1,6 +1,6 @@
 #include "Common.hlsl"
 
-PS_OUTPUT_GEOMETRY main(PS_IN input)
+PS_OUTPUT_GEOMETRY main(PS_IN input, bool isFrontFace : SV_IsFrontFace)
 {
     PS_OUTPUT_GEOMETRY output;
     
@@ -10,6 +10,10 @@ PS_OUTPUT_GEOMETRY main(PS_IN input)
     } else {
         output.Color = Material.BaseColor;
     }
+    output.Color.rgb += Material.EmissionColor.rgb;
+    float3 baseNormal = normalize(input.Normal.xyz) * (isFrontFace ? 1.0f : -1.0f);
+    if (false) {
+    }
     
     // Normal
     if (Material.HasNormalMap) {
@@ -17,7 +21,7 @@ PS_OUTPUT_GEOMETRY main(PS_IN input)
         normalMap = normalMap * 2.0f - 1.0f; // [0,1] → [-1,1]
         
         // ワールド空間法線からTBN行列を構築
-        float3 N = normalize(input.Normal.xyz);
+        float3 N = baseNormal;
         // 法線に平行でない任意のベクトルを選択
         float3 up = abs(N.y) < 0.999f ? float3(0.0f, 1.0f, 0.0f) : float3(1.0f, 0.0f, 0.0f);
         float3 T = normalize(cross(up, N));
@@ -31,7 +35,7 @@ PS_OUTPUT_GEOMETRY main(PS_IN input)
         
         output.Normal = float4(worldNormal, 1.0f);
     } else {
-        output.Normal = input.Normal;
+        output.Normal = float4(baseNormal, 1.0f);
         output.Normal.a = 1.0f;
     }
     

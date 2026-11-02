@@ -1,4 +1,4 @@
-﻿//=====================================================================================
+//=====================================================================================
 // Shader.h
 // Author:Kaito Aoki
 // Date:2026/01/29
@@ -29,7 +29,7 @@ private:
 	float _specular = 0.5f;
 	float _roughness = 0.5f;
 	float _normalWeight = 1.0f;
-	int _shadingModelID = 0; // 0: Smooth, 1: Toon
+	int _shadingModelID = 0; // 0: Smooth, 1: Toon, 2: Ambient Only, 3: Unlit
 	bool _flipU = false;
 	bool _flipV = false;
 

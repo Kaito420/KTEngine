@@ -1,4 +1,4 @@
-﻿#include "Texture.h"
+#include "Texture.h"
 #include "Manager.h"
 #include "Renderer.h"
 #include <cassert>
@@ -55,6 +55,16 @@ const TEXTURE* Texture::Load(const char* FileName) {
 		std::vector<std::string> searchDirs = { "asset/model", "asset/texture", "asset" };
 		bool found = false;
 		for (const auto& dir : searchDirs) {
+			if (!found && std::filesystem::exists(dir) && std::filesystem::is_directory(dir)) {
+				std::error_code ec;
+				for (const auto& entry : std::filesystem::recursive_directory_iterator(dir, std::filesystem::directory_options::skip_permission_denied, ec)) {
+					if (entry.is_regular_file() && entry.path().filename().string() == filename) {
+						resolvedPath = entry.path().generic_string();
+						found = true;
+						break;
+					}
+				}
+			}
 			std::string candidate = dir + "/" + filename;
 			if (std::filesystem::is_regular_file(candidate)) {
 				resolvedPath = candidate;
@@ -72,17 +82,38 @@ const TEXTURE* Texture::Load(const char* FileName) {
 		return _texturePool[resolvedPath].get();
 	}
 
-	wchar_t wFileName[512];
-	mbstowcs(wFileName, resolvedPath.c_str(), resolvedPath.length() + 1);
+
+
 
 	TexMetadata metadata;
 	ScratchImage image;
-	HRESULT hr = LoadFromWICFile(wFileName, WIC_FLAGS_NONE, &metadata, image);
-	if (FAILED(hr)) {
-		hr = LoadFromTGAFile(wFileName, &metadata, image);
+	std::filesystem::path resolvedFsPath(resolvedPath);
+	std::wstring wFileName = resolvedFsPath.wstring();
+	std::string ext = resolvedFsPath.extension().string();
+	std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+
+	HRESULT hr = E_FAIL;
+	if (ext == ".tga") {
+		hr = LoadFromTGAFile(wFileName.c_str(), &metadata, image);
+	} else if (ext == ".dds") {
+		hr = LoadFromDDSFile(wFileName.c_str(), DDS_FLAGS_NONE, &metadata, image);
+	} else {
+		hr = LoadFromWICFile(wFileName.c_str(), WIC_FLAGS_NONE, &metadata, image);
 	}
 	if (FAILED(hr)) {
-		hr = LoadFromDDSFile(wFileName, DDS_FLAGS_NONE, &metadata, image);
+		hr = LoadFromWICFile(wFileName.c_str(), WIC_FLAGS_NONE, &metadata, image);
+	}
+	if (FAILED(hr)) {
+		hr = LoadFromTGAFile(wFileName.c_str(), &metadata, image);
+	}
+	if (FAILED(hr)) {
+		hr = LoadFromDDSFile(wFileName.c_str(), DDS_FLAGS_NONE, &metadata, image);
+	}
+	if (FAILED(hr)) {
+
+	}
+	if (FAILED(hr)) {
+
 	}
 
 	if (FAILED(hr)) {
@@ -683,17 +714,38 @@ const TEXTURE* Texture::Reload(const char* FileName) {
 		return Load(resolvedPath.c_str());
 	}
 
-	wchar_t wFileName[512];
-	mbstowcs(wFileName, resolvedPath.c_str(), resolvedPath.length() + 1);
+
+
 
 	TexMetadata metadata;
 	ScratchImage image;
-	HRESULT hr = LoadFromWICFile(wFileName, WIC_FLAGS_NONE, &metadata, image);
-	if (FAILED(hr)) {
-		hr = LoadFromTGAFile(wFileName, &metadata, image);
+	std::filesystem::path resolvedFsPath(resolvedPath);
+	std::wstring wFileName = resolvedFsPath.wstring();
+	std::string ext = resolvedFsPath.extension().string();
+	std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+
+	HRESULT hr = E_FAIL;
+	if (ext == ".tga") {
+		hr = LoadFromTGAFile(wFileName.c_str(), &metadata, image);
+	} else if (ext == ".dds") {
+		hr = LoadFromDDSFile(wFileName.c_str(), DDS_FLAGS_NONE, &metadata, image);
+	} else {
+		hr = LoadFromWICFile(wFileName.c_str(), WIC_FLAGS_NONE, &metadata, image);
 	}
 	if (FAILED(hr)) {
-		hr = LoadFromDDSFile(wFileName, DDS_FLAGS_NONE, &metadata, image);
+		hr = LoadFromWICFile(wFileName.c_str(), WIC_FLAGS_NONE, &metadata, image);
+	}
+	if (FAILED(hr)) {
+		hr = LoadFromTGAFile(wFileName.c_str(), &metadata, image);
+	}
+	if (FAILED(hr)) {
+		hr = LoadFromDDSFile(wFileName.c_str(), DDS_FLAGS_NONE, &metadata, image);
+	}
+	if (FAILED(hr)) {
+
+	}
+	if (FAILED(hr)) {
+
 	}
 	if (FAILED(hr)) {
 		return _texturePool[resolvedPath].get();

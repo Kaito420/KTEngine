@@ -22,6 +22,26 @@ PS_OUTPUT main(PS_IN input)
     float metallic = materialARM.b;
     int shadingModel = (int)(materialARM.a * 255.0f + 0.5f);
 
+    // 3: Unlit (ライティング完全無効・スカイドーム初期値)
+    if (shadingModel == 3) {
+        output.Color = float4(saturate(baseColor.rgb * Light.Exposure), baseColor.a);
+        return output;
+    }
+
+    // 2: Ambient Only (平行光源・点光源・スペキュラ・シャドウを切り、環境光のみ適用)
+    if (shadingModel == 2) {
+        float3 ambientOnly = baseColor.rgb * Light.Ambient.rgb * Light.AmbientIntensity * ao;
+        ambientOnly *= Light.Exposure;
+        float a = 2.51f;
+        float b = 0.03f;
+        float c = 2.43f;
+        float d = 0.59f;
+        float e = 0.14f;
+        ambientOnly = saturate((ambientOnly * (a * ambientOnly + b)) / (ambientOnly * (c * ambientOnly + d) + e));
+        output.Color = float4(ambientOnly, baseColor.a);
+        return output;
+    }
+
     float3 lightDir = -normalize(Light.Direction.xyz); // 光源の方向
     float3 n = normalize(normal.xyz); // 法線ベクトル
     float3 eye = normalize(CameraPosition.xyz - position.xyz); // 視線ベクトル

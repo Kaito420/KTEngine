@@ -1,4 +1,4 @@
-﻿#include "SkyDome.h"
+#include "SkyDome.h"
 #include "GameObject.h"
 #include "Manager.h"
 #include "Scene.h"
@@ -20,6 +20,9 @@ void SkyDome::Awake(){
 		auto shaderComp = _owner->GetComponent<Shader>();
 		if (!shaderComp) {
 			shaderComp = _owner->AddComponent<Shader>();
+			if (shaderComp) shaderComp->SetShadingModelID(3); // 初期値: Unlit
+		} else if (shaderComp->GetShadingModelID() == 0) {
+			shaderComp->SetShadingModelID(3); // 初期値: Unlit
 		}
 		if (shaderComp && shaderComp->GetTexturePath().empty()) {
 			shaderComp->SetTexturePath("asset/texture/Space.jpg");
@@ -38,6 +41,7 @@ void SkyDome::Update()
 
 void SkyDome::Render() const
 {
+	if (Renderer::IsShadowPass()) return;
 	Renderer::SetDepthEnable(false);
 	Renderer::SetCullModeFront();
 	_sphere->Render();
