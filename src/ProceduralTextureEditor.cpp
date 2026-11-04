@@ -1,4 +1,4 @@
-﻿//=====================================================================================
+//=====================================================================================
 // ProceduralTextureEditor.cpp
 // Author:Kaito Aoki
 // Date:2026/10/26
@@ -178,6 +178,197 @@ static float EvaluateVoronoi(float u, float v, float scale, float jitter, int mo
 	}
 }
 
+static inline uint32_t Hash3D(int x, int y, int z, int seed) {
+	uint32_t h = static_cast<uint32_t>(x) * 374761393u
+	           + static_cast<uint32_t>(y) * 668265263u
+	           + static_cast<uint32_t>(z) * 2147483647u
+	           + static_cast<uint32_t>(seed) * 1442695041u;
+	h = (h ^ (h >> 13)) * 1274126177u;
+	return h ^ (h >> 16);
+}
+
+static inline void Hash3DVec3(int x, int y, int z, int seed, float& outX, float& outY, float& outZ) {
+	uint32_t h1 = Hash3D(x, y, z, seed);
+	uint32_t h2 = Hash3D(x ^ 0x5bd1e995, y ^ 0x1b873593, z ^ 0xcc9e2d51, seed + 7919);
+	uint32_t h3 = Hash3D(x ^ 0x85ebca6b, y ^ 0xc2b2ae35, z ^ 0x27d4eb2f, seed + 16127);
+	outX = static_cast<float>(h1 & 0xFFFFu) / 65535.0f;
+	outY = static_cast<float>(h2 & 0xFFFFu) / 65535.0f;
+	outZ = static_cast<float>(h3 & 0xFFFFu) / 65535.0f;
+}
+
+static float GradientNoise3D(float x, float y, float z, int seed) {
+	int ix0 = static_cast<int>(std::floor(x));
+	int iy0 = static_cast<int>(std::floor(y));
+	int iz0 = static_cast<int>(std::floor(z));
+	float fx = x - std::floor(x);
+	float fy = y - std::floor(y);
+	float fz = z - std::floor(z);
+
+	int ix1 = ix0 + 1;
+	int iy1 = iy0 + 1;
+	int iz1 = iz0 + 1;
+
+	auto gradDot3D = [&](int gx, int gy, int gz, float dx, float dy, float dz) -> float {
+		switch (Hash3D(gx, gy, gz, seed) & 15u) {
+		case 0:  return  dx + dy;
+		case 1:  return -dx + dy;
+		case 2:  return  dx - dy;
+		case 3:  return -dx - dy;
+		case 4:  return  dx + dz;
+		case 5:  return -dx + dz;
+		case 6:  return  dx - dz;
+		case 7:  return -dx - dz;
+		case 8:  return  dy + dz;
+		case 9:  return -dy + dz;
+		case 10: return  dy - dz;
+		case 11: return -dy - dz;
+		case 12: return  dx + dy;
+		case 13: return -dy + dz;
+		case 14: return -dx + dy;
+		default: return -dy - dz;
+		}
+	};
+
+	float u = SmoothStep(fx);
+	float v = SmoothStep(fy);
+	float w = SmoothStep(fz);
+
+	float n000 = gradDot3D(ix0, iy0, iz0, fx,        fy,        fz);
+	float n100 = gradDot3D(ix1, iy0, iz0, fx - 1.0f, fy,        fz);
+	float n010 = gradDot3D(ix0, iy1, iz0, fx,        fy - 1.0f, fz);
+	float n110 = gradDot3D(ix1, iy1, iz0, fx - 1.0f, fy - 1.0f, fz);
+	float n001 = gradDot3D(ix0, iy0, iz1, fx,        fy,        fz - 1.0f);
+	float n101 = gradDot3D(ix1, iy0, iz1, fx - 1.0f, fy,        fz - 1.0f);
+	float n011 = gradDot3D(ix0, iy1, iz1, fx,        fy - 1.0f, fz - 1.0f);
+	float n111 = gradDot3D(ix1, iy1, iz1, fx - 1.0f, fy - 1.0f, fz - 1.0f);
+
+	float nx00 = Lerp(n000, n100, u);
+	float nx10 = Lerp(n010, n110, u);
+	float nx01 = Lerp(n001, n101, u);
+	float nx11 = Lerp(n011, n111, u);
+
+	float nxy0 = Lerp(nx00, nx10, v);
+	float nxy1 = Lerp(nx01, nx11, v);
+	return Lerp(nxy0, nxy1, w);
+}
+
+static float EvaluateFBM3D(float px, float py, float pz, float scaleX, float scaleY, int octaves, float persistence, float lacunarity, int seed, bool ridged) {
+	float total = 0.0f;
+	float amplitude = 1.0f;
+	float maxAmp = 0.0f;
+	float freqXZ = std::max(0.5f, scaleX * 0.5f);
+	float freqY  = std::max(0.5f, scaleY * 0.5f);
+
+	for (int i = 0; i < octaves; i++) {
+		float n = GradientNoise3D((px + 3.7f) * freqXZ, (py + 3.7f) * freqY, (pz + 3.7f) * freqXZ, seed + i * 101);
+		if (ridged) {
+			n = 1.0f - std::fabs(n * 1.25f);
+			n = Clamp01(n);
+			n = n * n;
+		} else {
+			n = Clamp01(n * 0.65f + 0.5f);
+		}
+		total += n * amplitude;
+		maxAmp += amplitude;
+		amplitude *= persistence;
+		freqXZ *= lacunarity;
+		freqY  *= lacunarity;
+	}
+	return maxAmp > 0.0f ? Clamp01(total / maxAmp) : 0.0f;
+}
+
+static float EvaluateVoronoi3D(float px, float py, float pz, float scale, float jitter, int mode, int seed) {
+	float freq = std::max(0.5f, scale * 0.5f);
+	float x = (px + 5.0f) * freq;
+	float y = (py + 5.0f) * freq;
+	float z = (pz + 5.0f) * freq;
+
+	int ix = static_cast<int>(std::floor(x));
+	int iy = static_cast<int>(std::floor(y));
+	int iz = static_cast<int>(std::floor(z));
+	float fx = x - std::floor(x);
+	float fy = y - std::floor(y);
+	float fz = z - std::floor(z);
+
+	float minDist1 = 100.0f;
+	float minDist2 = 100.0f;
+	uint32_t closestHash = 0;
+
+	for (int dz = -1; dz <= 1; dz++) {
+		for (int dy = -1; dy <= 1; dy++) {
+			for (int dx = -1; dx <= 1; dx++) {
+				int cx = ix + dx;
+				int cy = iy + dy;
+				int cz = iz + dz;
+				float rx, ry, rz;
+				Hash3DVec3(cx, cy, cz, seed, rx, ry, rz);
+				float vx = static_cast<float>(dx) + 0.5f + (rx - 0.5f) * jitter - fx;
+				float vy = static_cast<float>(dy) + 0.5f + (ry - 0.5f) * jitter - fy;
+				float vz = static_cast<float>(dz) + 0.5f + (rz - 0.5f) * jitter - fz;
+				float d = std::sqrt(vx * vx + vy * vy + vz * vz);
+				if (d < minDist1) {
+					minDist2 = minDist1;
+					minDist1 = d;
+					closestHash = Hash3D(cx, cy, cz, seed + 31);
+				} else if (d < minDist2) {
+					minDist2 = d;
+				}
+			}
+		}
+	}
+
+	if (mode == 0) {
+		return Clamp01(minDist1);
+	} else if (mode == 1) {
+		return Clamp01((minDist2 - minDist1) * 1.5f);
+	} else {
+		return static_cast<float>(closestHash & 0xFFFFu) / 65535.0f;
+	}
+}
+
+static inline void MapUVTo3D(float u, float v, int mappingSpace, float& outX, float& outY, float& outZ) {
+	const float PI = 3.14159265359f;
+	float phi = u * 2.0f * PI;
+	float theta = Clamp01(v) * PI;
+	float sinT = std::sin(theta);
+	float dx = sinT * std::cos(phi);
+	float dy = std::cos(theta);
+	float dz = sinT * std::sin(phi);
+
+	if (mappingSpace == 2) {
+		// 3D Box / Cube-Sphere projection (projects unit sphere onto unit cube [-1, 1]^3)
+		float maxAxis = std::max(std::max(std::fabs(dx), std::fabs(dy)), std::fabs(dz));
+		if (maxAxis > 0.0001f) {
+			outX = dx / maxAxis;
+			outY = dy / maxAxis;
+			outZ = dz / maxAxis;
+		} else {
+			outX = dx; outY = dy; outZ = dz;
+		}
+	} else {
+		// 3D Spherical (Unit sphere)
+		outX = dx;
+		outY = dy;
+		outZ = dz;
+	}
+}
+
+static inline void Dir3DToSphericalUV(float dx, float dy, float dz, float& outU, float& outV) {
+	const float PI = 3.14159265359f;
+	float len = std::sqrt(dx * dx + dy * dy + dz * dz);
+	if (len > 0.0001f) {
+		dx /= len; dy /= len; dz /= len;
+	} else {
+		dx = 0.0f; dy = 1.0f; dz = 0.0f;
+	}
+	dy = std::clamp(dy, -1.0f, 1.0f);
+	float theta = std::acos(dy);
+	float phi = std::atan2(dz, dx);
+	if (phi < 0.0f) phi += 2.0f * PI;
+	outU = Frac(phi / (2.0f * PI));
+	outV = Clamp01(theta / PI);
+}
+
 static inline void SampleBilinearWrap(const std::vector<float>& buf, int w, int h, float u, float v, float outRGBA[4]) {
 	if (buf.empty() || w <= 0 || h <= 0) {
 		outRGBA[0] = outRGBA[1] = outRGBA[2] = 0.0f;
@@ -290,6 +481,17 @@ static std::vector<float> s_outArmRGBA;
 static const TEXTURE* s_outAlbedoTex = nullptr;
 static const TEXTURE* s_outNormalTex = nullptr;
 static const TEXTURE* s_outArmTex = nullptr;
+
+// 3D Mapping Space & 3D Interactive Preview state
+static int s_mappingSpace = 0;          // 0: 2D Planar (Tileable), 1: 3D Spherical (SkyDome / Sphere), 2: 3D Triplanar / Box (Cube)
+static int s_previewShapeMode = 0;      // 0: 2D Flat, 1: 3D Sphere, 2: 3D Cube, 3: 3D SkyDome (Inside)
+static bool s_previewPBRShading = true; // Enable PBR lighting (Normal + Roughness + Metallic + AO) in 3D preview
+static float s_previewYaw = 0.45f;
+static float s_previewPitch = 0.25f;
+static float s_lightYaw = -0.65f;
+static float s_lightPitch = 0.55f;
+static bool s_preview3DDirty = true;
+static const TEXTURE* s_preview3DTex = nullptr;
 
 static ProcNode* FindNode(int id) {
 	for (auto& n : s_nodes) {
@@ -435,6 +637,7 @@ static void LoadPresetOutputOnly() {
 	int outId = AddNode(ProcNodeType::Output, ImVec2(480.0f, 160.0f)).id;
 
 	strcpy_s(s_exportNameBuf, "proc_texture");
+	s_mappingSpace = 0;
 	s_selectedNodeId = outId;
 	s_graphDirty = true;
 }
@@ -483,6 +686,7 @@ static void LoadPresetBrickWall() {
 	AddLink(roughLevelsId, 0, outId, 2); // Roughness
 
 	strcpy_s(s_exportNameBuf, "proc_brick");
+	s_mappingSpace = 0;
 	s_selectedNodeId = outId;
 	s_graphDirty = true;
 }
@@ -531,6 +735,7 @@ static void LoadPresetMarble() {
 	AddLink(normalId, 0, outId, 1);
 
 	strcpy_s(s_exportNameBuf, "proc_marble");
+	s_mappingSpace = 0;
 	s_selectedNodeId = outId;
 	s_graphDirty = true;
 }
@@ -580,6 +785,7 @@ static void LoadPresetCrackedLava() {
 	AddLink(voronoiId, 0, outId, 4); // AO in cracks
 
 	strcpy_s(s_exportNameBuf, "proc_lava_rock");
+	s_mappingSpace = 0;
 	s_selectedNodeId = outId;
 	s_graphDirty = true;
 }
@@ -640,6 +846,7 @@ static void LoadPresetRustedMetal() {
 	AddLink(metalLevelsId, 0, outId, 3); // Metallic (non-rust is metallic)
 
 	strcpy_s(s_exportNameBuf, "proc_rusted_metal");
+	s_mappingSpace = 0;
 	s_selectedNodeId = outId;
 	s_graphDirty = true;
 }
@@ -647,11 +854,154 @@ static void LoadPresetRustedMetal() {
 // =====================================================================================
 // Node Evaluation Logic
 // =====================================================================================
+static void LoadPresetSkyDomeClouds() {
+	s_nodes.clear();
+	s_links.clear();
+	s_nextNodeId = 1;
+	s_nextLinkId = 1;
+	s_mappingSpace = 1;      // 3D Spherical (SkyDome / Sphere)
+	s_previewShapeMode = 3;  // 3D SkyDome (Inside)
+
+	int cloudNoiseId = AddNode(ProcNodeType::PerlinNoise, ImVec2(40.0f, 40.0f)).id;
+	FindNode(cloudNoiseId)->scaleX = 4.0f;
+	FindNode(cloudNoiseId)->scaleY = 6.0f;
+	FindNode(cloudNoiseId)->octaves = 6;
+	FindNode(cloudNoiseId)->persistence = 0.55f;
+	FindNode(cloudNoiseId)->seed = 777;
+
+	int warpNoiseId = AddNode(ProcNodeType::PerlinNoise, ImVec2(40.0f, 340.0f)).id;
+	FindNode(warpNoiseId)->scaleX = 3.0f;
+	FindNode(warpNoiseId)->scaleY = 3.0f;
+	FindNode(warpNoiseId)->octaves = 4;
+	FindNode(warpNoiseId)->seed = 1024;
+
+	int warpId = AddNode(ProcNodeType::UVWarp, ImVec2(310.0f, 220.0f)).id;
+	FindNode(warpId)->paramA = 0.22f;
+
+	int skyGradId = AddNode(ProcNodeType::Gradient, ImVec2(310.0f, 40.0f)).id;
+	FindNode(skyGradId)->mode = 0;
+	FindNode(skyGradId)->paramA = 0.0f;
+	FindNode(skyGradId)->scaleX = 1.0f;
+	FindNode(skyGradId)->colorA[0] = 0.10f; FindNode(skyGradId)->colorA[1] = 0.28f; FindNode(skyGradId)->colorA[2] = 0.68f;
+	FindNode(skyGradId)->colorB[0] = 0.58f; FindNode(skyGradId)->colorB[1] = 0.78f; FindNode(skyGradId)->colorB[2] = 0.96f;
+
+	int cloudRampId = AddNode(ProcNodeType::ColorRamp, ImVec2(570.0f, 260.0f)).id;
+	{
+		ProcNode* r = FindNode(cloudRampId);
+		r->paramD = 0.45f;
+		r->paramB = 0.62f;
+		r->paramC = 0.85f;
+		r->colorA[0] = 0.0f;  r->colorA[1] = 0.0f;  r->colorA[2] = 0.0f;
+		r->colorB[0] = 0.78f; r->colorB[1] = 0.84f; r->colorB[2] = 0.92f;
+		r->colorC[0] = 1.00f; r->colorC[1] = 0.99f; r->colorC[2] = 0.97f;
+	}
+
+	int blendId = AddNode(ProcNodeType::Blend, ImVec2(570.0f, 60.0f)).id;
+	FindNode(blendId)->mode = 4; // Screen
+	FindNode(blendId)->paramA = 0.92f;
+
+	int outId = AddNode(ProcNodeType::Output, ImVec2(850.0f, 140.0f)).id;
+	FindNode(outId)->paramA = 1.0f;
+
+	AddLink(warpNoiseId, 0, warpId, 1);
+	AddLink(warpId, 0, cloudNoiseId, 0);
+	AddLink(cloudNoiseId, 0, cloudRampId, 0);
+	AddLink(skyGradId, 0, blendId, 0);
+	AddLink(cloudRampId, 0, blendId, 1);
+	AddLink(cloudRampId, 0, blendId, 2);
+	AddLink(blendId, 0, outId, 0);
+
+	strcpy_s(s_exportNameBuf, "proc_skydome_clouds");
+	s_selectedNodeId = outId;
+	s_graphDirty = true;
+}
+
+static void LoadPresetPlanetSurface() {
+	s_nodes.clear();
+	s_links.clear();
+	s_nextNodeId = 1;
+	s_nextLinkId = 1;
+	s_mappingSpace = 1;      // 3D Spherical (SkyDome / Sphere)
+	s_previewShapeMode = 1;  // 3D Sphere
+	s_previewPBRShading = true;
+
+	int contNoiseId = AddNode(ProcNodeType::PerlinNoise, ImVec2(40.0f, 40.0f)).id;
+	FindNode(contNoiseId)->scaleX = 4.0f;
+	FindNode(contNoiseId)->scaleY = 4.0f;
+	FindNode(contNoiseId)->octaves = 6;
+	FindNode(contNoiseId)->persistence = 0.55f;
+	FindNode(contNoiseId)->seed = 3141;
+
+	int craterId = AddNode(ProcNodeType::Voronoi, ImVec2(40.0f, 340.0f)).id;
+	FindNode(craterId)->scaleX = 8.0f;
+	FindNode(craterId)->mode = 0; // F1 craters
+	FindNode(craterId)->paramA = 0.9f;
+	FindNode(craterId)->seed = 901;
+
+	int heightBlendId = AddNode(ProcNodeType::Blend, ImVec2(320.0f, 160.0f)).id;
+	FindNode(heightBlendId)->mode = 5; // Overlay
+	FindNode(heightBlendId)->paramA = 0.35f;
+
+	int colorRampId = AddNode(ProcNodeType::ColorRamp, ImVec2(580.0f, 60.0f)).id;
+	{
+		ProcNode* r = FindNode(colorRampId);
+		r->paramD = 0.35f;
+		r->paramB = 0.50f;
+		r->paramC = 0.78f;
+		r->colorA[0] = 0.08f; r->colorA[1] = 0.22f; r->colorA[2] = 0.48f;
+		r->colorB[0] = 0.24f; r->colorB[1] = 0.52f; r->colorB[2] = 0.26f;
+		r->colorC[0] = 0.68f; r->colorC[1] = 0.62f; r->colorC[2] = 0.54f;
+	}
+
+	int normalId = AddNode(ProcNodeType::NormalMap, ImVec2(580.0f, 300.0f)).id;
+	FindNode(normalId)->paramA = 6.0f;
+
+	int roughLevelsId = AddNode(ProcNodeType::Levels, ImVec2(580.0f, 480.0f)).id;
+	FindNode(roughLevelsId)->paramA = 0.15f;
+	FindNode(roughLevelsId)->paramB = 1.6f;
+
+	int outId = AddNode(ProcNodeType::Output, ImVec2(850.0f, 180.0f)).id;
+
+	AddLink(contNoiseId, 0, heightBlendId, 0);
+	AddLink(craterId, 0, heightBlendId, 1);
+	AddLink(heightBlendId, 0, colorRampId, 0);
+	AddLink(heightBlendId, 0, normalId, 0);
+	AddLink(heightBlendId, 0, roughLevelsId, 0);
+
+	AddLink(colorRampId, 0, outId, 0);
+	AddLink(normalId, 0, outId, 1);
+	AddLink(roughLevelsId, 0, outId, 2);
+
+	strcpy_s(s_exportNameBuf, "proc_planet");
+	s_selectedNodeId = outId;
+	s_graphDirty = true;
+}
+
 static void EvaluateSingleNode(ProcNode& node, int width, int height) {
 	node.evalWidth = width;
 	node.evalHeight = height;
 	node.bufferRGBA.resize(static_cast<size_t>(width) * height * 4);
 
+	auto getCoords3D = [&](int x, int y, ProcNode* uvSource, float& u, float& v, float& px, float& py, float& pz) {
+		float baseU = (static_cast<float>(x) + 0.5f) / static_cast<float>(width);
+		float baseV = (static_cast<float>(y) + 0.5f) / static_cast<float>(height);
+		if (uvSource && static_cast<int>(uvSource->bufferRGBA.size()) == width * height * 4) {
+			const float* p = &uvSource->bufferRGBA[(y * width + x) * 4];
+			if (p[3] > 1.5f) {
+				px = (p[0] - 0.5f) * 4.0f;
+				py = (p[1] - 0.5f) * 4.0f;
+				pz = (p[2] - 0.5f) * 4.0f;
+				Dir3DToSphericalUV(px, py, pz, u, v);
+				return;
+			}
+			u = p[0];
+			v = p[1];
+		} else {
+			u = baseU;
+			v = baseV;
+		}
+		MapUVTo3D(u, v, s_mappingSpace, px, py, pz);
+	};
 	auto getUV = [&](int x, int y, ProcNode* uvSource, float& u, float& v) {
 		if (uvSource && static_cast<int>(uvSource->bufferRGBA.size()) == width * height * 4) {
 			const float* p = &uvSource->bufferRGBA[(y * width + x) * 4];
@@ -663,6 +1013,7 @@ static void EvaluateSingleNode(ProcNode& node, int width, int height) {
 		}
 	};
 
+
 	switch (node.type) {
 	case ProcNodeType::PerlinNoise: {
 		ProcNode* uvNode = GetInputSourceNode(node.id, 0);
@@ -670,7 +1021,11 @@ static void EvaluateSingleNode(ProcNode& node, int width, int height) {
 			for (int x = 0; x < width; x++) {
 				float u, v;
 				getUV(x, y, uvNode, u, v);
-				float val = EvaluateFBM(u, v, node.scaleX, node.scaleY, node.octaves, node.persistence, node.lacunarity, node.seed, node.flagA);
+				float px, py, pz;
+				getCoords3D(x, y, uvNode, u, v, px, py, pz);
+				float val = (s_mappingSpace == 0)
+					? EvaluateFBM(u, v, node.scaleX, node.scaleY, node.octaves, node.persistence, node.lacunarity, node.seed, node.flagA)
+					: EvaluateFBM3D(px, py, pz, node.scaleX, node.scaleY, node.octaves, node.persistence, node.lacunarity, node.seed, node.flagA);
 				float* dst = &node.bufferRGBA[(y * width + x) * 4];
 				dst[0] = dst[1] = dst[2] = val;
 				dst[3] = 1.0f;
@@ -684,7 +1039,11 @@ static void EvaluateSingleNode(ProcNode& node, int width, int height) {
 			for (int x = 0; x < width; x++) {
 				float u, v;
 				getUV(x, y, uvNode, u, v);
-				float val = EvaluateVoronoi(u, v, node.scaleX, node.paramA, node.mode, node.seed);
+				float px, py, pz;
+				getCoords3D(x, y, uvNode, u, v, px, py, pz);
+				float val = (s_mappingSpace == 0)
+					? EvaluateVoronoi(u, v, node.scaleX, node.paramA, node.mode, node.seed)
+					: EvaluateVoronoi3D(px, py, pz, node.scaleX, node.paramA, node.mode, node.seed);
 				if (node.flagA) val = 1.0f - val;
 				float* dst = &node.bufferRGBA[(y * width + x) * 4];
 				dst[0] = dst[1] = dst[2] = val;
@@ -699,8 +1058,15 @@ static void EvaluateSingleNode(ProcNode& node, int width, int height) {
 			for (int x = 0; x < width; x++) {
 				float u, v;
 				getUV(x, y, uvNode, u, v);
-				float sx = u * std::max(1.0f, node.scaleX);
+
 				float sy = v * std::max(1.0f, node.scaleY);
+				float effScaleX = std::max(1.0f, node.scaleX);
+				if (s_mappingSpace == 1) {
+					float rowCenterV = (std::floor(sy) + 0.5f) / std::max(1.0f, node.scaleY);
+					float sinLat = std::sin(Clamp01(rowCenterV) * 3.14159265f);
+					effScaleX = std::max(2.0f, std::round(effScaleX * 2.0f * sinLat));
+				}
+				float sx = u * effScaleX;
 				const float* col = node.colorA;
 				if (node.flagA) {
 					// Grid mode
@@ -731,7 +1097,13 @@ static void EvaluateSingleNode(ProcNode& node, int width, int height) {
 				getUV(x, y, uvNode, u, v);
 				float ry = v * rows;
 				int rowIdx = static_cast<int>(std::floor(ry));
-				float rx = u * cols + ((rowIdx & 1) ? node.paramB : 0.0f);
+				float effCols = cols;
+				if (s_mappingSpace == 1) {
+					float rowCenterV = (static_cast<float>(rowIdx) + 0.5f) / rows;
+					float sinLat = std::sin(Clamp01(rowCenterV) * 3.14159265f);
+					effCols = std::max(1.0f, std::round(cols * 2.0f * sinLat));
+				}
+				float rx = u * effCols + ((rowIdx & 1) ? node.paramB : 0.0f);
 				int colIdx = static_cast<int>(std::floor(rx));
 				float fx = Frac(rx);
 				float fy = Frac(ry);
@@ -767,7 +1139,17 @@ static void EvaluateSingleNode(ProcNode& node, int width, int height) {
 				float u, v;
 				getUV(x, y, uvNode, u, v);
 				float t = 0.0f;
-				if (node.mode == 0) {
+				float px, py, pz;
+				getCoords3D(x, y, uvNode, u, v, px, py, pz);
+				if (s_mappingSpace != 0) {
+					if (node.mode == 0) {
+						float proj = (-py * ca + px * sa) * 0.5f + 0.5f;
+						t = (node.scaleX <= 1.05f) ? Clamp01(proj * node.scaleX) : Frac(proj * node.scaleX);
+					} else {
+						float d = std::sqrt(px * px + pz * pz);
+						t = Clamp01(d * std::max(0.1f, node.scaleX));
+					}
+				} else if (node.mode == 0) {
 					float du = u - 0.5f;
 					float dv = v - 0.5f;
 					t = Frac(((du * ca - dv * sa) + 0.5f) * std::max(0.1f, node.scaleX));
@@ -886,7 +1268,29 @@ static void EvaluateSingleNode(ProcNode& node, int width, int height) {
 				float wu = Frac(u + dx);
 				float wv = Frac(v + dy);
 				float* dst = &node.bufferRGBA[(y * width + x) * 4];
-				if (srcNode && static_cast<int>(srcNode->bufferRGBA.size()) == width * height * 4) {
+				if (s_mappingSpace != 0) {
+					float px, py, pz;
+					MapUVTo3D(u, v, s_mappingSpace, px, py, pz);
+					float dz = 0.0f;
+					if (warpNode && static_cast<int>(warpNode->bufferRGBA.size()) == width * height * 4) {
+						int xShift = (x + width / 3) % width;
+						int yShift = (y + height / 3) % height;
+						const float* wp2 = &warpNode->bufferRGBA[(yShift * width + xShift) * 4];
+						dz = (wp2[0] - 0.5f) * strength;
+					}
+					float wpx = px + dx * 2.0f;
+					float wpy = py + dy * 2.0f;
+					float wpz = pz + dz * 2.0f;
+					if (srcNode && static_cast<int>(srcNode->bufferRGBA.size()) == width * height * 4) {
+						Dir3DToSphericalUV(wpx, wpy, wpz, wu, wv);
+						SampleBilinearWrap(srcNode->bufferRGBA, width, height, wu, wv, dst);
+					} else {
+						dst[0] = wpx * 0.25f + 0.5f;
+						dst[1] = wpy * 0.25f + 0.5f;
+						dst[2] = wpz * 0.25f + 0.5f;
+						dst[3] = 2.0f;
+					}
+				} else if (srcNode && static_cast<int>(srcNode->bufferRGBA.size()) == width * height * 4) {
 					SampleBilinearWrap(srcNode->bufferRGBA, width, height, wu, wv, dst);
 				} else {
 					dst[0] = wu;
@@ -926,6 +1330,11 @@ static void EvaluateSingleNode(ProcNode& node, int width, int height) {
 
 		auto sampleH = [&](int x, int y) -> float {
 			if (!hNode || static_cast<int>(hNode->bufferRGBA.size()) != width * height * 4) return 0.5f;
+			if (s_mappingSpace == 1 && (y < 0 || y >= height)) {
+				x += width / 2;
+				y = (y < 0) ? -y : (2 * height - 1 - y);
+				y = std::clamp(y, 0, height - 1);
+			}
 			int wx = ((x % width) + width) % width;
 			int wy = ((y % height) + height) % height;
 			return Luminance(&hNode->bufferRGBA[(wy * width + wx) * 4]);
@@ -1074,10 +1483,280 @@ static void EvaluateGraph(int width, int height, bool updateGpuPreviews) {
 
 		ConvertFloatToByteRGBA(s_outArmRGBA, byteBuf);
 		s_outArmTex = Texture::UpdateOrCreateFromRGBA("__proc_out_arm", byteBuf.data(), width, height);
+		s_preview3DDirty = true;
 	}
 }
 
 // =====================================================================================
+static void Render3DPreviewImage() {
+	const int res = 160;
+	const int srcW = std::max(1, s_previewResolution);
+	const int srcH = std::max(1, s_previewResolution);
+
+	std::vector<float> imgRGBA(static_cast<size_t>(res) * res * 4, 0.0f);
+
+	float cy = std::cos(s_previewYaw), sy = std::sin(s_previewYaw);
+	float cp = std::cos(s_previewPitch), sp = std::sin(s_previewPitch);
+
+	auto worldToLocal = [&](float wx, float wy, float wz, float& lx, float& ly, float& lz) {
+		float tx =  cy * wx + sy * wz;
+		float ty =  wy;
+		float tz = -sy * wx + cy * wz;
+		lx = tx;
+		ly =  cp * ty + sp * tz;
+		lz = -sp * ty + cp * tz;
+	};
+	auto localToWorld = [&](float lx, float ly, float lz, float& wx, float& wy, float& wz) {
+		float tx = lx;
+		float ty = cp * ly - sp * lz;
+		float tz = sp * ly + cp * lz;
+		wx =  cy * tx - sy * tz;
+		wy =  ty;
+		wz =  sy * tx + cy * tz;
+	};
+
+	float lcy = std::cos(s_lightYaw), lsy = std::sin(s_lightYaw);
+	float lcp = std::cos(s_lightPitch), lsp = std::sin(s_lightPitch);
+	float lightX = lcp * lsy;
+	float lightY = lsp;
+	float lightZ = -lcp * lcy;
+	{
+		float lLen = std::sqrt(lightX * lightX + lightY * lightY + lightZ * lightZ);
+		if (lLen > 0.0001f) { lightX /= lLen; lightY /= lLen; lightZ /= lLen; }
+	}
+
+	const std::vector<float>* activeChannelBuf = &s_outAlbedoRGBA;
+	if (s_previewChannel == 1) activeChannelBuf = &s_outNormalRGBA;
+	else if (s_previewChannel == 2) activeChannelBuf = &s_outArmRGBA;
+	else if (s_previewChannel == 3) {
+		ProcNode* sel = FindNode(s_selectedNodeId);
+		if (sel && !sel->bufferRGBA.empty()) activeChannelBuf = &sel->bufferRGBA;
+	}
+
+	for (int py = 0; py < res; py++) {
+		for (int px = 0; px < res; px++) {
+			float ndcX = ((static_cast<float>(px) + 0.5f) / static_cast<float>(res)) * 2.0f - 1.0f;
+			float ndcY = 1.0f - ((static_cast<float>(py) + 0.5f) / static_cast<float>(res)) * 2.0f;
+
+			float* outPix = &imgRGBA[(py * res + px) * 4];
+
+			float bgGrad = Clamp01((ndcY + 1.0f) * 0.5f);
+			outPix[0] = Lerp(0.08f, 0.14f, bgGrad);
+			outPix[1] = Lerp(0.09f, 0.16f, bgGrad);
+			outPix[2] = Lerp(0.11f, 0.20f, bgGrad);
+			outPix[3] = 1.0f;
+
+			if (s_previewShapeMode == 3) {
+				float fovScale = 0.85f;
+				float rdx = ndcX * fovScale;
+				float rdy = ndcY * fovScale;
+				float rdz = 1.0f;
+				float rLen = std::sqrt(rdx * rdx + rdy * rdy + rdz * rdz);
+				rdx /= rLen; rdy /= rLen; rdz /= rLen;
+
+				float lx, ly, lz;
+				worldToLocal(rdx, rdy, rdz, lx, ly, lz);
+
+				float u, v;
+				Dir3DToSphericalUV(lx, ly, lz, u, v);
+
+				float col[4];
+				SampleBilinearWrap(*activeChannelBuf, srcW, srcH, u, v, col);
+				outPix[0] = col[0];
+				outPix[1] = col[1];
+				outPix[2] = col[2];
+				outPix[3] = 1.0f;
+				continue;
+			}
+
+			float roX = 0.0f, roY = 0.0f, roZ = -2.35f;
+			float rdX = ndcX * 0.48f;
+			float rdY = ndcY * 0.48f;
+			float rdZ = 1.0f;
+			float rdLen = std::sqrt(rdX * rdX + rdY * rdY + rdZ * rdZ);
+			rdX /= rdLen; rdY /= rdLen; rdZ /= rdLen;
+
+			bool hit = false;
+			float u = 0.0f, v = 0.0f;
+			float wnX = 0.0f, wnY = 0.0f, wnZ = -1.0f;
+			float wtX = 1.0f, wtY = 0.0f, wtZ = 0.0f;
+			float wbX = 0.0f, wbY = 1.0f, wbZ = 0.0f;
+
+			if (s_previewShapeMode == 1) {
+				const float radius = 0.86f;
+				float b = roX * rdX + roY * rdY + roZ * rdZ;
+				float c = (roX * roX + roY * roY + roZ * roZ) - radius * radius;
+				float disc = b * b - c;
+				if (disc >= 0.0f) {
+					float t = -b - std::sqrt(disc);
+					if (t > 0.0f) {
+						hit = true;
+						float hx = (roX + rdX * t) / radius;
+						float hy = (roY + rdY * t) / radius;
+						float hz = (roZ + rdZ * t) / radius;
+						wnX = hx; wnY = hy; wnZ = hz;
+
+						float lx, ly, lz;
+						worldToLocal(hx, hy, hz, lx, ly, lz);
+						Dir3DToSphericalUV(lx, ly, lz, u, v);
+
+						float ltx = -lz, lty = 0.0f, ltz = lx;
+						float ltLen = std::sqrt(ltx * ltx + ltz * ltz);
+						if (ltLen > 0.0001f) { ltx /= ltLen; ltz /= ltLen; }
+						else { ltx = 1.0f; ltz = 0.0f; }
+
+						float lbx = ly * ltz - lz * lty;
+						float lby = lz * ltx - lx * ltz;
+						float lbz = lx * lty - ly * ltx;
+
+						localToWorld(ltx, lty, ltz, wtX, wtY, wtZ);
+						localToWorld(lbx, lby, lbz, wbX, wbY, wbZ);
+					}
+				}
+			} else if (s_previewShapeMode == 2) {
+				const float boxHalf = 0.64f;
+				float lroX, lroY, lroZ;
+				float lrdX, lrdY, lrdZ;
+				worldToLocal(roX, roY, roZ, lroX, lroY, lroZ);
+				worldToLocal(rdX, rdY, rdZ, lrdX, lrdY, lrdZ);
+
+				float tMin = -1e9f, tMax = 1e9f;
+				int hitAxis = 0;
+				float hitSign = 1.0f;
+
+				const float roArr[3] = { lroX, lroY, lroZ };
+				const float rdArr[3] = { lrdX, lrdY, lrdZ };
+				bool boxValid = true;
+				for (int a = 0; a < 3; a++) {
+					if (std::fabs(rdArr[a]) < 1e-6f) {
+						if (roArr[a] < -boxHalf || roArr[a] > boxHalf) { boxValid = false; break; }
+					} else {
+						float invD = 1.0f / rdArr[a];
+						float t1 = (-boxHalf - roArr[a]) * invD;
+						float t2 = ( boxHalf - roArr[a]) * invD;
+						float s = -1.0f;
+						if (t1 > t2) { std::swap(t1, t2); s = 1.0f; }
+						if (t1 > tMin) { tMin = t1; hitAxis = a; hitSign = s; }
+						if (t2 < tMax) { tMax = t2; }
+						if (tMin > tMax) { boxValid = false; break; }
+					}
+				}
+
+				if (boxValid && tMin > 0.0f) {
+					hit = true;
+					float lhx = lroX + lrdX * tMin;
+					float lhy = lroY + lrdY * tMin;
+					float lhz = lroZ + lrdZ * tMin;
+
+					float lnx = 0.0f, lny = 0.0f, lnz = 0.0f;
+					float ltx = 0.0f, lty = 0.0f, ltz = 0.0f;
+					float lbx = 0.0f, lby = 0.0f, lbz = 0.0f;
+
+					if (hitAxis == 0) {
+						lnx = hitSign;
+						u = (lhz * (-hitSign) / boxHalf) * 0.5f + 0.5f;
+						v = (-lhy / boxHalf) * 0.5f + 0.5f;
+						ltx = 0.0f; lty = 0.0f; ltz = -hitSign;
+						lbx = 0.0f; lby = -1.0f; lbz = 0.0f;
+					} else if (hitAxis == 1) {
+						lny = hitSign;
+						u = (lhx / boxHalf) * 0.5f + 0.5f;
+						v = (lhz * hitSign / boxHalf) * 0.5f + 0.5f;
+						ltx = 1.0f; lty = 0.0f; ltz = 0.0f;
+						lbx = 0.0f; lby = 0.0f; lbz = hitSign;
+					} else {
+						lnz = hitSign;
+						u = (lhx * hitSign / boxHalf) * 0.5f + 0.5f;
+						v = (-lhy / boxHalf) * 0.5f + 0.5f;
+						ltx = hitSign; lty = 0.0f; ltz = 0.0f;
+						lbx = 0.0f; lby = -1.0f; lbz = 0.0f;
+					}
+
+					if (s_mappingSpace != 0) {
+						Dir3DToSphericalUV(lhx, lhy, lhz, u, v);
+					}
+
+					localToWorld(lnx, lny, lnz, wnX, wnY, wnZ);
+					localToWorld(ltx, lty, ltz, wtX, wtY, wtZ);
+					localToWorld(lbx, lby, lbz, wbX, wbY, wbZ);
+				}
+			}
+
+			if (!hit) continue;
+
+			if (!s_previewPBRShading || s_previewChannel != 0) {
+				float col[4];
+				SampleBilinearWrap(*activeChannelBuf, srcW, srcH, u, v, col);
+				outPix[0] = col[0];
+				outPix[1] = col[1];
+				outPix[2] = col[2];
+				outPix[3] = 1.0f;
+				continue;
+			}
+
+			float albedo[4], normSample[4], armSample[4];
+			SampleBilinearWrap(s_outAlbedoRGBA, srcW, srcH, u, v, albedo);
+			SampleBilinearWrap(s_outNormalRGBA, srcW, srcH, u, v, normSample);
+			SampleBilinearWrap(s_outArmRGBA,    srcW, srcH, u, v, armSample);
+
+			float ao        = Clamp01(armSample[0]);
+			float roughness = std::clamp(armSample[1], 0.05f, 1.0f);
+			float metallic  = Clamp01(armSample[2]);
+
+			float tnx = normSample[0] * 2.0f - 1.0f;
+			float tny = normSample[1] * 2.0f - 1.0f;
+			float tnz = std::max(0.01f, normSample[2] * 2.0f - 1.0f);
+
+			float nx = wtX * tnx + wbX * tny + wnX * tnz;
+			float ny = wtY * tnx + wbY * tny + wnY * tnz;
+			float nz = wtZ * tnx + wbZ * tny + wnZ * tnz;
+			float nLen = std::sqrt(nx * nx + ny * ny + nz * nz);
+			if (nLen > 0.0001f) { nx /= nLen; ny /= nLen; nz /= nLen; }
+
+			float vx = -rdX, vy = -rdY, vz = -rdZ;
+			float ndotl = std::max(0.0f, nx * lightX + ny * lightY + nz * lightZ);
+			float ndotv = std::max(0.001f, nx * vx + ny * vy + nz * vz);
+
+			float hx = lightX + vx, hy = lightY + vy, hz = lightZ + vz;
+			float hLen = std::sqrt(hx * hx + hy * hy + hz * hz);
+			if (hLen > 0.0001f) { hx /= hLen; hy /= hLen; hz /= hLen; }
+			float ndoth = std::max(0.0f, nx * hx + ny * hy + nz * hz);
+			float vdoth = std::max(0.0f, vx * hx + vy * hy + vz * hz);
+
+			float alpha = roughness * roughness;
+			float alpha2 = alpha * alpha;
+			float denom = ndoth * ndoth * (alpha2 - 1.0f) + 1.0f;
+			float D = alpha2 / std::max(0.0001f, 3.14159265f * denom * denom);
+			float k = (roughness + 1.0f) * (roughness + 1.0f) * 0.125f;
+			float G = (ndotv / (ndotv * (1.0f - k) + k)) * (ndotl / (ndotl * (1.0f - k) + k));
+			float fresnelPow = std::pow(1.0f - vdoth, 5.0f);
+
+			for (int c = 0; c < 3; c++) {
+				float f0 = Lerp(0.04f, albedo[c], metallic);
+				float F = f0 + (1.0f - f0) * fresnelPow;
+				float spec = (D * G * F) / std::max(0.001f, 4.0f * ndotv * std::max(0.001f, ndotl));
+				float kd = (1.0f - F) * (1.0f - metallic);
+				float diff = kd * albedo[c] / 3.14159265f;
+
+				float skyFactor = ny * 0.5f + 0.5f;
+				float ambColor = Lerp(0.14f, 0.34f, skyFactor);
+				float envSpec = Lerp(0.05f, 0.28f, (1.0f - roughness) * skyFactor) * f0;
+				float ambient = (albedo[c] * (1.0f - metallic * 0.7f) * ambColor + envSpec) * ao;
+
+				float lit = ambient + (diff + spec) * ndotl * 2.4f;
+				lit = lit / (1.0f + lit * 0.22f);
+				outPix[c] = Clamp01(lit);
+			}
+			outPix[3] = 1.0f;
+		}
+	}
+
+	std::vector<unsigned char> byteBuf;
+	ConvertFloatToByteRGBA(imgRGBA, byteBuf);
+	s_preview3DTex = Texture::UpdateOrCreateFromRGBA("__proc_preview_3d", byteBuf.data(), res, res);
+	s_preview3DDirty = false;
+}
+
 // PNG Export via DirectXTex
 // =====================================================================================
 static bool SaveRGBABufferToPNG(const std::vector<float>& floatRGBA, int width, int height, const std::string& filePath) {
@@ -1194,6 +1873,7 @@ static void SaveGraphToJson() {
 			   cereal::make_nvp("ExportName", exportName),
 			   cereal::make_nvp("Nodes", s_nodes),
 			   cereal::make_nvp("Links", s_links));
+			ar(cereal::make_nvp("MappingSpace", s_mappingSpace));
 			s_statusMessage = std::string("Saved graph: ") + ofn.lpstrFile;
 			s_statusTimer = 4.0f;
 		}
@@ -1223,6 +1903,8 @@ static void LoadGraphFromJson() {
 				   cereal::make_nvp("Nodes", s_nodes),
 				   cereal::make_nvp("Links", s_links));
 				strcpy_s(s_exportNameBuf, exportName.c_str());
+				s_mappingSpace = 0;
+				try { ar(cereal::make_nvp("MappingSpace", s_mappingSpace)); } catch (...) {}
 				s_graphDirty = true;
 				s_statusMessage = std::string("Loaded graph: ") + ofn.lpstrFile;
 				s_statusTimer = 4.0f;
@@ -1240,6 +1922,7 @@ static void LoadGraphFromJson() {
 static bool DrawNodeParameters(ProcNode& node, float itemWidth) {
 	bool changed = false;
 	ImGui::PushItemWidth(itemWidth);
+
 
 	switch (node.type) {
 	case ProcNodeType::PerlinNoise:
@@ -1413,6 +2096,10 @@ void ProceduralTextureEditor::RenderUI(bool* p_open) {
 		if (ImGui::MenuItem("Veined Polished Marble (Albedo + Normal)"))           LoadPresetMarble();
 		if (ImGui::MenuItem("Cracked Lava / Basalt Rock (Albedo + Normal + AO)"))  LoadPresetCrackedLava();
 		if (ImGui::MenuItem("Rusted Metal Plate (Albedo + Normal + ARM)"))         LoadPresetRustedMetal();
+		ImGui::Separator();
+		ImGui::TextDisabled("3D Spherical Presets (SkyDome / Sphere)");
+		if (ImGui::MenuItem("SkyDome Cloudy Sky (3D Spherical)"))                  LoadPresetSkyDomeClouds();
+		if (ImGui::MenuItem("Planet / Asteroid Surface (3D Spherical + PBR)"))     LoadPresetPlanetSurface();
 		ImGui::EndPopup();
 	}
 
@@ -1427,6 +2114,19 @@ void ProceduralTextureEditor::RenderUI(bool* p_open) {
 	ImGui::SameLine();
 	if (ImGui::Button("Reset View")) {
 		s_canvasScroll = ImVec2(0.0f, 0.0f);
+	}
+
+	ImGui::SameLine(0.0f, 16.0f);
+	ImGui::TextUnformatted("Mapping:");
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(210.0f);
+	const char* toolbarMappingModes[] = {
+		"2D Planar (Tileable)",
+		"3D Spherical (SkyDome / Sphere)",
+		"3D Box / Cube-Sphere"
+	};
+	if (ImGui::Combo("##ToolbarMappingSpace", &s_mappingSpace, toolbarMappingModes, IM_ARRAYSIZE(toolbarMappingModes))) {
+		s_graphDirty = true;
 	}
 
 	if (s_statusTimer > 0.0f) {
@@ -1493,7 +2193,10 @@ void ProceduralTextureEditor::RenderUI(bool* p_open) {
 			ImGui::SetCursorScreenPos(nodeScreenPos);
 			ImGui::InvisibleButton("##HeaderDrag", ImVec2(nodeWidth, 26.0f));
 			if (ImGui::IsItemActive()) {
-				s_selectedNodeId = node.id;
+				if (s_selectedNodeId != node.id) {
+					s_selectedNodeId = node.id;
+					s_preview3DDirty = true;
+				}
 				if (ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
 					node.pos.x += ImGui::GetIO().MouseDelta.x;
 					node.pos.y += ImGui::GetIO().MouseDelta.y;
@@ -1594,7 +2297,10 @@ void ProceduralTextureEditor::RenderUI(bool* p_open) {
 			ImGui::SetCursorScreenPos(ImVec2(nodeScreenPos.x + 10.0f, bodyY));
 			ImGui::BeginGroup();
 			if (DrawNodeParameters(node, 118.0f)) {
-				s_selectedNodeId = node.id;
+				if (s_selectedNodeId != node.id) {
+					s_selectedNodeId = node.id;
+					s_preview3DDirty = true;
+				}
 				s_graphDirty = true;
 			}
 			ImGui::EndGroup();
@@ -1728,12 +2434,52 @@ void ProceduralTextureEditor::RenderUI(bool* p_open) {
 	// ---------------------------------------------------------------------------------
 	ImGui::BeginChild("PreviewAndExportPane", ImVec2(rightPaneWidth, avail.y), true);
 	{
-		ImGui::TextUnformatted("2D Texture Preview");
+		ImGui::TextUnformatted("Mapping Space:");
+		const char* mappingNames[] = {
+			"2D Planar (Tileable)",
+			"3D Spherical (SkyDome / Sphere)",
+			"3D Box / Cube-Sphere"
+		};
+		ImGui::SetNextItemWidth(-1.0f);
+		if (ImGui::Combo("##MappingSpacePane", &s_mappingSpace, mappingNames, IM_ARRAYSIZE(mappingNames))) {
+			s_graphDirty = true;
+		}
+
+		ImGui::Spacing();
+		ImGui::TextUnformatted("Preview View & Channel:");
+		const char* shapeNames[] = {
+			"2D Flat",
+			"3D Sphere",
+			"3D Cube",
+			"3D SkyDome (Inside)"
+		};
+		ImGui::SetNextItemWidth(-1.0f);
+		if (ImGui::Combo("##PreviewShapeMode", &s_previewShapeMode, shapeNames, IM_ARRAYSIZE(shapeNames))) {
+			s_preview3DDirty = true;
+		}
 		const char* channelNames[] = { "Output Albedo", "Output Normal", "Output ARM", "Selected Node" };
 		ImGui::SetNextItemWidth(-1.0f);
-		ImGui::Combo("##PreviewChannel", &s_previewChannel, channelNames, IM_ARRAYSIZE(channelNames));
+		if (ImGui::Combo("##PreviewChannel", &s_previewChannel, channelNames, IM_ARRAYSIZE(channelNames))) {
+			s_preview3DDirty = true;
+		}
 
-		ImGui::Checkbox("2x2 Tiling Preview", &s_tilePreview2x2);
+		if (s_previewShapeMode == 0) {
+			ImGui::Checkbox("2x2 Tiling Preview", &s_tilePreview2x2);
+		} else {
+			if (s_previewShapeMode != 3 && s_previewChannel == 0) {
+				if (ImGui::Checkbox("PBR Lighting", &s_previewPBRShading)) {
+					s_preview3DDirty = true;
+				}
+				ImGui::SameLine();
+			}
+			if (ImGui::SmallButton("Reset 3D")) {
+				s_previewYaw = 0.45f;
+				s_previewPitch = 0.25f;
+				s_lightYaw = -0.65f;
+				s_lightPitch = 0.55f;
+				s_preview3DDirty = true;
+			}
+		}
 
 		const TEXTURE* previewTex = s_outAlbedoTex;
 		if (s_previewChannel == 1) previewTex = s_outNormalTex;
@@ -1744,6 +2490,36 @@ void ProceduralTextureEditor::RenderUI(bool* p_open) {
 		}
 
 		float previewSize = rightPaneWidth - 20.0f;
+		if (s_previewShapeMode != 0) {
+			if (s_preview3DDirty || !s_preview3DTex) {
+				Render3DPreviewImage();
+			}
+			if (s_preview3DTex) {
+				void* srv3d = Renderer::GetTextureSRV(s_preview3DTex);
+				if (srv3d) {
+					ImVec2 p0 = ImGui::GetCursorScreenPos();
+					ImGui::InvisibleButton("##3DPreviewCanvas", ImVec2(previewSize, previewSize),
+						ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight);
+					if (ImGui::IsItemActive()) {
+						ImVec2 delta = ImGui::GetIO().MouseDelta;
+						if (ImGui::IsMouseDragging(ImGuiMouseButton_Left, 0.0f)) {
+							s_previewYaw   += delta.x * 0.012f;
+							s_previewPitch  = std::clamp(s_previewPitch + delta.y * 0.012f, -1.45f, 1.45f);
+							s_preview3DDirty = true;
+						}
+						if (ImGui::IsMouseDragging(ImGuiMouseButton_Right, 0.0f)) {
+							s_lightYaw   += delta.x * 0.014f;
+							s_lightPitch  = std::clamp(s_lightPitch - delta.y * 0.014f, -1.45f, 1.45f);
+							s_preview3DDirty = true;
+						}
+					}
+					ImDrawList* dl = ImGui::GetWindowDrawList();
+					dl->AddImage(srv3d, p0, ImVec2(p0.x + previewSize, p0.y + previewSize));
+					dl->AddRect(p0, ImVec2(p0.x + previewSize, p0.y + previewSize), IM_COL32(80, 90, 110, 180));
+					ImGui::TextDisabled("L-Drag: Rotate 3D | R-Drag: Move Light");
+				}
+			}
+		} else
 		if (previewTex) {
 			void* srv = Renderer::GetTextureSRV(previewTex);
 			if (srv) {
