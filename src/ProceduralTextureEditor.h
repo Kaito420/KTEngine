@@ -1,4 +1,4 @@
-﻿//=====================================================================================
+//=====================================================================================
 // ProceduralTextureEditor.h
 // Author:Kaito Aoki
 // Date:2026/10/26
@@ -29,7 +29,8 @@ enum class ProcNodeType : int {
 	NormalMap,
 
 	// Output
-	Output
+	Output,
+	CustomHLSL
 };
 
 struct ProcNodeLink {
@@ -69,6 +70,7 @@ struct ProcNode {
 	float colorA[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 	float colorB[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	float colorC[4] = { 0.5f, 0.5f, 0.5f, 1.0f };
+	std::string customHlslFile = "";
 
 	// Runtime evaluation cache (not serialized)
 	std::vector<float> bufferRGBA; // size = evalWidth * evalHeight * 4
@@ -86,6 +88,7 @@ struct ProcNode {
 		   colorB[0], colorB[1], colorB[2], colorB[3],
 		   colorC[0], colorC[1], colorC[2], colorC[3]);
 		type = static_cast<ProcNodeType>(typeInt);
+		try { ar(customHlslFile); } catch (...) {}
 	}
 };
 
