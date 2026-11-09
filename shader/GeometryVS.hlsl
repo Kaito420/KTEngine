@@ -26,7 +26,8 @@ PS_IN main(VS_IN input)
         output.TexCoord.y = 1.0f - output.TexCoord.y;
     }
     
-    output.Diffuse = input.Diffuse;
+    // Pass local 3D vertex position in Diffuse.xyz for 3D Solid Texture mapping
+    output.Diffuse = float4(position.xyz, 1.0f);
     
     return output;
 }

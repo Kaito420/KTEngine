@@ -117,7 +117,8 @@
                                                     "NormalMapPath": "",
                                                     "MetallicMapPath": "",
                                                     "RoughnessMapPath": "",
-                                                    "ARMMapPath": ""
+                                                    "ARMMapPath": "",
+                                                    "MappingMode": 0
                                                 }
                                             }
                                         },
@@ -295,7 +296,8 @@
                                                 "NormalMapPath": "asset/texture/Drill_01_nor_dx_4k.dds",
                                                 "MetallicMapPath": "",
                                                 "RoughnessMapPath": "",
-                                                "ARMMapPath": ""
+                                                "ARMMapPath": "",
+                                                "MappingMode": 0
                                             }
                                         }
                                     },
@@ -390,7 +392,8 @@
                                                 "NormalMapPath": "",
                                                 "MetallicMapPath": "",
                                                 "RoughnessMapPath": "",
-                                                "ARMMapPath": ""
+                                                "ARMMapPath": "",
+                                                "MappingMode": 0
                                             }
                                         }
                                     },
@@ -481,7 +484,8 @@
                                                 "NormalMapPath": "",
                                                 "MetallicMapPath": "",
                                                 "RoughnessMapPath": "",
-                                                "ARMMapPath": ""
+                                                "ARMMapPath": "",
+                                                "MappingMode": 0
                                             }
                                         }
                                     },
@@ -574,7 +578,8 @@
                                                 "NormalMapPath": "",
                                                 "MetallicMapPath": "",
                                                 "RoughnessMapPath": "",
-                                                "ARMMapPath": ""
+                                                "ARMMapPath": "",
+                                                "MappingMode": 0
                                             }
                                         }
                                     },
@@ -691,7 +696,8 @@
                                                 "NormalMapPath": "asset/texture/proc_texture_normal.png",
                                                 "MetallicMapPath": "",
                                                 "RoughnessMapPath": "",
-                                                "ARMMapPath": "asset/texture/proc_texture_arm.png"
+                                                "ARMMapPath": "asset/texture/proc_texture_arm.png",
+                                                "MappingMode": 1
                                             }
                                         }
                                     },
@@ -732,20 +738,20 @@
                                         "z": 0.0
                                     },
                                     "Scale": {
-                                        "x": 1.0000178813934327,
-                                        "y": 1.0000826120376588,
-                                        "z": 1.000054121017456
+                                        "x": 1.000043511390686,
+                                        "y": 1.0000966787338257,
+                                        "z": 1.0000511407852173
                                     },
                                     "Rotation": {
-                                        "x": 74.73616027832031,
-                                        "y": 50.711875915527347,
-                                        "z": 33.84906768798828
+                                        "x": -81.47469329833985,
+                                        "y": 24.351659774780275,
+                                        "z": -66.74855041503906
                                     },
                                     "Quaternion": {
-                                        "x": 0.6237881779670715,
-                                        "y": 0.16594015061855317,
-                                        "z": -0.039582449942827228,
-                                        "w": 0.7627485990524292
+                                        "x": -0.6206299662590027,
+                                        "y": -0.217462420463562,
+                                        "z": -0.29250138998031618,
+                                        "w": 0.6942417025566101
                                     }
                                 },
                                 "Components": [
@@ -784,7 +790,8 @@
                                                 "NormalMapPath": "asset/texture/proc_texture_wood_03_normal.png",
                                                 "MetallicMapPath": "",
                                                 "RoughnessMapPath": "",
-                                                "ARMMapPath": "asset/texture/proc_texture_wood_03_arm.png"
+                                                "ARMMapPath": "asset/texture/proc_texture_wood_03_arm.png",
+                                                "MappingMode": 1
                                             }
                                         }
                                     },

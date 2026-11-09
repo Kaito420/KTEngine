@@ -1,4 +1,4 @@
-//=====================================================================================
+﻿//=====================================================================================
 // ProceduralTextureEditor.cpp
 // Author:Kaito Aoki
 // Date:2026/10/26
@@ -1358,15 +1358,18 @@ float4 Node_Gradient(float2 uv, float3 pos3D, int mode, float angleDeg, float re
 			float proj = (-pos3D.y * ca + pos3D.x * sa) * 0.5f + 0.5f;
 			t = (repeatScale <= 1.05f) ? saturate(proj * repeatScale) : frac(proj * repeatScale);
 		} else {
-			float d = length(pos3D.xz);
-			t = saturate(d * max(0.1f, repeatScale));
+			float2 centerXZ = float2(sa * 0.65f, (1.0f - ca) * 0.45f);
+			float d = length(pos3D.xz - centerXZ);
+			float scaled = d * max(0.1f, repeatScale);
+			t = (repeatScale <= 1.05f) ? saturate(scaled) : frac(scaled);
 		}
 	} else if (mode == 0) {
 		float2 d = uv - 0.5f;
 		t = frac(((d.x * ca - d.y * sa) + 0.5f) * max(0.1f, repeatScale));
 	} else {
 		float2 d = uv - 0.5f;
-		t = saturate(length(d) * 2.0f * max(0.1f, repeatScale));
+		float scaled = length(d) * 2.0f * max(0.1f, repeatScale);
+		t = (repeatScale <= 1.05f) ? saturate(scaled) : frac(scaled);
 	}
 	return float4(lerp(colorA, colorB, t), 1.0f);
 }
@@ -2219,8 +2222,11 @@ static void EvaluateSingleNode(ProcNode& node, int width, int height) {
 						float proj = (-py * ca + px * sa) * 0.5f + 0.5f;
 						t = (node.scaleX <= 1.05f) ? Clamp01(proj * node.scaleX) : Frac(proj * node.scaleX);
 					} else {
-						float d = std::sqrt(px * px + pz * pz);
-						t = Clamp01(d * std::max(0.1f, node.scaleX));
+						float cx = sa * 0.65f;
+						float cz = (1.0f - ca) * 0.45f;
+						float d = std::sqrt((px - cx) * (px - cx) + (pz - cz) * (pz - cz));
+						float scaled = d * std::max(0.1f, node.scaleX);
+						t = (node.scaleX <= 1.05f) ? Clamp01(scaled) : Frac(scaled);
 					}
 				} else if (node.mode == 0) {
 					float du = u - 0.5f;
@@ -2229,7 +2235,8 @@ static void EvaluateSingleNode(ProcNode& node, int width, int height) {
 				} else {
 					float du = u - 0.5f;
 					float dv = v - 0.5f;
-					t = Clamp01(std::sqrt(du * du + dv * dv) * 2.0f * std::max(0.1f, node.scaleX));
+					float scaled = std::sqrt(du * du + dv * dv) * 2.0f * std::max(0.1f, node.scaleX);
+					t = (node.scaleX <= 1.05f) ? Clamp01(scaled) : Frac(scaled);
 				}
 				float* dst = &node.bufferRGBA[(y * width + x) * 4];
 				for (int c = 0; c < 3; c++) {
@@ -2783,21 +2790,21 @@ static void Render3DPreviewImage() {
 
 					if (hitAxis == 0) {
 						lnx = hitSign;
-						u = (lhz * (-hitSign) / boxHalf) * 0.5f + 0.5f;
+						u = (lhz * hitSign / boxHalf) * 0.5f + 0.5f;
 						v = (-lhy / boxHalf) * 0.5f + 0.5f;
-						ltx = 0.0f; lty = 0.0f; ltz = -hitSign;
+						ltx = 0.0f; lty = 0.0f; ltz = hitSign;
 						lbx = 0.0f; lby = -1.0f; lbz = 0.0f;
 					} else if (hitAxis == 1) {
 						lny = hitSign;
 						u = (lhx / boxHalf) * 0.5f + 0.5f;
-						v = (lhz * hitSign / boxHalf) * 0.5f + 0.5f;
+						v = (-lhz * hitSign / boxHalf) * 0.5f + 0.5f;
 						ltx = 1.0f; lty = 0.0f; ltz = 0.0f;
-						lbx = 0.0f; lby = 0.0f; lbz = hitSign;
+						lbx = 0.0f; lby = 0.0f; lbz = -hitSign;
 					} else {
 						lnz = hitSign;
-						u = (lhx * hitSign / boxHalf) * 0.5f + 0.5f;
+						u = (-lhx * hitSign / boxHalf) * 0.5f + 0.5f;
 						v = (-lhy / boxHalf) * 0.5f + 0.5f;
-						ltx = hitSign; lty = 0.0f; ltz = 0.0f;
+						ltx = -hitSign; lty = 0.0f; ltz = 0.0f;
 						lbx = 0.0f; lby = -1.0f; lbz = 0.0f;
 					}
 
@@ -2965,6 +2972,7 @@ static void ExportProceduralTextures(bool applyToSelectedObject) {
 				if (okAlbedo) shader->SetTexturePath(albedoPath);
 				if (okNormal) shader->SetNormalMapPath(normalPath);
 				if (okArm)    shader->SetARMMapPath(armPath);
+				shader->SetMappingMode((s_mappingSpace != 0) ? 1 : 0);
 			}
 		}
 	}
@@ -3102,6 +3110,8 @@ static bool DrawNodeParameters(ProcNode& node, float itemWidth) {
 		changed |= ImGui::Combo("Type", &node.mode, modes, IM_ARRAYSIZE(modes));
 		if (node.mode == 0) {
 			changed |= ImGui::SliderFloat("Angle", &node.paramA, 0.0f, 360.0f, "%.0f deg");
+		} else {
+			changed |= ImGui::SliderFloat("Axis Offset", &node.paramA, 0.0f, 180.0f, "%.0f deg");
 		}
 		changed |= ImGui::SliderFloat("Repeat", &node.scaleX, 0.5f, 16.0f, "%.1f");
 		changed |= ImGui::ColorEdit3("Start", node.colorA, ImGuiColorEditFlags_NoInputs);

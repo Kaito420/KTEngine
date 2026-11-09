@@ -169,7 +169,7 @@ void ModelRenderer::Render() const
 			material.FlipV = shaderComp->GetFlipV() ? 1 : 0;
 			material.HasNormalMap = shaderComp->GetNormalMap() ? 1 : 0;
 			material.HasMetallicMap = shaderComp->GetARMMap() ? 1 : 0;
-			material.HasRoughnessMap = 0;
+			material.HasRoughnessMap = shaderComp->GetMappingMode();
 		} else {
 			material.BaseColor = { 1.0f, 1.0f, 1.0f, 1.0f };
 			material.HasNormalMap = 0;

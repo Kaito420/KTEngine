@@ -1,4 +1,4 @@
-//=====================================================================================
+﻿//=====================================================================================
 // Shader.h
 // Author:Kaito Aoki
 // Date:2026/01/29
@@ -30,6 +30,7 @@ private:
 	float _roughness = 0.5f;
 	float _normalWeight = 1.0f;
 	int _shadingModelID = 0; // 0: Smooth, 1: Toon, 2: Ambient Only, 3: Unlit
+	int _mappingMode = 0;    // 0: 2D Standard (Mesh UV), 1: 3D Solid (Spherical / Box)
 	bool _flipU = false;
 	bool _flipV = false;
 
@@ -69,6 +70,8 @@ public:
 	void SetNormalWeight(float val) { _normalWeight = val; }
 	int GetShadingModelID() const { return _shadingModelID; }
 	void SetShadingModelID(int val) { _shadingModelID = val; }
+	int GetMappingMode() const { return _mappingMode; }
+	void SetMappingMode(int val) { _mappingMode = val; }
 	bool GetFlipU() const { return _flipU; }
 	void SetFlipU(bool val) { _flipU = val; }
 	bool GetFlipV() const { return _flipV; }
@@ -119,6 +122,11 @@ public:
 			ar(cereal::make_nvp("ARMMapPath", _armMapPath));
 		} catch (...) {
 			_armMapPath = "";
+		}
+		try {
+			ar(cereal::make_nvp("MappingMode", _mappingMode));
+		} catch (...) {
+			_mappingMode = 0;
 		}
 
 		if (!_texturePath.empty()) {

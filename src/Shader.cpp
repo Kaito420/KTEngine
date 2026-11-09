@@ -1,4 +1,4 @@
-//=====================================================================================
+﻿//=====================================================================================
 // Shader.cpp
 // Author:Kaito Aoki
 // Date:2026/01/29
@@ -76,6 +76,7 @@ void Shader::CopyFrom(const Shader* source) {
 	_roughness = source->_roughness;
 	_normalWeight = source->_normalWeight;
 	_shadingModelID = source->_shadingModelID;
+	_mappingMode = source->_mappingMode;
 	_flipU = source->_flipU;
 	_flipV = source->_flipV;
 
@@ -167,6 +168,9 @@ void Shader::ShowUI(){
 	
 	const char* shadingModels[] = { "Smooth", "Toon", "Ambient Only", "Unlit" };
 	ImGui::Combo("Shading Model", &_shadingModelID, shadingModels, IM_ARRAYSIZE(shadingModels));
+
+	const char* mappingModes[] = { "2D Standard (Mesh UV)", "3D Solid (Spherical / Box)" };
+	ImGui::Combo("Texture Mapping", &_mappingMode, mappingModes, IM_ARRAYSIZE(mappingModes));
 
 	ImGui::Checkbox("Flip UV U", &_flipU);
 	ImGui::SameLine();
