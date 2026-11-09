@@ -110,7 +110,7 @@
                                                     "Specular": 0.5,
                                                     "Roughness": 0.5,
                                                     "NormalWeight": 1.0,
-                                                    "ShadingModelID": 0,
+                                                    "ShadingModelID": 3,
                                                     "FlipU": false,
                                                     "FlipV": false,
                                                     "TexturePath": "asset/texture/sky2.jpg",
@@ -185,7 +185,7 @@
                                     "Direction": {
                                         "x": 0.0,
                                         "y": -1.0,
-                                        "z": 0.0,
+                                        "z": -1.100000023841858,
                                         "w": 0.0
                                     },
                                     "Diffuse": {
@@ -615,6 +615,188 @@
                                                     "asset/animation/Human_Walking.fbx",
                                                     "asset/animation/Human_Running.fbx"
                                                 ]
+                                            }
+                                        }
+                                    }
+                                ],
+                                "ParentID": -1
+                            }
+                        }
+                    },
+                    {
+                        "polymorphic_id": 1073741824,
+                        "ptr_wrapper": {
+                            "id": 2147483668,
+                            "data": {
+                                "ID": 10,
+                                "Name": "GameObject(2)",
+                                "Active": true,
+                                "ExecuteInEditor": false,
+                                "Transform": {
+                                    "Position": {
+                                        "x": 1.1877604722976685,
+                                        "y": 1.1335783004760743,
+                                        "z": 0.0
+                                    },
+                                    "Scale": {
+                                        "x": 1.0,
+                                        "y": 1.0,
+                                        "z": 1.0
+                                    },
+                                    "Rotation": {
+                                        "x": 0.0,
+                                        "y": 0.0,
+                                        "z": -0.0
+                                    },
+                                    "Quaternion": {
+                                        "x": -0.0,
+                                        "y": 0.0,
+                                        "z": -0.0,
+                                        "w": 1.0
+                                    }
+                                },
+                                "Components": [
+                                    {
+                                        "polymorphic_id": 3,
+                                        "ptr_wrapper": {
+                                            "id": 2147483669,
+                                            "data": {
+                                                "value0": {
+                                                    "Active": true,
+                                                    "ExecuteInEditor": false
+                                                },
+                                                "VertexShaderID": "DirectionalLight",
+                                                "VertexLayoutID": "DirectionalLight",
+                                                "PixelShaderID": "DirectionalLight",
+                                                "BaseColor": {
+                                                    "x": 1.0,
+                                                    "y": 1.0,
+                                                    "z": 1.0,
+                                                    "w": 1.0
+                                                },
+                                                "EmissionColor": {
+                                                    "x": 0.0,
+                                                    "y": 0.0,
+                                                    "z": 0.0,
+                                                    "w": 0.0
+                                                },
+                                                "Metallic": 0.0,
+                                                "Specular": 0.5,
+                                                "Roughness": 0.5,
+                                                "NormalWeight": 1.0,
+                                                "ShadingModelID": 0,
+                                                "FlipU": false,
+                                                "FlipV": false,
+                                                "TexturePath": "asset/texture/proc_texture.png",
+                                                "NormalMapPath": "asset/texture/proc_texture_normal.png",
+                                                "MetallicMapPath": "",
+                                                "RoughnessMapPath": "",
+                                                "ARMMapPath": "asset/texture/proc_texture_arm.png"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 6,
+                                        "ptr_wrapper": {
+                                            "id": 2147483670,
+                                            "data": {
+                                                "value0": {
+                                                    "Active": true,
+                                                    "ExecuteInEditor": false
+                                                },
+                                                "FileName": "asset/model/torus.obj",
+                                                "FlipWinding": false,
+                                                "FlipNormals": false,
+                                                "CullMode": 0
+                                            }
+                                        }
+                                    }
+                                ],
+                                "ParentID": -1
+                            }
+                        }
+                    },
+                    {
+                        "polymorphic_id": 7,
+                        "ptr_wrapper": {
+                            "id": 2147483671,
+                            "data": {
+                                "ID": 11,
+                                "Name": "Cube(1)",
+                                "Active": true,
+                                "ExecuteInEditor": false,
+                                "Transform": {
+                                    "Position": {
+                                        "x": 0.0,
+                                        "y": 2.0235047340393068,
+                                        "z": 0.0
+                                    },
+                                    "Scale": {
+                                        "x": 1.0000178813934327,
+                                        "y": 1.0000826120376588,
+                                        "z": 1.000054121017456
+                                    },
+                                    "Rotation": {
+                                        "x": 74.73616027832031,
+                                        "y": 50.711875915527347,
+                                        "z": 33.84906768798828
+                                    },
+                                    "Quaternion": {
+                                        "x": 0.6237881779670715,
+                                        "y": 0.16594015061855317,
+                                        "z": -0.039582449942827228,
+                                        "w": 0.7627485990524292
+                                    }
+                                },
+                                "Components": [
+                                    {
+                                        "polymorphic_id": 3,
+                                        "ptr_wrapper": {
+                                            "id": 2147483672,
+                                            "data": {
+                                                "value0": {
+                                                    "Active": true,
+                                                    "ExecuteInEditor": false
+                                                },
+                                                "VertexShaderID": "DirectionalLight",
+                                                "VertexLayoutID": "DirectionalLight",
+                                                "PixelShaderID": "DirectionalLight",
+                                                "BaseColor": {
+                                                    "x": 1.0,
+                                                    "y": 1.0,
+                                                    "z": 1.0,
+                                                    "w": 1.0
+                                                },
+                                                "EmissionColor": {
+                                                    "x": 0.0,
+                                                    "y": 0.0,
+                                                    "z": 0.0,
+                                                    "w": 0.0
+                                                },
+                                                "Metallic": 0.0,
+                                                "Specular": 0.5,
+                                                "Roughness": 0.5,
+                                                "NormalWeight": 1.0,
+                                                "ShadingModelID": 0,
+                                                "FlipU": false,
+                                                "FlipV": false,
+                                                "TexturePath": "asset/texture/proc_texture_wood_03.png",
+                                                "NormalMapPath": "asset/texture/proc_texture_wood_03_normal.png",
+                                                "MetallicMapPath": "",
+                                                "RoughnessMapPath": "",
+                                                "ARMMapPath": "asset/texture/proc_texture_wood_03_arm.png"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 8,
+                                        "ptr_wrapper": {
+                                            "id": 2147483673,
+                                            "data": {
+                                                "value0": {
+                                                    "Active": true,
+                                                    "ExecuteInEditor": false
+                                                }
                                             }
                                         }
                                     }
