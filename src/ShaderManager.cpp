@@ -3,7 +3,9 @@
 #include <cassert>
 #include <cstdio>
 #include <filesystem>
+#include <fstream>
 #include <algorithm>
+#include <d3dcompiler.h>
 
 static std::string ExtractShaderStem(const char* fileName) {
     if (!fileName) return "";
@@ -18,13 +20,24 @@ static void RegisterStemMapping(std::map<std::string, std::vector<std::string>>&
     }
 }
 
+static bool IsCustomGeometryPixelShaderID(const std::string& psId) {
+    if (psId.empty() || psId == "Geometry" || psId == "DirectionalLight" ||
+        psId == "VertexDirectionalLightingPS" || psId == "UnlitTexture" ||
+        psId == "UnlitTexturePS" || psId == "UnlitColor" || psId == "UnlitColorPS" ||
+        psId == "Toon" || psId == "ToonPS") {
+        return false;
+    }
+    if (psId.size() >= 4 && _strnicmp(psId.c_str(), "Proc", 4) == 0) {
+        return true;
+    }
+    return false;
+}
+
 void ShaderManager::LoadVertexShader(const std::string& id, const char* fileName) {
     RegisterStemMapping(_vsFileToIds, ExtractShaderStem(fileName), id);
     FILE* file = nullptr;
     fopen_s(&file, fileName, "rb");
     if (!file) {
-        // もしshader/フォルダの中にない場合は、実行フォルダパスや異なる階層を探すための代替処理
-        // （KTEngineではshader/フォルダにHLSLがあり、csoはx64/Debugなどのビルド出力ディレクトリにあることが多い）
         char altPath[512];
         sprintf_s(altPath, "shader/%s", fileName);
         fopen_s(&file, altPath, "rb");
@@ -55,8 +68,81 @@ void ShaderManager::LoadVertexShader(const std::string& id, const char* fileName
     _vertexShaderBinaries[id] = std::move(buffer);
 }
 
+bool ShaderManager::CompileAndRegisterPixelShaderHLSL(const std::string& psId, const std::filesystem::path& hlslPath, std::string& outError) {
+    namespace fs = std::filesystem;
+    std::error_code ec;
+    fs::path resolvedPath = hlslPath;
+    if (!fs::exists(resolvedPath, ec)) {
+        fs::path alt1 = fs::path("shader") / hlslPath.filename();
+        fs::path alt2 = fs::path("../shader") / hlslPath.filename();
+        if (fs::exists(alt1, ec)) resolvedPath = alt1;
+        else if (fs::exists(alt2, ec)) resolvedPath = alt2;
+        else {
+            outError = "HLSL file not found: " + hlslPath.string();
+            return false;
+        }
+    }
+
+    std::string stem = resolvedPath.stem().string();
+    RegisterStemMapping(_psFileToIds, stem, psId);
+    if (psId != stem) {
+        RegisterStemMapping(_psFileToIds, stem, stem);
+    }
+
+    UINT compileFlags = D3DCOMPILE_ENABLE_STRICTNESS;
+#ifdef _DEBUG
+    compileFlags |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+#else
+    compileFlags |= D3DCOMPILE_OPTIMIZATION_LEVEL3;
+#endif
+
+    ComPtr<ID3DBlob> shaderBlob;
+    ComPtr<ID3DBlob> errorBlob;
+    std::wstring wPath = resolvedPath.wstring();
+    HRESULT hr = D3DCompileFromFile(
+        wPath.c_str(),
+        nullptr,
+        D3D_COMPILE_STANDARD_FILE_INCLUDE,
+        "main",
+        "ps_5_0",
+        compileFlags,
+        0,
+        &shaderBlob,
+        &errorBlob
+    );
+
+    if (FAILED(hr) || !shaderBlob) {
+        if (errorBlob && errorBlob->GetBufferPointer()) {
+            outError.assign((const char*)errorBlob->GetBufferPointer(), errorBlob->GetBufferSize());
+        } else {
+            outError = "D3DCompileFromFile failed for " + resolvedPath.string();
+        }
+        return false;
+    }
+
+    std::vector<unsigned char> binary(shaderBlob->GetBufferSize());
+    memcpy(binary.data(), shaderBlob->GetBufferPointer(), binary.size());
+
+    // Save .cso next to .hlsl
+    fs::path csoPath = resolvedPath.parent_path() / (stem + ".cso");
+    {
+        std::ofstream ofs(csoPath, std::ios::binary);
+        if (ofs.is_open()) {
+            ofs.write((const char*)binary.data(), binary.size());
+        }
+    }
+
+    Renderer::FlushGPUDX12();
+    _pixelShaderBinaries[psId] = binary;
+    _pixelShaderBinaries[stem] = binary;
+    ClearPSOCache();
+    outError = "Compiled " + resolvedPath.filename().string() + " successfully (ps_5_0).";
+    return true;
+}
+
 void ShaderManager::LoadPixelShader(const std::string& id, const char* fileName) {
-    RegisterStemMapping(_psFileToIds, ExtractShaderStem(fileName), id);
+    std::string stem = ExtractShaderStem(fileName);
+    RegisterStemMapping(_psFileToIds, stem, id);
     FILE* file = nullptr;
     fopen_s(&file, fileName, "rb");
     if (!file) {
@@ -70,10 +156,22 @@ void ShaderManager::LoadPixelShader(const std::string& id, const char* fileName)
     }
 
     if (!file) {
+        // Attempt on-the-fly compilation if shader/<stem>.hlsl exists
+        std::filesystem::path hlslCandidate = std::filesystem::path("shader") / (stem + ".hlsl");
+        std::error_code ec;
+        if (std::filesystem::exists(hlslCandidate, ec)) {
+            std::string compileErr;
+            if (CompileAndRegisterPixelShaderHLSL(id, hlslCandidate, compileErr)) {
+                return;
+            }
+        }
+
         OutputDebugStringA("Pixel Shader file not found: ");
         OutputDebugStringA(fileName);
-        OutputDebugStringA(" (Fallback to UnlitTexturePS)\n");
-        if (_pixelShaderBinaries.count("UnlitTexture") > 0) {
+        OutputDebugStringA(" (Fallback to Geometry / UnlitTexturePS)\n");
+        if (IsCustomGeometryPixelShaderID(id) && _pixelShaderBinaries.count("Geometry") > 0) {
+            _pixelShaderBinaries[id] = _pixelShaderBinaries["Geometry"];
+        } else if (_pixelShaderBinaries.count("UnlitTexture") > 0) {
             _pixelShaderBinaries[id] = _pixelShaderBinaries["UnlitTexture"];
         }
         return;
@@ -111,10 +209,12 @@ ID3D12PipelineState* ShaderManager::GetPipelineState(
     std::string actualVsId = vsId;
     std::string actualPsId = psId;
 
-    // ジオメトリパス中かつ不透明オブジェクトの場合、自動的にジオメトリパス用PSOに切り替える
+    // ジオメトリパス中かつ不透明オブジェクトの場合、VSはGeometry固定、PSはカスタムG-Buffer PS指定があればそれを使用
     if (Renderer::IsGeometryPass() && blendMode == 0) {
         actualVsId = "Geometry";
-        actualPsId = "Geometry";
+        if (!IsCustomGeometryPixelShaderID(psId)) {
+            actualPsId = "Geometry";
+        }
     }
 
     PipelineStateKey key = { actualVsId, actualPsId, blendMode, cullMode, depthEnable, depthWrite, topologyType };
@@ -140,12 +240,16 @@ ID3D12PipelineState* ShaderManager::GetPipelineState(
         
         // 予備チェック
         if (_vertexShaderBinaries.count(actualVsId) == 0 || _pixelShaderBinaries.count(actualPsId) == 0) {
-            OutputDebugStringA("Requested VS/PS binary not found in map! Falling back to UnlitTexture.\n");
+            OutputDebugStringA("Requested VS/PS binary not found in map! Falling back to Geometry/UnlitTexture.\n");
             if (_vertexShaderBinaries.count(actualVsId) == 0 && _vertexShaderBinaries.count("UnlitTexture") > 0) {
                 _vertexShaderBinaries[actualVsId] = _vertexShaderBinaries["UnlitTexture"];
             }
-            if (_pixelShaderBinaries.count(actualPsId) == 0 && _pixelShaderBinaries.count("UnlitTexture") > 0) {
-                _pixelShaderBinaries[actualPsId] = _pixelShaderBinaries["UnlitTexture"];
+            if (_pixelShaderBinaries.count(actualPsId) == 0) {
+                if (actualVsId == "Geometry" && _pixelShaderBinaries.count("Geometry") > 0) {
+                    _pixelShaderBinaries[actualPsId] = _pixelShaderBinaries["Geometry"];
+                } else if (_pixelShaderBinaries.count("UnlitTexture") > 0) {
+                    _pixelShaderBinaries[actualPsId] = _pixelShaderBinaries["UnlitTexture"];
+                }
             }
         }
     }
@@ -256,19 +360,17 @@ ID3D12PipelineState* ShaderManager::GetPipelineState(
     ComPtr<ID3D12PipelineState> pso;
     HRESULT hr = device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pso));
     if (FAILED(hr)) {
-        // 詳細なエラーログを出力
         FILE* fp = nullptr;
         fopen_s(&fp, "d3d12_log.txt", "a");
         if (fp) {
             fprintf(fp, "\n--- CreateGraphicsPipelineState Failed Details ---\n");
-            fprintf(fp, "VS ID: %s, PS ID: %s\n", vsId.c_str(), psId.c_str());
+            fprintf(fp, "VS ID: %s, PS ID: %s\n", actualVsId.c_str(), actualPsId.c_str());
             fprintf(fp, "HRESULT: 0x%08X\n", hr);
             fprintf(fp, "VS Size: %zu bytes, PS Size: %zu bytes\n", vsBin.size(), psBin.size());
             fprintf(fp, "BlendMode: %d, CullMode: %d, DepthEnable: %d, DepthWrite: %d, TopologyType: %d\n",
                 blendMode, cullMode, depthEnable ? 1 : 0, depthWrite ? 1 : 0, (int)topologyType);
             fclose(fp);
         }
-        // D3D12デバッグメッセージも強制出力
         Renderer::PrintDebugMessagesDX12();
         OutputDebugStringA("CreateGraphicsPipelineState failed!\n");
         return nullptr;
@@ -328,4 +430,3 @@ void ShaderManager::ClearPSOCache() {
     _lastKey = {};
     _lastPSO = nullptr;
 }
-

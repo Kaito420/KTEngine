@@ -506,7 +506,7 @@ void HotReloadManager::CheckAndReloadModified() {
             if (it == _hlslTimestamps.end() || it->second != writeTime) {
                 _hlslTimestamps[key] = writeTime;
                 std::string stem = entry.path().stem().string();
-                if (_stricmp(stem.c_str(), "Common") == 0) {
+                if (_stricmp(stem.c_str(), "Common") == 0 || _stricmp(stem.c_str(), "ProceduralCommon") == 0) {
                     commonHlslChanged = true;
                 } else {
                     modifiedHlsl.push_back(entry.path());

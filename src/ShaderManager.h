@@ -4,6 +4,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <filesystem>
 #include <d3d12.h>
 #include <wrl/client.h>
 
@@ -56,6 +57,7 @@ public:
 
     void LoadVertexShader(const std::string& id, const char* fileName);
     void LoadPixelShader(const std::string& id, const char* fileName);
+    bool CompileAndRegisterPixelShaderHLSL(const std::string& psId, const std::filesystem::path& hlslPath, std::string& outError);
     const std::vector<unsigned char>& GetVertexShaderBinary(const std::string& id) const;
     bool ReloadShaderFromBinary(const std::string& stem, bool isVS, const std::vector<unsigned char>& binary);
     void ClearPSOCache();

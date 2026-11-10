@@ -40,7 +40,6 @@ void Square::Render()const{
 	if (!cmdList) return;
 
 	if (Renderer::IsShadowPass()) {
-		// 頂点バッファビュー設定
 		D3D12_VERTEX_BUFFER_VIEW vbView = {};
 		vbView.BufferLocation = _vertexBuffer->Resource->GetGPUVirtualAddress();
 		vbView.StrideInBytes = _vertexBuffer->Stride;
@@ -59,14 +58,12 @@ void Square::Render()const{
 	if (Renderer::IsGeometryPass() && blendMode != 0) return;
 	if (!Renderer::IsGeometryPass() && blendMode == 0) return;
 
-	// 頂点バッファビュー設定
 	D3D12_VERTEX_BUFFER_VIEW vbView = {};
 	vbView.BufferLocation = _vertexBuffer->Resource->GetGPUVirtualAddress();
 	vbView.StrideInBytes = _vertexBuffer->Stride;
 	vbView.SizeInBytes = _vertexBuffer->Stride * _vertexBuffer->Size;
 	cmdList->IASetVertexBuffers(0, 1, &vbView);
 
-	// g|W
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 	// PSOバインド
 	{
@@ -86,6 +83,8 @@ void Square::Render()const{
 
 	MATERIAL material = {};
 	material.Diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
+	material.Ambient = { 1.0f, 1.0f, 0.0f, 0.0f };
+	material.Specular = { 0.0f, 0.0f, 1.0f, 1337.0f };
 
 	auto shaderComp = _owner->GetComponent<Shader>();
 	const TEXTURE* tex = (shaderComp && shaderComp->GetTexture()) ? shaderComp->GetTexture() : _texture;
@@ -97,17 +96,7 @@ void Square::Render()const{
 			scColor = { 1.0f, 1.0f, 1.0f, 1.0f };
 		}
 		material.BaseColor = scColor;
-		material.EmissionColor = shaderComp->GetEmissionColor();
-		material.Metallic = shaderComp->GetMetallic();
-		material.SpecularPbr = shaderComp->GetSpecular();
-		material.Roughness = shaderComp->GetRoughness();
-		material.NormalWeight = shaderComp->GetNormalWeight();
-		material.ShadingModelID = shaderComp->GetShadingModelID();
-		material.FlipU = shaderComp->GetFlipU() ? 1 : 0;
-		material.FlipV = shaderComp->GetFlipV() ? 1 : 0;
-		material.HasNormalMap = shaderComp->GetNormalMap() ? 1 : 0;
-		material.HasMetallicMap = shaderComp->GetARMMap() ? 1 : 0;
-		material.HasRoughnessMap = shaderComp->GetMappingMode();
+		shaderComp->FillMaterialStruct(material);
 	} else {
 		material.BaseColor = { 1.0f, 1.0f, 1.0f, 1.0f };
 		material.EmissionColor = { 0.0f, 0.0f, 0.0f, 0.0f };
@@ -123,7 +112,6 @@ void Square::Render()const{
 
 	Renderer::SetConstant(3, &material, sizeof(material));
 	
-	// eNX`oCh
 	if (tex) {
 		Renderer::SetTexture(6, tex);
 	}
@@ -134,7 +122,6 @@ void Square::Render()const{
 		Renderer::SetTexture(8, shaderComp->GetARMMap());
 	}
 
-	// `
 	cmdList->DrawInstanced(4, 1, 0, 0);
 	Profiler::RecordDrawCall(4, 6);
 }

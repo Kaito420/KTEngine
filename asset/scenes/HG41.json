@@ -118,7 +118,15 @@
                                                     "MetallicMapPath": "",
                                                     "RoughnessMapPath": "",
                                                     "ARMMapPath": "",
-                                                    "MappingMode": 0
+                                                    "MappingMode": 0,
+                                                    "UVTilingX": 1.0,
+                                                    "UVTilingY": 1.0,
+                                                    "UVOffsetX": 0.0,
+                                                    "UVOffsetY": 0.0,
+                                                    "UVWrapMode": 0,
+                                                    "UVScaleMode": 0,
+                                                    "ProcScale3D": 1.0,
+                                                    "ProcSeed": 1337
                                                 }
                                             }
                                         },
@@ -297,7 +305,15 @@
                                                 "MetallicMapPath": "",
                                                 "RoughnessMapPath": "",
                                                 "ARMMapPath": "",
-                                                "MappingMode": 0
+                                                "MappingMode": 0,
+                                                "UVTilingX": 1.0,
+                                                "UVTilingY": 1.0,
+                                                "UVOffsetX": 0.0,
+                                                "UVOffsetY": 0.0,
+                                                "UVWrapMode": 0,
+                                                "UVScaleMode": 0,
+                                                "ProcScale3D": 1.0,
+                                                "ProcSeed": 1337
                                             }
                                         }
                                     },
@@ -393,7 +409,15 @@
                                                 "MetallicMapPath": "",
                                                 "RoughnessMapPath": "",
                                                 "ARMMapPath": "",
-                                                "MappingMode": 0
+                                                "MappingMode": 0,
+                                                "UVTilingX": 1.0,
+                                                "UVTilingY": 1.0,
+                                                "UVOffsetX": 0.0,
+                                                "UVOffsetY": 0.0,
+                                                "UVWrapMode": 0,
+                                                "UVScaleMode": 0,
+                                                "ProcScale3D": 1.0,
+                                                "ProcSeed": 1337
                                             }
                                         }
                                     },
@@ -485,7 +509,15 @@
                                                 "MetallicMapPath": "",
                                                 "RoughnessMapPath": "",
                                                 "ARMMapPath": "",
-                                                "MappingMode": 0
+                                                "MappingMode": 0,
+                                                "UVTilingX": 1.0,
+                                                "UVTilingY": 1.0,
+                                                "UVOffsetX": 0.0,
+                                                "UVOffsetY": 0.0,
+                                                "UVWrapMode": 0,
+                                                "UVScaleMode": 0,
+                                                "ProcScale3D": 1.0,
+                                                "ProcSeed": 1337
                                             }
                                         }
                                     },
@@ -579,7 +611,15 @@
                                                 "MetallicMapPath": "",
                                                 "RoughnessMapPath": "",
                                                 "ARMMapPath": "",
-                                                "MappingMode": 0
+                                                "MappingMode": 0,
+                                                "UVTilingX": 1.0,
+                                                "UVTilingY": 1.0,
+                                                "UVOffsetX": 0.0,
+                                                "UVOffsetY": 0.0,
+                                                "UVWrapMode": 0,
+                                                "UVScaleMode": 0,
+                                                "ProcScale3D": 1.0,
+                                                "ProcSeed": 1337
                                             }
                                         }
                                     },
@@ -692,12 +732,20 @@
                                                 "ShadingModelID": 0,
                                                 "FlipU": false,
                                                 "FlipV": false,
-                                                "TexturePath": "asset/texture/proc_texture.png",
-                                                "NormalMapPath": "asset/texture/proc_texture_normal.png",
+                                                "TexturePath": "asset/texture/proc_texture_wood_03.png",
+                                                "NormalMapPath": "asset/texture/proc_texture_wood_03_normal.png",
                                                 "MetallicMapPath": "",
                                                 "RoughnessMapPath": "",
-                                                "ARMMapPath": "asset/texture/proc_texture_arm.png",
-                                                "MappingMode": 1
+                                                "ARMMapPath": "asset/texture/proc_texture_wood_03_arm.png",
+                                                "MappingMode": 1,
+                                                "UVTilingX": 1.0,
+                                                "UVTilingY": 1.0,
+                                                "UVOffsetX": 0.0,
+                                                "UVOffsetY": 0.0,
+                                                "UVWrapMode": 0,
+                                                "UVScaleMode": 0,
+                                                "ProcScale3D": 1.0,
+                                                "ProcSeed": 1337
                                             }
                                         }
                                     },
@@ -791,7 +839,15 @@
                                                 "MetallicMapPath": "",
                                                 "RoughnessMapPath": "",
                                                 "ARMMapPath": "asset/texture/proc_texture_wood_03_arm.png",
-                                                "MappingMode": 1
+                                                "MappingMode": 1,
+                                                "UVTilingX": 1.0,
+                                                "UVTilingY": 1.0,
+                                                "UVOffsetX": 0.0,
+                                                "UVOffsetY": 0.0,
+                                                "UVWrapMode": 0,
+                                                "UVScaleMode": 0,
+                                                "ProcScale3D": 1.0,
+                                                "ProcSeed": 1337
                                             }
                                         }
                                     },

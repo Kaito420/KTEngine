@@ -10,6 +10,7 @@
 #include "Scene.h"
 #include "GameObject.h"
 #include "Shader.h"
+#include "ShaderManager.h"
 #include "imgui_internal.h"
 
 #include <cmath>
@@ -2930,6 +2931,115 @@ static bool SaveRGBABufferToPNG(const std::vector<float>& floatRGBA, int width, 
 	return true;
 }
 
+static void ExportAndApplyPixelShader(bool applyToSelectedObject) {
+	std::string rawName = (s_editorTabMode == 1 && s_hlslFileNameBuf[0] != '\0') ? s_hlslFileNameBuf : s_exportNameBuf;
+	if (rawName.empty()) rawName = "ProcCustom";
+
+	// Sanitize identifier
+	std::string cleanName;
+	for (char c : rawName) {
+		if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_') {
+			cleanName.push_back(c);
+		}
+	}
+	if (cleanName.empty()) cleanName = "ProcCustom";
+	if (cleanName.size() < 4 || _strnicmp(cleanName.c_str(), "Proc", 4) != 0) {
+		cleanName = "Proc_" + cleanName;
+	}
+	if (cleanName.size() < 2 || _stricmp(cleanName.c_str() + cleanName.size() - 2, "PS") != 0) {
+		cleanName += "PS";
+	}
+
+	std::string bodyHlsl = (s_editorTabMode == 1 && !s_hlslCodeText.empty())
+		? s_hlslCodeText
+		: GenerateHLSLFromGraph();
+
+	std::ostringstream psStream;
+	psStream << "// ============================================================================\n";
+	psStream << "// " << cleanName << ".hlsl\n";
+	psStream << "// Auto-Generated Real-Time 3D Procedural G-Buffer Pixel Shader (ps_5_0)\n";
+	psStream << "// ============================================================================\n\n";
+	psStream << "#include \"Common.hlsl\"\n";
+	psStream << "#include \"ProceduralCommon.hlsl\"\n\n";
+	psStream << "// Default uniforms for Custom HLSL compatibility in Pixel Shader\n";
+	psStream << "static const float  g_ParamA  = 0.5f;\n";
+	psStream << "static const float  g_ParamB  = 0.5f;\n";
+	psStream << "static const float  g_ParamC  = 0.5f;\n";
+	psStream << "static const float  g_ParamD  = 0.5f;\n";
+	psStream << "static const float4 g_ColorA  = float4(0.25f, 0.13f, 0.06f, 1.0f);\n";
+	psStream << "static const float4 g_ColorB  = float4(0.75f, 0.52f, 0.28f, 1.0f);\n";
+	psStream << "static const float  g_ScaleX  = 4.0f;\n";
+	psStream << "static const float  g_ScaleY  = 4.0f;\n";
+	psStream << "static const int    g_Seed    = 1337;\n";
+	psStream << "static const uint   g_HasInUV = 0u;\n";
+	psStream << "static const uint   g_HasInA  = 0u;\n";
+	psStream << "static const uint   g_HasInB  = 0u;\n";
+	psStream << "float4 SampleInputUV(float2 uv) { return float4(uv.x, uv.y, 0.0f, 1.0f); }\n";
+	psStream << "float4 SampleInputA(float2 uv)  { return float4(0.0f, 0.0f, 0.0f, 1.0f); }\n";
+	psStream << "float4 SampleInputB(float2 uv)  { return float4(0.0f, 0.0f, 0.0f, 1.0f); }\n\n";
+	psStream << bodyHlsl << "\n\n";
+	psStream << "PS_OUTPUT_GEOMETRY main(PS_IN input, bool isFrontFace : SV_IsFrontFace)\n";
+	psStream << "{\n";
+	psStream << "\tPS_OUTPUT_GEOMETRY output;\n";
+	psStream << "\tint uvScaleMode = GetMaterialUVScaleMode();\n";
+	psStream << "\tfloat scale3D   = GetMaterialScale3D();\n";
+	psStream << "\tfloat2 offset   = GetMaterialOffset();\n";
+	psStream << "\tfloat3 localPos  = input.Diffuse.xyz;\n";
+	psStream << "\tfloat3 objScale  = (uvScaleMode == 0) ? GetObjectScaleFromWorld() : float3(1.0f, 1.0f, 1.0f);\n";
+	psStream << "\tfloat3 procPos3D = localPos * 2.0f * objScale * scale3D + float3(offset.x, 0.0f, offset.y);\n";
+	psStream << "\tfloat2 procUV    = Dir3DToSphericalUV(procPos3D);\n\n";
+	psStream << "\tfloat4 procAlbedo = float4(0.5f, 0.5f, 0.5f, 1.0f);\n";
+	psStream << "\tfloat4 procNormal = float4(0.5f, 0.5f, 1.0f, 1.0f);\n";
+	psStream << "\tfloat4 procARM    = float4(1.0f, Material.Roughness, Material.Metallic, 1.0f);\n";
+	psStream << "\tEvaluateProceduralTexture((uint2)input.Position.xy, procUV, procPos3D, procAlbedo, procNormal, procARM);\n\n";
+	psStream << "\toutput.Color = float4(procAlbedo.rgb * Material.BaseColor.rgb + Material.EmissionColor.rgb, Material.BaseColor.a);\n\n";
+	psStream << "\tfloat3 baseNormal = normalize(input.Normal.xyz) * (isFrontFace ? 1.0f : -1.0f);\n";
+	psStream << "\tfloat3 normalMap  = procNormal.rgb * 2.0f - 1.0f;\n";
+	psStream << "\tfloat3 N  = baseNormal;\n";
+	psStream << "\tfloat3 up = abs(N.y) < 0.999f ? float3(0.0f, 1.0f, 0.0f) : float3(1.0f, 0.0f, 0.0f);\n";
+	psStream << "\tfloat3 T  = normalize(cross(up, N));\n";
+	psStream << "\tfloat3 B  = cross(N, T);\n";
+	psStream << "\tfloat3 worldNormal = normalize(T * normalMap.x + B * normalMap.y + N * normalMap.z);\n";
+	psStream << "\tworldNormal = normalize(lerp(N, worldNormal, Material.NormalWeight));\n";
+	psStream << "\toutput.Normal = float4(worldNormal, 1.0f);\n\n";
+	psStream << "\toutput.Position = float4(input.WorldPosition.xyz, 1.0f);\n";
+	psStream << "\toutput.MaterialARM.r = procARM.r;\n";
+	psStream << "\toutput.MaterialARM.g = procARM.g;\n";
+	psStream << "\toutput.MaterialARM.b = procARM.b;\n";
+	psStream << "\toutput.MaterialARM.a = (float)Material.ShadingModelID / 255.0f;\n";
+	psStream << "\treturn output;\n";
+	psStream << "}\n";
+
+	std::string savedPath;
+	if (!SaveHlslToShaderFolder(cleanName + ".hlsl", psStream.str(), savedPath)) {
+		s_statusMessage = "Error: Failed to write PixelShader to shader/" + cleanName + ".hlsl";
+		s_statusTimer = 5.0f;
+		return;
+	}
+
+	std::string compileLog;
+	bool compiled = ShaderManager::Instance().CompileAndRegisterPixelShaderHLSL(cleanName, savedPath, compileLog);
+	if (!compiled) {
+		s_statusMessage = "PS Compile Error: " + compileLog;
+		s_statusTimer = 6.0f;
+		return;
+	}
+
+	if (applyToSelectedObject && Manager::GetCurrentScene()) {
+		auto selected = Manager::GetCurrentScene()->GetSelectedGameObject();
+		if (selected) {
+			Shader* shader = selected->GetComponent<Shader>();
+			if (shader) {
+				shader->SetMappingMode(3); // 3D Procedural HLSL (Real-Time PixelShader)
+				shader->SetPixelShader(cleanName);
+			}
+		}
+	}
+
+	s_statusMessage = "Compiled & Registered PixelShader: " + savedPath;
+	s_statusTimer = 5.0f;
+}
+
 static void ExportProceduralTextures(bool applyToSelectedObject) {
 	const int resolutions[] = { 256, 512, 1024, 2048 };
 	int exportRes = resolutions[std::clamp(s_exportResIdx, 0, 3)];
@@ -3940,11 +4050,20 @@ void ProceduralTextureEditor::RenderUI(bool* p_open) {
 		if (!selectedShader) {
 			ImGui::BeginDisabled(true);
 		}
-		if (ImGui::Button("Export & Apply to Selected Object", ImVec2(-1.0f, 28.0f))) {
+		if (ImGui::Button("Export & Apply PNG to Selected Object", ImVec2(-1.0f, 28.0f))) {
 			ExportProceduralTextures(true);
 		}
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.16f, 0.44f, 0.68f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.22f, 0.56f, 0.84f, 1.0f));
+		if (ImGui::Button("Apply as Real-Time PixelShader (.hlsl)", ImVec2(-1.0f, 30.0f))) {
+			ExportAndApplyPixelShader(true);
+		}
+		ImGui::PopStyleColor(2);
 		if (!selectedShader) {
 			ImGui::EndDisabled();
+			if (ImGui::Button("Export PixelShader (.hlsl) to shader/", ImVec2(-1.0f, 26.0f))) {
+				ExportAndApplyPixelShader(false);
+			}
 			ImGui::TextDisabled("(Select a GameObject with Shader to apply)");
 		} else {
 			ImGui::TextColored(ImVec4(0.55f, 0.80f, 1.0f, 1.0f), "Target: %s", selectedObj->_name.c_str());

@@ -10,7 +10,6 @@ void Sphere::CreateSphereMesh(float radius, int sliceCount, int stackCount, std:
 	vertices.clear();
 	indices.clear();
 
-	// gbv
 	vertices.push_back({ XMFLOAT3(0.0f, radius, 0.0f),
 						 XMFLOAT3(0.0f, 1.0f, 0.0f),
 						 XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
@@ -44,21 +43,18 @@ void Sphere::CreateSphereMesh(float radius, int sliceCount, int stackCount, std:
 		}
 	}
 
-	// {g
 	vertices.push_back({ XMFLOAT3(0.0f, -radius, 0.0f),
 						 XMFLOAT3(0.0f, -1.0f, 0.0f),
 						 XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
 						 XMFLOAT2(0.5f, 1.0f) });
 
-	// top stack (top pole to first ring)
 	for (UINT i = 0; i < sliceCount; ++i)
 	{
-		indices.push_back(0); // top pole index
+		indices.push_back(0);
 		indices.push_back((i + 1) % sliceCount + 1);
 		indices.push_back(i + 1);
 	}
 
-	// middle stacks
 	UINT baseIndex = 1;
 	UINT ringVertexCount = sliceCount + 1;
 
@@ -76,7 +72,6 @@ void Sphere::CreateSphereMesh(float radius, int sliceCount, int stackCount, std:
 		}
 	}
 
-	// bottom stack
 	UINT southPoleIndex = (UINT)vertices.size() - 1;
 	baseIndex = southPoleIndex - ringVertexCount;
 
@@ -200,6 +195,8 @@ void Sphere::Render()const {
 
 	MATERIAL material = {};
 	material.Diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
+	material.Ambient = { 1.0f, 1.0f, 0.0f, 0.0f };
+	material.Specular = { 0.0f, 0.0f, 1.0f, 1337.0f };
 
 	auto shaderComp = _owner->GetComponent<Shader>();
 	const TEXTURE* tex = (shaderComp && shaderComp->GetTexture()) ? shaderComp->GetTexture() : _texture;
@@ -211,17 +208,7 @@ void Sphere::Render()const {
 			scColor = { 1.0f, 1.0f, 1.0f, 1.0f };
 		}
 		material.BaseColor = scColor;
-		material.EmissionColor = shaderComp->GetEmissionColor();
-		material.Metallic = shaderComp->GetMetallic();
-		material.SpecularPbr = shaderComp->GetSpecular();
-		material.Roughness = shaderComp->GetRoughness();
-		material.NormalWeight = shaderComp->GetNormalWeight();
-		material.ShadingModelID = shaderComp->GetShadingModelID();
-		material.FlipU = shaderComp->GetFlipU() ? 1 : 0;
-		material.FlipV = shaderComp->GetFlipV() ? 1 : 0;
-		material.HasNormalMap = shaderComp->GetNormalMap() ? 1 : 0;
-		material.HasMetallicMap = shaderComp->GetARMMap() ? 1 : 0;
-		material.HasRoughnessMap = shaderComp->GetMappingMode();
+		shaderComp->FillMaterialStruct(material);
 	} else {
 		material.BaseColor = { 1.0f, 1.0f, 1.0f, 1.0f };
 		material.EmissionColor = { 0.0f, 0.0f, 0.0f, 0.0f };

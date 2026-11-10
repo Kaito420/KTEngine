@@ -166,6 +166,8 @@ void Capsule::Render() const {
 
 	MATERIAL material = {};
 	material.Diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
+	material.Ambient = { 1.0f, 1.0f, 0.0f, 0.0f };
+	material.Specular = { 0.0f, 0.0f, 1.0f, 1337.0f };
 
 	auto shaderComp = _owner->GetComponent<Shader>();
 	const TEXTURE* tex = (shaderComp && shaderComp->GetTexture()) ? shaderComp->GetTexture() : _texture;
@@ -177,17 +179,7 @@ void Capsule::Render() const {
 			scColor = { 1.0f, 1.0f, 1.0f, 1.0f };
 		}
 		material.BaseColor = scColor;
-		material.EmissionColor = shaderComp->GetEmissionColor();
-		material.Metallic = shaderComp->GetMetallic();
-		material.SpecularPbr = shaderComp->GetSpecular();
-		material.Roughness = shaderComp->GetRoughness();
-		material.NormalWeight = shaderComp->GetNormalWeight();
-		material.ShadingModelID = shaderComp->GetShadingModelID();
-		material.FlipU = shaderComp->GetFlipU() ? 1 : 0;
-		material.FlipV = shaderComp->GetFlipV() ? 1 : 0;
-		material.HasNormalMap = shaderComp->GetNormalMap() ? 1 : 0;
-		material.HasMetallicMap = shaderComp->GetARMMap() ? 1 : 0;
-		material.HasRoughnessMap = shaderComp->GetMappingMode();
+		shaderComp->FillMaterialStruct(material);
 	} else {
 		material.BaseColor = { 1.0f, 1.0f, 1.0f, 1.0f };
 		material.EmissionColor = { 0.0f, 0.0f, 0.0f, 0.0f };

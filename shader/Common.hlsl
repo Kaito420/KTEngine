@@ -30,7 +30,10 @@ struct MATERIAL
     int FlipV;
     int HasNormalMap;
     
-    // [古いマテリアルメンバ] (既存フォワード用)
+    // [古いマテリアルメンバ / 拡張UV・3Dプロシージャル制御パラメータ]
+    // Ambient     : (TilingU, TilingV, OffsetU, OffsetV)
+    // SpecularOld : (UVWrapMode, UVScaleMode, Scale3D, Seed3D)
+    // HasRoughnessMap : MappingMode (0: 2D Standard, 1: 3D Solid PNG, 2: 3D World Triplanar PNG, 3: 3D Procedural HLSL)
     float4 Ambient;
     float4 Diffuse;
     float4 SpecularOld;
@@ -141,4 +144,5 @@ Texture2D<float4> TextureMaterialARM : register(t3);
 Texture2DArray<float> TextureShadowMap : register(t7);
 
 SamplerState Sampler : register(s0);
+SamplerState SamplerClamp : register(s1);
 SamplerComparisonState ShadowSampler : register(s2);
