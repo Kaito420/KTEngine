@@ -1,4 +1,4 @@
-﻿//=====================================================================================
+//=====================================================================================
 // ProceduralTextureEditor.cpp
 // Author:Kaito Aoki
 // Date:2026/10/26
@@ -1679,9 +1679,22 @@ static bool RunComputeShaderHLSL(
 
 	cmdList->Close();
 
+	ID3D12CommandQueue* queue = Renderer::GetCommandQueueDX12();
 	ID3D12CommandList* lists[] = { cmdList.Get() };
-	Renderer::GetCommandQueueDX12()->ExecuteCommandLists(1, lists);
-	Renderer::FlushGPUDX12();
+	queue->ExecuteCommandLists(1, lists);
+
+	ComPtr<ID3D12Fence> fence;
+	if (SUCCEEDED(dev->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence)))) {
+		queue->Signal(fence.Get(), 1);
+		if (fence->GetCompletedValue() < 1) {
+			HANDLE fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+			if (fenceEvent) {
+				fence->SetEventOnCompletion(1, fenceEvent);
+				WaitForSingleObject(fenceEvent, INFINITE);
+				CloseHandle(fenceEvent);
+			}
+		}
+	}
 
 	auto readbackToVector = [&](ComPtr<ID3D12Resource>& rbRes, std::vector<float>& dstVec) {
 		dstVec.resize(numPixels * 4);
@@ -1836,7 +1849,7 @@ static std::string GenerateHLSLFromGraph() {
 		auto getPos3DExpr = [&](int pinIdx) -> std::string {
 			ProcNode* src = GetInputSourceNode(node->id, pinIdx);
 			if (src && src->type == ProcNodeType::UVWarp) {
-				return "MapUVTo3D(n" + std::to_string(src->id) + ".xy, g_MappingSpace)";
+				return "(g_MappingSpace != 0 ? wpos" + std::to_string(src->id) + " : MapUVTo3D(n" + std::to_string(src->id) + ".xy, g_MappingSpace))";
 			}
 			return "pos3D";
 		};
@@ -1909,10 +1922,13 @@ static std::string GenerateHLSLFromGraph() {
 			ProcNode* srcN = GetInputSourceNode(id, 0);
 			ProcNode* warpN = GetInputSourceNode(id, 1);
 			std::string wExpr = warpN ? ("(n" + std::to_string(warpN->id) + ".xy - 0.5f) * " + std::to_string(node->paramA) + "f") : "float2(0.0f, 0.0f)";
+			ss << "\tfloat2 wdelta" << id << " = " << wExpr << ";\n";
+			ss << "\tfloat3 wpos" << id << " = pos3D + float3(wdelta" << id << ".x, wdelta" << id << ".y, wdelta" << id << ".x) * 2.0f;\n";
 			if (srcN) {
-				ss << "\tfloat4 n" << id << " = n" << srcN->id << ";\n\n";
+				ss << "\tfloat2 wuv" << id << " = frac(n" << srcN->id << ".xy + wdelta" << id << ");\n";
+				ss << "\tfloat4 n" << id << " = float4(wuv" << id << ".x, wuv" << id << ".y, n" << srcN->id << ".z, n" << srcN->id << ".w);\n\n";
 			} else {
-				ss << "\tfloat2 wuv" << id << " = frac(uv + " << wExpr << ");\n";
+				ss << "\tfloat2 wuv" << id << " = frac(uv + wdelta" << id << ");\n";
 				ss << "\tfloat4 n" << id << " = float4(wuv" << id << ".x, wuv" << id << ".y, 0.0f, 1.0f);\n\n";
 			}
 			break;
