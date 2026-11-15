@@ -1,4 +1,4 @@
-﻿#include "Renderer.h"
+#include "Renderer.h"
 #include <iostream>
 
 GraphicsAPI g_CurrentAPI = GraphicsAPI::DirectX12;
@@ -173,6 +173,7 @@ namespace Renderer {
     bool GetDepthWriteDX12() { return RendererDX12::GetDepthWrite(); }
     void BindShaderConstantsDX12() { RendererDX12::BindShaderConstants(); }
     void FlushGPUDX12() { RendererDX12::WaitForLastSubmittedFrame(); }
+    bool IsCommandListOpenDX12() { return RendererDX12::IsCommandListOpen(); }
     void RecreateShadowPSODX12() { RendererDX12::RecreateShadowPSO(); }
 
     std::unique_ptr<VERTEX_BUFFER> CreateVertexBuffer(unsigned int stride, unsigned int size) {

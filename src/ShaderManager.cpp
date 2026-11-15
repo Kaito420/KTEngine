@@ -1,4 +1,4 @@
-﻿#include "ShaderManager.h"
+#include "ShaderManager.h"
 #include "Renderer.h"
 #include <cassert>
 #include <cstdio>
@@ -132,12 +132,31 @@ bool ShaderManager::CompileAndRegisterPixelShaderHLSL(const std::string& psId, c
         }
     }
 
-    Renderer::FlushGPUDX12();
+    // Also sync .cso to executable's shader/ directory if running from x64/Debug or x64/Release
+    char exePathBuf[MAX_PATH] = {};
+    if (GetModuleFileNameA(NULL, exePathBuf, MAX_PATH) > 0) {
+        fs::path exeShaderDir = fs::path(exePathBuf).parent_path() / "shader";
+        if (fs::exists(exeShaderDir, ec)) {
+            std::ofstream ofs(exeShaderDir / (stem + ".cso"), std::ios::binary);
+            if (ofs.is_open()) {
+                ofs.write((const char*)binary.data(), binary.size());
+            }
+        }
+    }
+
+    if (!Renderer::IsCommandListOpenDX12()) {
+        Renderer::FlushGPUDX12();
+    }
     _pixelShaderBinaries[psId] = binary;
     _pixelShaderBinaries[stem] = binary;
     ClearPSOCache();
     outError = "Compiled " + resolvedPath.filename().string() + " successfully (ps_5_0).";
     return true;
+}
+
+bool ShaderManager::HasPixelShaderBinary(const std::string& id) const {
+    auto it = _pixelShaderBinaries.find(id);
+    return (it != _pixelShaderBinaries.end() && !it->second.empty());
 }
 
 void ShaderManager::LoadPixelShader(const std::string& id, const char* fileName) {
@@ -426,7 +445,30 @@ bool ShaderManager::ReloadShaderFromBinary(const std::string& stem, bool isVS, c
 }
 
 void ShaderManager::ClearPSOCache() {
+    for (auto& kv : _pipelineStates) {
+        if (kv.second) {
+            _retiredPSOs.push_back(std::move(kv.second));
+        }
+    }
     _pipelineStates.clear();
     _lastKey = {};
     _lastPSO = nullptr;
+    if (!Renderer::IsCommandListOpenDX12()) {
+        Renderer::FlushGPUDX12();
+        _retiredPSOs.clear();
+    }
+}
+
+void ShaderManager::RetirePSO(ComPtr<ID3D12PipelineState> pso) {
+    if (pso) {
+        _retiredPSOs.push_back(std::move(pso));
+    }
+    if (!Renderer::IsCommandListOpenDX12()) {
+        Renderer::FlushGPUDX12();
+        _retiredPSOs.clear();
+    }
+}
+
+void ShaderManager::FlushRetiredPSOs() {
+    _retiredPSOs.clear();
 }

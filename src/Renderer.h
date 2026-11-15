@@ -1,4 +1,4 @@
-﻿//=====================================================================================
+//=====================================================================================
 // RendererDX11.h
 // Author:Kaito Aoki
 // Date:2025/06/23
@@ -201,6 +201,7 @@ namespace RendererDX12 {
     void SetCameraPosition(XMFLOAT4 cameraPos);
     void BindShaderConstants();
     void WaitForLastSubmittedFrame();
+    bool IsCommandListOpen();
 }
 
 namespace Renderer {
@@ -322,6 +323,7 @@ namespace Renderer {
     bool GetDepthWriteDX12();
     void BindShaderConstantsDX12();
     void FlushGPUDX12();
+    bool IsCommandListOpenDX12();
     void RecreateShadowPSODX12();
 }
 

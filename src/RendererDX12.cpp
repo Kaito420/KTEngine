@@ -1,4 +1,4 @@
-﻿#include "Renderer.h"
+#include "Renderer.h"
 #include "D3DX12.h"
 #include "PostProcessSystem.h"
 #include <iostream>
@@ -275,7 +275,13 @@ namespace RendererDX12 {
         return handle;
     }
 
+    static bool g_isCommandListOpen = false;
+    bool IsCommandListOpen() { return g_isCommandListOpen; }
+
     void WaitForLastSubmittedFrame() {
+        if (g_isCommandListOpen) {
+            return;
+        }
         const UINT64 fence = g_fenceLastSignaledValue;
         g_pd3dCommandQueue->Signal(g_fence.Get(), fence);
         g_fenceLastSignaledValue++;
@@ -761,6 +767,7 @@ namespace RendererDX12 {
 
     void Shutdown() {
         WaitForLastSubmittedFrame();
+        ShaderManager::Instance().FlushRetiredPSOs();
 
         g_fullScreenQuadVB.Reset();
 
@@ -821,10 +828,10 @@ namespace RendererDX12 {
         Scene
     };
     CurrentRenderContext g_currentRenderContext = CurrentRenderContext::None;
-    static bool g_isCommandListOpen = false;
 
     void BeginRenderFrame() {
         if (g_isCommandListOpen) return;
+        ShaderManager::Instance().FlushRetiredPSOs();
 
         if (g_sceneResizePending) {
             WaitForLastSubmittedFrame();
@@ -1049,6 +1056,7 @@ namespace RendererDX12 {
         g_pSwapChain->Present(1, 0);
 
         WaitForLastSubmittedFrame();
+        ShaderManager::Instance().FlushRetiredPSOs();
 
         PrintDebugMessages();
     }
@@ -1479,6 +1487,9 @@ namespace RendererDX12 {
         psoDesc.SampleMask = UINT_MAX;
         ComPtr<ID3D12PipelineState> newPso;
         if (SUCCEEDED(g_pd3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&newPso)))) {
+            if (g_shadowPipelineState) {
+                ShaderManager::Instance().RetirePSO(g_shadowPipelineState);
+            }
             g_shadowPipelineState = newPso;
         }
     }

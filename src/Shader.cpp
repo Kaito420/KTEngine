@@ -362,8 +362,10 @@ void Shader::ShowUI(){
 				std::string itemLabel = stem + ".hlsl (shader/" + stem + ".hlsl)";
 				if (ImGui::Selectable(itemLabel.c_str(), selected)) {
 					SetPixelShader(stem);
-					std::string err;
-					ShaderManager::Instance().CompileAndRegisterPixelShaderHLSL(stem, std::filesystem::path("shader") / (stem + ".hlsl"), err);
+					if (!ShaderManager::Instance().HasPixelShaderBinary(stem)) {
+						std::string err;
+						ShaderManager::Instance().CompileAndRegisterPixelShaderHLSL(stem, std::filesystem::path("shader") / (stem + ".hlsl"), err);
+					}
 				}
 				if (selected) ImGui::SetItemDefaultFocus();
 			}

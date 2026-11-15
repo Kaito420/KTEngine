@@ -1,4 +1,4 @@
-﻿//=====================================================================================
+//=====================================================================================
 // HotReloadManager.cpp
 // Author:Kaito Aoki
 // Date:2026/10/26
@@ -245,7 +245,9 @@ bool HotReloadManager::CompileSingleHLSL(const std::filesystem::path& hlslPath, 
     }
 
     // 3. GPU待機の上、ShaderManagerのバイナリとPSOキャッシュを更新
-    Renderer::FlushGPUDX12();
+    if (!Renderer::IsCommandListOpenDX12()) {
+        Renderer::FlushGPUDX12();
+    }
     ShaderManager::Instance().ReloadShaderFromBinary(stem, isVS, binary);
 
     // ShadowVS の場合は RendererDX12 側の専用シャドウPSOも再生成する

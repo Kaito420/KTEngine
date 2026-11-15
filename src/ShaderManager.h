@@ -1,4 +1,4 @@
-﻿#ifndef _SHADERMANAGER_H
+#ifndef _SHADERMANAGER_H
 #define _SHADERMANAGER_H
 
 #include <map>
@@ -43,6 +43,7 @@ private:
     std::map<std::string, std::vector<std::string>> _vsFileToIds;
     std::map<std::string, std::vector<std::string>> _psFileToIds;
     std::map<PipelineStateKey, ComPtr<ID3D12PipelineState>> _pipelineStates;
+    std::vector<ComPtr<ID3D12PipelineState>> _retiredPSOs;
     PipelineStateKey _lastKey = {};
     ID3D12PipelineState* _lastPSO = nullptr;
 
@@ -58,9 +59,12 @@ public:
     void LoadVertexShader(const std::string& id, const char* fileName);
     void LoadPixelShader(const std::string& id, const char* fileName);
     bool CompileAndRegisterPixelShaderHLSL(const std::string& psId, const std::filesystem::path& hlslPath, std::string& outError);
+    bool HasPixelShaderBinary(const std::string& id) const;
     const std::vector<unsigned char>& GetVertexShaderBinary(const std::string& id) const;
     bool ReloadShaderFromBinary(const std::string& stem, bool isVS, const std::vector<unsigned char>& binary);
     void ClearPSOCache();
+    void RetirePSO(ComPtr<ID3D12PipelineState> pso);
+    void FlushRetiredPSOs();
 
     ID3D12PipelineState* GetPipelineState(
         const std::string& vsId,
