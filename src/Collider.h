@@ -1,4 +1,4 @@
-﻿//=====================================================================================
+//=====================================================================================
 // Collider.h
 // Author:Kaito Aoki
 // Date:2025/09/08
@@ -20,6 +20,7 @@ class ColliderBox;
 class ColliderSphere;
 class ColliderCapsule;
 class ColliderMesh;
+class ProceduralMesh;
 struct MODEL;
 
 template <typename T, int Capacity>
@@ -338,9 +339,17 @@ public:
 
 private:
 	const MODEL* _cachedModel = nullptr;
+	const ProceduralMesh* _cachedProcMesh = nullptr;
+	uint32_t _cachedProcRevision = 0;
 	KTVECTOR3 _oldScale = { 0.0f, 0.0f, 0.0f };
 
 public:
+	// 0: Auto (Concave for ProceduralMesh, Convex Hull for ModelRenderer)
+	// 1: Force Convex Hull (Quickhull)
+	// 2: Force Concave Triangle Mesh (Field / Terrain)
+	int _meshColliderMode = 0;
+	bool _isConcaveField = false;
+
 	std::vector<KTVECTOR3> _localVertices;
 	std::vector<HullFace> _faces;
 	std::vector<std::pair<int, int>> _uniqueEdges;
@@ -369,6 +378,7 @@ public:
 
 	void RebuildMesh();
 	void BuildConvexHullFromPoints(const std::vector<KTVECTOR3>& rawPoints);
+	void BuildTriangleMeshFromProcedural(const ProceduralMesh* procMesh);
 	void BuildWireframeBuffers();
 
 	bool Collide(Collider* other, CollisionManifold& outCollisionManifold) override {
@@ -406,6 +416,7 @@ public:
 	template <class Archive>
 	void serialize(Archive& ar) {
 		ar(cereal::base_class<Collider>(this));
+		try { ar(cereal::make_nvp("MeshColliderMode", _meshColliderMode)); } catch (...) {}
 	}
 };
 

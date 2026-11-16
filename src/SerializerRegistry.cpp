@@ -33,4 +33,5 @@ void RegisterAllComponents() {
 	ComponentRegistry::Register<Fade>("Fade");
 	ComponentRegistry::Register<Wave>("Wave");
 	ComponentRegistry::Register<FractalGenerator>("FractalGenerator");
+	ComponentRegistry::Register<ProceduralMesh>("ProceduralMesh");
 }

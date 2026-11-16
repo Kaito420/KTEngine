@@ -1,4 +1,4 @@
-﻿//=====================================================================================
+//=====================================================================================
 // Collider.cpp
 // Author:Kaito Aoki
 // Date:2025/09/08
@@ -15,8 +15,10 @@
 #include "ShaderManager.h"
 #include "Shader.h"
 #include "ModelRenderer.h"
+#include "ProceduralMesh.h"
 #include "RigidBody.h"
 #include <set>
+#include <deque>
 #include <cmath>
 #include <algorithm>
 
@@ -1107,13 +1109,45 @@ void ColliderMesh::Update() {
 
 void ColliderMesh::RebuildMesh() {
 	const MODEL* model = nullptr;
+	const ProceduralMesh* procMesh = nullptr;
 	if (_owner) {
+		procMesh = _owner->GetComponent<ProceduralMesh>();
 		ModelRenderer* mr = _owner->GetComponent<ModelRenderer>();
 		if (mr) {
 			model = mr->GetModel();
 		}
 	}
 	_cachedModel = model;
+	_cachedProcMesh = procMesh;
+	_cachedProcRevision = procMesh ? procMesh->GetMeshRevision() : 0;
+
+	if (_meshColliderMode == 1) {
+		_isConcaveField = false;
+	} else if (_meshColliderMode == 2) {
+		_isConcaveField = true;
+	} else {
+		// Auto mode: use Concave Triangle Mesh for ProceduralMesh, Convex Hull for ModelRenderer
+		_isConcaveField = (procMesh != nullptr);
+	}
+
+	if (procMesh && !procMesh->GetVertices().empty()) {
+		if (_isConcaveField) {
+			BuildTriangleMeshFromProcedural(procMesh);
+			BuildWireframeBuffers();
+			_hasChangedScale = true;
+			return;
+		} else {
+			std::vector<KTVECTOR3> rawPoints;
+			rawPoints.reserve(procMesh->GetVertices().size());
+			for (const auto& v : procMesh->GetVertices()) {
+				rawPoints.push_back(KTVECTOR3(v.position.x, v.position.y, v.position.z));
+			}
+			BuildConvexHullFromPoints(rawPoints);
+			BuildWireframeBuffers();
+			_hasChangedScale = true;
+			return;
+		}
+	}
 
 	std::vector<KTVECTOR3> rawPoints;
 	if (model && !model->BaseVertices.empty()) {
@@ -1122,7 +1156,7 @@ void ColliderMesh::RebuildMesh() {
 			rawPoints.push_back(KTVECTOR3(v.position.x, v.position.y, v.position.z));
 		}
 	} else {
-		// ModelRendererが未設定の場合は単位立方体の頂点をフォールバックとして使用
+		// ModelRendererもProceduralMeshも未設定の場合は単位立方体の頂点をフォールバックとして使用
 		const float h = 0.5f;
 		rawPoints = {
 			{ -h, -h, -h }, {  h, -h, -h }, {  h,  h, -h }, { -h,  h, -h },
@@ -1133,6 +1167,96 @@ void ColliderMesh::RebuildMesh() {
 	BuildConvexHullFromPoints(rawPoints);
 	BuildWireframeBuffers();
 	_hasChangedScale = true;
+}
+
+void ColliderMesh::BuildTriangleMeshFromProcedural(const ProceduralMesh* procMesh) {
+	_localVertices.clear();
+	_faces.clear();
+	_uniqueEdges.clear();
+	_uniqueFaceNormalsLocal.clear();
+	_uniqueEdgeDirsLocal.clear();
+
+	if (!procMesh) return;
+	const auto& srcVerts   = procMesh->GetVertices();
+	const auto& srcIndices = procMesh->GetIndices();
+	if (srcVerts.empty() || srcIndices.size() < 3) return;
+
+	_localVertices.reserve(srcVerts.size());
+	KTVECTOR3 lMin(FLT_MAX, FLT_MAX, FLT_MAX);
+	KTVECTOR3 lMax(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+
+	for (const auto& v : srcVerts) {
+		KTVECTOR3 p(v.position.x, v.position.y, v.position.z);
+		_localVertices.push_back(p);
+		if (p.x < lMin.x) lMin.x = p.x;
+		if (p.y < lMin.y) lMin.y = p.y;
+		if (p.z < lMin.z) lMin.z = p.z;
+		if (p.x > lMax.x) lMax.x = p.x;
+		if (p.y > lMax.y) lMax.y = p.y;
+		if (p.z > lMax.z) lMax.z = p.z;
+	}
+
+	_localCenter = (lMin + lMax) * 0.5f;
+	_localHalfExtents = (lMax - lMin) * 0.5f;
+	if (_localHalfExtents.y < 0.05f) _localHalfExtents.y = 0.05f;
+
+	size_t triCount = srcIndices.size() / 3;
+	_faces.reserve(triCount);
+
+	for (size_t t = 0; t < triCount; ++t) {
+		int i0 = static_cast<int>(srcIndices[t * 3 + 0]);
+		int i1 = static_cast<int>(srcIndices[t * 3 + 1]);
+		int i2 = static_cast<int>(srcIndices[t * 3 + 2]);
+		if (i0 < 0 || i1 < 0 || i2 < 0 ||
+		    i0 >= (int)_localVertices.size() ||
+		    i1 >= (int)_localVertices.size() ||
+		    i2 >= (int)_localVertices.size()) {
+			continue;
+		}
+
+		const KTVECTOR3& a = _localVertices[i0];
+		const KTVECTOR3& b = _localVertices[i1];
+		const KTVECTOR3& c = _localVertices[i2];
+		KTVECTOR3 fn = Cross(b - a, c - a);
+		if (fn.y < 0.0f) {
+			fn = -fn;
+		}
+		if (fn.MagnitudeSqr() > 1e-10f) {
+			fn = fn.Normalize();
+		} else {
+			fn = KTVECTOR3(0.0f, 1.0f, 0.0f);
+		}
+
+		HullFace hf;
+		hf.v0 = i0;
+		hf.v1 = i1;
+		hf.v2 = i2;
+		hf.localNormal = fn;
+		_faces.push_back(hf);
+	}
+
+	// Build wireframe edges directly from grid topology for fast & clean visualization
+	int segX = procMesh->GetSegmentsX();
+	int segZ = procMesh->GetSegmentsZ();
+	int vertsX = segX + 1;
+	int vertsZ = segZ + 1;
+	if (static_cast<int>(_localVertices.size()) == vertsX * vertsZ) {
+		_uniqueEdges.reserve(static_cast<size_t>(segX) * vertsZ + static_cast<size_t>(segZ) * vertsX + static_cast<size_t>(segX) * segZ);
+		for (int iz = 0; iz < vertsZ; ++iz) {
+			for (int ix = 0; ix < vertsX; ++ix) {
+				int curr = iz * vertsX + ix;
+				if (ix < segX) {
+					_uniqueEdges.push_back({ curr, curr + 1 });
+				}
+				if (iz < segZ) {
+					_uniqueEdges.push_back({ curr, curr + vertsX });
+				}
+				if (ix < segX && iz < segZ && segX * segZ <= 4096) {
+					_uniqueEdges.push_back({ curr + 1, curr + vertsX });
+				}
+			}
+		}
+	}
 }
 
 void ColliderMesh::BuildConvexHullFromPoints(const std::vector<KTVECTOR3>& rawPoints) {
@@ -1431,9 +1555,44 @@ void ColliderMesh::BuildConvexHullFromPoints(const std::vector<KTVECTOR3>& rawPo
 	}
 }
 
+namespace {
+	static std::deque<std::unique_ptr<VERTEX_BUFFER>> s_retiredWireVBs;
+	static std::deque<std::unique_ptr<INDEX_BUFFER>>  s_retiredWireIBs;
+
+	void RetireWireBuffers(std::unique_ptr<VERTEX_BUFFER>& vb, std::unique_ptr<INDEX_BUFFER>& ib) {
+		if (vb) {
+			s_retiredWireVBs.push_back(std::move(vb));
+			while (s_retiredWireVBs.size() > 24) {
+				s_retiredWireVBs.pop_front();
+			}
+		}
+		if (ib) {
+			s_retiredWireIBs.push_back(std::move(ib));
+			while (s_retiredWireIBs.size() > 24) {
+				s_retiredWireIBs.pop_front();
+			}
+		}
+	}
+
+	bool TriangleOverlapsAABB(const KTVECTOR3& a, const KTVECTOR3& b, const KTVECTOR3& c, const AABB& box, float margin = 0.05f) {
+		float minX = (std::min)(a.x, (std::min)(b.x, c.x)) - margin;
+		float maxX = (std::max)(a.x, (std::max)(b.x, c.x)) + margin;
+		if (maxX < box.min.x || minX > box.max.x) return false;
+
+		float minY = (std::min)(a.y, (std::min)(b.y, c.y)) - margin;
+		float maxY = (std::max)(a.y, (std::max)(b.y, c.y)) + margin;
+		if (maxY < box.min.y || minY > box.max.y) return false;
+
+		float minZ = (std::min)(a.z, (std::min)(b.z, c.z)) - margin;
+		float maxZ = (std::max)(a.z, (std::max)(b.z, c.z)) + margin;
+		if (maxZ < box.min.z || minZ > box.max.z) return false;
+
+		return true;
+	}
+}
+
 void ColliderMesh::BuildWireframeBuffers() {
-	_wireVB.reset();
-	_wireIB.reset();
+	RetireWireBuffers(_wireVB, _wireIB);
 	_wireIndexCount = 0;
 
 	if (_localVertices.empty() || _uniqueEdges.empty() || !Renderer::GetDeviceDX12()) {
@@ -1478,10 +1637,16 @@ void ColliderMesh::BuildWireframeBuffers() {
 void ColliderMesh::SyncTransform() {
 	if (!_owner) return;
 
-	// ModelRenderer のモデルが変化していたら自動再構築
+	// ModelRenderer または ProceduralMesh の変化を検知したら自動再構築
 	ModelRenderer* mr = _owner->GetComponent<ModelRenderer>();
 	const MODEL* currentModel = mr ? mr->GetModel() : nullptr;
-	if (_localVertices.empty() || currentModel != _cachedModel) {
+	ProceduralMesh* pm = _owner->GetComponent<ProceduralMesh>();
+	uint32_t currentPmRev = pm ? pm->GetMeshRevision() : 0;
+
+	if (_localVertices.empty() ||
+	    currentModel != _cachedModel ||
+	    pm != _cachedProcMesh ||
+	    currentPmRev != _cachedProcRevision) {
 		RebuildMesh();
 	}
 	if (_wireIndexCount == 0 && !_uniqueEdges.empty() && Renderer::GetDeviceDX12()) {
@@ -1534,6 +1699,10 @@ void ColliderMesh::SyncTransform() {
 		if (wp.z > wMax.z) wMax.z = wp.z;
 	}
 
+	if (_isConcaveField || (wMax.y - wMin.y) < 0.08f) {
+		wMin.y -= 0.15f;
+		wMax.y += 0.08f;
+	}
 	_aabb.min = wMin;
 	_aabb.max = wMax;
 
@@ -1568,6 +1737,75 @@ bool ColliderMesh::CheckVSSphere(const ColliderSphere* other, CollisionManifold&
 	KTVECTOR3 vMesh = (rbMesh && !rbMesh->IsSleeping() && !rbMesh->_isKinematic) ? rbMesh->_velocity : KTVECTOR3(0.0f, 0.0f, 0.0f);
 	KTVECTOR3 relVel = vSphere - vMesh;
 	KTVECTOR3 prevSphereCenter = sphereCenter - relVel * (1.0f / 60.0f);
+
+	// --- Concave Triangle Mesh / Procedural Field Mode ---
+	if (_isConcaveField) {
+		KTVECTOR3 ownerUp = _owner ? _owner->GetUp() : KTVECTOR3(0.0f, 1.0f, 0.0f);
+		float minDistSq = FLT_MAX;
+		KTVECTOR3 closestPt = sphereCenter;
+		KTVECTOR3 bestTriNormal = ownerUp;
+
+		for (const auto& f : _faces) {
+			const KTVECTOR3& a = _worldVertices[f.v0];
+			const KTVECTOR3& b = _worldVertices[f.v1];
+			const KTVECTOR3& c = _worldVertices[f.v2];
+
+			if (!TriangleOverlapsAABB(a, b, c, other->_aabb, radius + 0.35f)) {
+				continue;
+			}
+
+			KTVECTOR3 pt = ClosestPointOnTriangle(sphereCenter, a, b, c);
+			float dSq = (sphereCenter - pt).MagnitudeSqr();
+			if (dSq < minDistSq) {
+				minDistSq = dSq;
+				closestPt = pt;
+				KTVECTOR3 fn = Cross(b - a, c - a);
+				if (Dot(fn, ownerUp) < 0.0f) fn = -fn;
+				bestTriNormal = (fn.MagnitudeSqr() > 1e-10f) ? fn.Normalize() : ownerUp;
+			}
+		}
+
+		if (minDistSq == FLT_MAX) return false;
+
+		float signedDist = Dot(bestTriNormal, sphereCenter - closestPt);
+		float prevSignedDist = Dot(bestTriNormal, prevSphereCenter - closestPt);
+		KTVECTOR3 horizDelta = (sphereCenter - closestPt) - bestTriNormal * signedDist;
+
+		// Anti-tunneling recovery if sphere center slightly crossed below the surface triangle
+		bool penetratedBelow = (signedDist < 0.0f && signedDist >= -(radius * 2.5f + 0.20f) &&
+		                        horizDelta.MagnitudeSqr() <= radius * radius * 0.5f &&
+		                        prevSignedDist >= signedDist - 0.01f);
+
+		if (!penetratedBelow && minDistSq > radius * radius) {
+			return false;
+		}
+
+		outCollisionManifold.hasCollision = true;
+		outCollisionManifold.a = const_cast<ColliderSphere*>(other);
+		outCollisionManifold.b = const_cast<ColliderMesh*>(this);
+
+		if (penetratedBelow) {
+			float pen = radius - signedDist;
+			outCollisionManifold.normal = bestTriNormal;
+			outCollisionManifold.penetrationDepth = pen;
+			ContactPoint cp;
+			cp.position = closestPt;
+			cp.penetration = pen;
+			outCollisionManifold.contacts.push_back(cp);
+		} else {
+			float dist = sqrtf(minDistSq);
+			KTVECTOR3 diff = sphereCenter - closestPt;
+			KTVECTOR3 n = (dist > 1e-5f) ? (diff / dist) : bestTriNormal;
+			if (Dot(n, bestTriNormal) < 0.0f) n = bestTriNormal;
+			outCollisionManifold.normal = n;
+			outCollisionManifold.penetrationDepth = (std::max)(0.0f, radius - dist);
+			ContactPoint cp;
+			cp.position = closestPt;
+			cp.penetration = outCollisionManifold.penetrationDepth;
+			outCollisionManifold.contacts.push_back(cp);
+		}
+		return true;
+	}
 
 	float minDistSq = FLT_MAX;
 	KTVECTOR3 closestPt = _worldCenter;
@@ -1658,6 +1896,107 @@ bool ColliderMesh::CheckVSCapsule(const ColliderCapsule* other, CollisionManifol
 	KTVECTOR3 vCap = (rbCap && !rbCap->IsSleeping() && !rbCap->_isKinematic) ? rbCap->_velocity : KTVECTOR3(0.0f, 0.0f, 0.0f);
 	KTVECTOR3 vMesh = (rbMesh && !rbMesh->IsSleeping() && !rbMesh->_isKinematic) ? rbMesh->_velocity : KTVECTOR3(0.0f, 0.0f, 0.0f);
 	KTVECTOR3 relVel = vCap - vMesh;
+
+	// --- Concave Triangle Mesh / Procedural Field Mode ---
+	if (_isConcaveField) {
+		KTVECTOR3 ownerUp = _owner ? _owner->GetUp() : KTVECTOR3(0.0f, 1.0f, 0.0f);
+		std::vector<const HullFace*> activeFaces;
+		activeFaces.reserve(32);
+		for (const auto& f : _faces) {
+			if (TriangleOverlapsAABB(_worldVertices[f.v0], _worldVertices[f.v1], _worldVertices[f.v2], other->_aabb, radius + 0.35f)) {
+				activeFaces.push_back(&f);
+			}
+		}
+		if (activeFaces.empty()) return false;
+
+		float bestDistSq = FLT_MAX;
+		KTVECTOR3 bestSegPt = segA;
+		KTVECTOR3 bestMeshPt = segA;
+		KTVECTOR3 bestTriNormal = ownerUp;
+
+		const int SAMPLES = 6;
+		for (int s = 0; s <= SAMPLES; ++s) {
+			float t = (float)s / (float)SAMPLES;
+			KTVECTOR3 p = segA + (segB - segA) * t;
+			for (const HullFace* f : activeFaces) {
+				const KTVECTOR3& a = _worldVertices[f->v0];
+				const KTVECTOR3& b = _worldVertices[f->v1];
+				const KTVECTOR3& c = _worldVertices[f->v2];
+				KTVECTOR3 q = ClosestPointOnTriangle(p, a, b, c);
+				KTVECTOR3 ab = segB - segA;
+				float abLenSq = ab.MagnitudeSqr();
+				float u = (abLenSq > 1e-6f) ? Clamp(Dot(q - segA, ab) / abLenSq, 0.0f, 1.0f) : 0.0f;
+				KTVECTOR3 pRefined = segA + ab * u;
+				KTVECTOR3 qRefined = ClosestPointOnTriangle(pRefined, a, b, c);
+
+				float dSq = (pRefined - qRefined).MagnitudeSqr();
+				if (dSq < bestDistSq) {
+					bestDistSq = dSq;
+					bestSegPt = pRefined;
+					bestMeshPt = qRefined;
+					KTVECTOR3 fn = Cross(b - a, c - a);
+					if (Dot(fn, ownerUp) < 0.0f) fn = -fn;
+					bestTriNormal = (fn.MagnitudeSqr() > 1e-10f) ? fn.Normalize() : ownerUp;
+				}
+			}
+		}
+
+		float signedDist = Dot(bestTriNormal, bestSegPt - bestMeshPt);
+		KTVECTOR3 horizDelta = (bestSegPt - bestMeshPt) - bestTriNormal * signedDist;
+		bool penetratedBelow = (signedDist < 0.0f && signedDist >= -(radius * 2.5f + 0.20f) &&
+		                        horizDelta.MagnitudeSqr() <= radius * radius * 0.5f);
+
+		if (!penetratedBelow && bestDistSq > radius * radius) {
+			return false;
+		}
+
+		outCollisionManifold.hasCollision = true;
+		outCollisionManifold.a = const_cast<ColliderCapsule*>(other);
+		outCollisionManifold.b = const_cast<ColliderMesh*>(this);
+
+		if (penetratedBelow) {
+			float pen = radius - signedDist;
+			outCollisionManifold.normal = bestTriNormal;
+			outCollisionManifold.penetrationDepth = pen;
+			ContactPoint cp;
+			cp.position = bestMeshPt;
+			cp.penetration = pen;
+			outCollisionManifold.contacts.push_back(cp);
+		} else {
+			float dist = sqrtf(bestDistSq);
+			KTVECTOR3 diff = bestSegPt - bestMeshPt;
+			KTVECTOR3 n = (dist > 1e-5f) ? (diff / dist) : bestTriNormal;
+			if (Dot(n, bestTriNormal) < 0.0f) n = bestTriNormal;
+			outCollisionManifold.normal = n;
+			outCollisionManifold.penetrationDepth = (std::max)(0.0f, radius - dist);
+			ContactPoint cp;
+			cp.position = bestMeshPt;
+			cp.penetration = outCollisionManifold.penetrationDepth;
+			outCollisionManifold.contacts.push_back(cp);
+
+			KTVECTOR3 endPts[2] = { segA, segB };
+			for (int i = 0; i < 2; ++i) {
+				if ((endPts[i] - bestSegPt).MagnitudeSqr() < 0.01f) continue;
+				float endMinSq = FLT_MAX;
+				KTVECTOR3 endMeshPt = bestMeshPt;
+				for (const HullFace* f : activeFaces) {
+					KTVECTOR3 q = ClosestPointOnTriangle(endPts[i], _worldVertices[f->v0], _worldVertices[f->v1], _worldVertices[f->v2]);
+					float dSq = (endPts[i] - q).MagnitudeSqr();
+					if (dSq < endMinSq) {
+						endMinSq = dSq;
+						endMeshPt = q;
+					}
+				}
+				if (endMinSq <= radius * radius) {
+					ContactPoint cp2;
+					cp2.position = endMeshPt;
+					cp2.penetration = (std::max)(0.0f, radius - sqrtf(endMinSq));
+					outCollisionManifold.contacts.push_back(cp2);
+				}
+			}
+		}
+		return true;
+	}
 
 	// カプセル中心線分と各三角形・各エッジの最短距離を評価
 	float bestDistSq = FLT_MAX;
@@ -2129,6 +2468,153 @@ bool ColliderMesh::CheckVSOBB(const ColliderBox* other, CollisionManifold& outCo
 		bCenter + ax0 + ax1 + ax2,
 		bCenter - ax0 + ax1 + ax2
 	};
+
+	// --- Concave Triangle Mesh / Procedural Field Mode ---
+	if (_isConcaveField) {
+		KTVECTOR3 ownerUp = _owner ? _owner->GetUp() : KTVECTOR3(0.0f, 1.0f, 0.0f);
+		std::vector<const HullFace*> activeFaces;
+		activeFaces.reserve(32);
+		for (const auto& f : _faces) {
+			if (TriangleOverlapsAABB(_worldVertices[f.v0], _worldVertices[f.v1], _worldVertices[f.v2], other->_aabb, 0.25f)) {
+				activeFaces.push_back(&f);
+			}
+		}
+		if (activeFaces.empty()) return false;
+
+		struct FieldBoxContact {
+			KTVECTOR3 pos;
+			KTVECTOR3 normal;
+			float penetration;
+		};
+		std::vector<FieldBoxContact> rawContacts;
+		rawContacts.reserve(16);
+
+		auto addFieldContact = [&](const KTVECTOR3& pt, const KTVECTOR3& n, float pen) {
+			if (pen <= 0.0f) return;
+			for (auto& existing : rawContacts) {
+				if ((existing.pos - pt).MagnitudeSqr() < 0.0025f) {
+					if (pen > existing.penetration) {
+						existing.penetration = pen;
+						existing.normal = n;
+					}
+					return;
+				}
+			}
+			rawContacts.push_back({ pt, n, pen });
+		};
+
+		float maxAllowableDepth = (std::max)(other->_extents.x, (std::max)(other->_extents.y, other->_extents.z)) * 2.2f + 0.25f;
+
+		// 1. Test Box vertices against overlapping terrain triangles
+		for (const auto& bv : boxVerts) {
+			float bestTriHorizSq = FLT_MAX;
+			float bestSignedDist = FLT_MAX;
+			KTVECTOR3 bestQ = bv;
+			KTVECTOR3 bestN = ownerUp;
+
+			for (const HullFace* f : activeFaces) {
+				const KTVECTOR3& a = _worldVertices[f->v0];
+				const KTVECTOR3& b = _worldVertices[f->v1];
+				const KTVECTOR3& c = _worldVertices[f->v2];
+				KTVECTOR3 fn = Cross(b - a, c - a);
+				if (Dot(fn, ownerUp) < 0.0f) fn = -fn;
+				fn = (fn.MagnitudeSqr() > 1e-10f) ? fn.Normalize() : ownerUp;
+
+				KTVECTOR3 q = ClosestPointOnTriangle(bv, a, b, c);
+				float sd = Dot(fn, bv - q);
+				KTVECTOR3 horiz = (bv - q) - fn * sd;
+				float hSq = horiz.MagnitudeSqr();
+				if (hSq < 0.0025f && sd <= 0.0f && sd >= -maxAllowableDepth) {
+					if (hSq < bestTriHorizSq || (fabsf(hSq - bestTriHorizSq) < 1e-4f && sd > bestSignedDist)) {
+						bestTriHorizSq = hSq;
+						bestSignedDist = sd;
+						bestQ = q;
+						bestN = fn;
+					}
+				}
+			}
+
+			if (bestSignedDist <= 0.0f && bestSignedDist >= -maxAllowableDepth) {
+				addFieldContact(bv, bestN, -bestSignedDist);
+			}
+		}
+
+		// 2. Test Terrain triangle vertices & midpoints poking into the OBB
+		for (const HullFace* f : activeFaces) {
+			const KTVECTOR3& a = _worldVertices[f->v0];
+			const KTVECTOR3& b = _worldVertices[f->v1];
+			const KTVECTOR3& c = _worldVertices[f->v2];
+			KTVECTOR3 fn = Cross(b - a, c - a);
+			if (Dot(fn, ownerUp) < 0.0f) fn = -fn;
+			fn = (fn.MagnitudeSqr() > 1e-10f) ? fn.Normalize() : ownerUp;
+
+			float boxRadiusAlongFn =
+				fabsf(Dot(ax0, fn)) +
+				fabsf(Dot(ax1, fn)) +
+				fabsf(Dot(ax2, fn));
+			float minBoxProjAlongFn = Dot(bCenter, fn) - boxRadiusAlongFn;
+
+			KTVECTOR3 samplePts[4] = {
+				a, b, c,
+				(a + b + c) * (1.0f / 3.0f)
+			};
+
+			for (const auto& tp : samplePts) {
+				KTVECTOR3 rel = tp - bCenter;
+				float qx = Dot(rel, other->_axis[0]);
+				float qy = Dot(rel, other->_axis[1]);
+				float qz = Dot(rel, other->_axis[2]);
+				if (fabsf(qx) <= other->_extents.x + 1e-3f &&
+				    fabsf(qy) <= other->_extents.y + 1e-3f &&
+				    fabsf(qz) <= other->_extents.z + 1e-3f) {
+					float pen = Dot(tp, fn) - minBoxProjAlongFn;
+					if (pen > 0.0f && pen <= maxAllowableDepth) {
+						addFieldContact(tp, fn, pen);
+					}
+				}
+			}
+		}
+
+		if (rawContacts.empty()) return false;
+
+		// Aggregate weighted normal and select up to 4 contacts
+		KTVECTOR3 avgNormal(0.0f, 0.0f, 0.0f);
+		float maxPen = 0.0f;
+		for (const auto& rc : rawContacts) {
+			avgNormal = avgNormal + rc.normal * rc.penetration;
+			if (rc.penetration > maxPen) maxPen = rc.penetration;
+		}
+		if (avgNormal.MagnitudeSqr() > 1e-8f) {
+			avgNormal = avgNormal.Normalize();
+		} else {
+			avgNormal = ownerUp;
+		}
+		if (fabsf(avgNormal.x) < 1e-5f) avgNormal.x = 0.0f;
+		if (fabsf(avgNormal.y) < 1e-5f) avgNormal.y = 0.0f;
+		if (fabsf(avgNormal.z) < 1e-5f) avgNormal.z = 0.0f;
+		avgNormal = avgNormal.Normalize();
+
+		outCollisionManifold.hasCollision = true;
+		outCollisionManifold.a = const_cast<ColliderBox*>(other);
+		outCollisionManifold.b = const_cast<ColliderMesh*>(this);
+		outCollisionManifold.normal = avgNormal;
+		outCollisionManifold.penetrationDepth = maxPen;
+
+		std::sort(rawContacts.begin(), rawContacts.end(),
+			[](const FieldBoxContact& lhs, const FieldBoxContact& rhs) {
+				return lhs.penetration > rhs.penetration;
+			});
+
+		size_t count = (std::min)(rawContacts.size(), (size_t)4);
+		for (size_t i = 0; i < count; ++i) {
+			ContactPoint cp;
+			cp.position = rawContacts[i].pos;
+			cp.penetration = rawContacts[i].penetration;
+			outCollisionManifold.contacts.push_back(cp);
+		}
+		return true;
+	}
+
 	std::vector<KTVECTOR3> boxAxes = {
 		other->_axis[0],
 		other->_axis[1],
@@ -2189,9 +2675,21 @@ KTMATRIX3 ColliderMesh::ComputeLocalInertiaTensor(float mass) {
 void ColliderMesh::ShowUI() {
 	ImGui::Checkbox("_wasOverlap", &_wasOverlap);
 	ImGui::DragFloat3("Center Offset", &_center.x, 0.05f);
-	ImGui::Text("Convex Hull Vertices: %d", (int)_localVertices.size());
-	ImGui::Text("Convex Hull Faces:    %d", (int)_faces.size());
-	ImGui::Text("Wireframe Edges:      %d", (int)_uniqueEdges.size());
+
+	const char* modes[] = {
+		"Auto (Concave for ProceduralMesh / Convex for Model)",
+		"Force Convex Hull (3D Quickhull)",
+		"Force Concave Triangle Mesh (Field / Terrain)"
+	};
+	if (ImGui::Combo("Mesh Collider Mode", &_meshColliderMode, modes, IM_ARRAYSIZE(modes))) {
+		RebuildMesh();
+		SyncTransform();
+	}
+
+	ImGui::Text("Active Shape Type: %s", _isConcaveField ? "Concave Triangle Field" : "Convex Hull");
+	ImGui::Text("Collider Vertices: %d", (int)_localVertices.size());
+	ImGui::Text("Collider Triangles:%d", (int)_faces.size());
+	ImGui::Text("Wireframe Edges:   %d", (int)_uniqueEdges.size());
 	if (ImGui::Button("Rebuild Mesh Collider")) {
 		RebuildMesh();
 		SyncTransform();
