@@ -192,8 +192,8 @@
                                     "ShadingModel": 0,
                                     "SpecularModel": 1,
                                     "Direction": {
-                                        "x": 0.0,
-                                        "y": -1.0,
+                                        "x": 1.100000023841858,
+                                        "y": -1.5,
                                         "z": -1.100000023841858,
                                         "w": 0.0
                                     },
@@ -227,9 +227,9 @@
                                         "z": 1.0,
                                         "w": 1.0
                                     },
-                                    "RimPower": 2.0,
+                                    "RimPower": 2.700000047683716,
                                     "RimLightModel": 0,
-                                    "Intensity": 1.100000023841858,
+                                    "Intensity": 3.0,
                                     "AmbientIntensity": 1.0,
                                     "Exposure": 1.0
                                 }
@@ -497,7 +497,7 @@
                                 "Transform": {
                                     "Position": {
                                         "x": 0.0,
-                                        "y": -1.4018795490264893,
+                                        "y": -2.2100768089294435,
                                         "z": 0.0
                                     },
                                     "Scale": {
@@ -530,26 +530,26 @@
                                                 },
                                                 "Width": 10.0,
                                                 "Depth": 10.0,
-                                                "SegmentsX": 63,
-                                                "SegmentsZ": 64,
+                                                "SegmentsX": 128,
+                                                "SegmentsZ": 126,
                                                 "GeneratorMode": 2,
-                                                "DisplacementMapPath": "",
-                                                "DisplacementScale": 0.5,
-                                                "DisplacementMidpoint": 0.0,
+                                                "DisplacementMapPath": "asset/texture/proc_texture_rockSurface.png",
+                                                "DisplacementScale": 3.0,
+                                                "DisplacementMidpoint": 0.38999998569488528,
                                                 "InvertDisplacement": false,
-                                                "DispSmoothRadius": 1,
+                                                "DispSmoothRadius": 3,
                                                 "DispTilingX": 1.0,
                                                 "DispTilingY": 1.0,
                                                 "DispOffsetX": 0.0,
                                                 "DispOffsetY": 0.0,
-                                                "NoiseType": 2,
-                                                "NoiseAmplitude": 1.659999966621399,
+                                                "NoiseType": 1,
+                                                "NoiseAmplitude": 1.4900000095367432,
                                                 "NoiseFrequency": 3.0,
-                                                "NoiseOctaves": 4,
-                                                "NoisePersistence": 0.44999998807907107,
-                                                "NoiseLacunarity": 2.0,
-                                                "NoiseSeed": 1337,
-                                                "TerraceSteps": 6.199999809265137,
+                                                "NoiseOctaves": 3,
+                                                "NoisePersistence": 0.47999998927116396,
+                                                "NoiseLacunarity": 2.359999895095825,
+                                                "NoiseSeed": 600,
+                                                "TerraceSteps": 6.0,
                                                 "UseIslandFalloff": false,
                                                 "FalloffStrength": 1.5,
                                                 "NormalMode": 0,
@@ -572,7 +572,7 @@
                                                 },
                                                 "VertexShaderID": "DirectionalLight",
                                                 "VertexLayoutID": "DirectionalLight",
-                                                "PixelShaderID": "Geometry",
+                                                "PixelShaderID": "DirectionalLight",
                                                 "BaseColor": {
                                                     "x": 1.0,
                                                     "y": 1.0,
@@ -592,7 +592,7 @@
                                                 "ShadingModelID": 0,
                                                 "FlipU": false,
                                                 "FlipV": false,
-                                                "TexturePath": "x64/Development/asset/texture/proc_texture_rockSurface.png",
+                                                "TexturePath": "asset/texture/proc_texture_rockSurface.png",
                                                 "NormalMapPath": "asset/texture/proc_texture_rockSurface_normal.png",
                                                 "MetallicMapPath": "",
                                                 "RoughnessMapPath": "",
@@ -603,7 +603,7 @@
                                                 "UVOffsetX": 0.0,
                                                 "UVOffsetY": 0.0,
                                                 "UVWrapMode": 0,
-                                                "UVScaleMode": 0,
+                                                "UVScaleMode": 1,
                                                 "ProcScale3D": 1.0,
                                                 "ProcSeed": 1337
                                             }
