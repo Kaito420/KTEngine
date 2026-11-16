@@ -1,4 +1,4 @@
-﻿//=====================================================================================
+//=====================================================================================
 // Scene.cpp
 // Author:Kaito Aoki
 // Date:2025/07/04
@@ -185,6 +185,16 @@ void Scene::OnLoaded() {
 	GameObject::_nextId = maxId + 1;
 }
 
+namespace {
+	struct PendingHierarchyDrop {
+		GameObject* src    = nullptr;
+		GameObject* target = nullptr;
+		// 0: MakeChild, 1: InsertBefore, 2: InsertAfter, 3: MoveToRootTop, 4: MoveToRootBottom
+		int mode           = -1;
+	};
+	static PendingHierarchyDrop s_pendingHierarchyDrop;
+}
+
 void Scene::RenderHierarchyNode(const std::shared_ptr<GameObject>& gameObject) {
 	if (!gameObject || gameObject->IsDestroy()) return;
 
@@ -211,6 +221,10 @@ void Scene::RenderHierarchyNode(const std::shared_ptr<GameObject>& gameObject) {
 		ImGui::PopStyleColor();
 	}
 
+	ImVec2 itemMin = ImGui::GetItemRectMin();
+	ImVec2 itemMax = ImGui::GetItemRectMax();
+	float itemHeight = itemMax.y - itemMin.y;
+
 	if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
 		_selectedObjId = gameObject->_id;
 	}
@@ -223,12 +237,59 @@ void Scene::RenderHierarchyNode(const std::shared_ptr<GameObject>& gameObject) {
 		ImGui::EndDragDropSource();
 	}
 
-	// Drag & Drop Target (オブジェクトに重ねてドロップすると親子化)
+	// Drag & Drop Target (上端28%: 直前に挿入 / 中央44%: 親子化 / 下端28%: 直後に挿入)
 	if (ImGui::BeginDragDropTarget()) {
-		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_GAMEOBJECT")) {
+		float mouseY = ImGui::GetIO().MousePos.y;
+		float relY = (itemHeight > 1.0f) ? ((mouseY - itemMin.y) / itemHeight) : 0.5f;
+		int dropMode = 0; // 0: MakeChild, 1: InsertBefore, 2: InsertAfter
+		if (relY < 0.28f) {
+			dropMode = 1;
+		} else if (relY > 0.72f) {
+			dropMode = 2;
+		}
+
+		const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(
+			"DND_GAMEOBJECT",
+			ImGuiDragDropFlags_AcceptBeforeDelivery | ImGuiDragDropFlags_AcceptNoDrawDefaultRect
+		);
+		if (payload && payload->Data) {
 			GameObject* srcPtr = *(GameObject**)payload->Data;
-			if (srcPtr && srcPtr != gameObject.get() && !srcPtr->IsAncestorOf(gameObject)) {
-				srcPtr->SetParent(gameObject, true);
+			bool validDrop = (srcPtr != nullptr && srcPtr != gameObject.get());
+			if (validDrop) {
+				if (dropMode == 0) {
+					validDrop = !srcPtr->IsAncestorOf(gameObject);
+				} else {
+					auto targetParent = gameObject->GetParent();
+					if (targetParent && (srcPtr == targetParent.get() || srcPtr->IsAncestorOf(targetParent))) {
+						validDrop = false;
+					}
+				}
+			}
+
+			if (validDrop) {
+				ImDrawList* drawList = ImGui::GetWindowDrawList();
+				ImU32 lineColor = IM_COL32(66, 175, 255, 255);
+				ImU32 boxColor  = IM_COL32(66, 175, 255, 210);
+				ImU32 fillColor = IM_COL32(66, 175, 255, 45);
+
+				if (dropMode == 1) {
+					float y = itemMin.y;
+					drawList->AddLine(ImVec2(itemMin.x + 4.0f, y), ImVec2(itemMax.x, y), lineColor, 2.5f);
+					drawList->AddCircleFilled(ImVec2(itemMin.x + 6.0f, y), 3.5f, lineColor);
+				} else if (dropMode == 2) {
+					float y = itemMax.y;
+					drawList->AddLine(ImVec2(itemMin.x + 4.0f, y), ImVec2(itemMax.x, y), lineColor, 2.5f);
+					drawList->AddCircleFilled(ImVec2(itemMin.x + 6.0f, y), 3.5f, lineColor);
+				} else {
+					drawList->AddRectFilled(itemMin, itemMax, fillColor, 3.0f);
+					drawList->AddRect(itemMin, itemMax, boxColor, 3.0f, 0, 1.5f);
+				}
+
+				if (payload->IsDelivery()) {
+					s_pendingHierarchyDrop.src    = srcPtr;
+					s_pendingHierarchyDrop.target = gameObject.get();
+					s_pendingHierarchyDrop.mode   = dropMode;
+				}
 			}
 		}
 		ImGui::EndDragDropTarget();
@@ -300,17 +361,21 @@ void Scene::RenderHierarchy()
 			}
 		};
 
-		auto acceptRootUnparentDrop = []() {
+		auto acceptRootUnparentDrop = [](int rootDropMode) {
 			if (ImGui::BeginDragDropTarget()) {
 				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_GAMEOBJECT")) {
 					GameObject* srcPtr = *(GameObject**)payload->Data;
-					if (srcPtr && srcPtr->GetParent() != nullptr) {
-						srcPtr->SetParent(nullptr, true);
+					if (srcPtr) {
+						s_pendingHierarchyDrop.src    = srcPtr;
+						s_pendingHierarchyDrop.target = nullptr;
+						s_pendingHierarchyDrop.mode   = rootDropMode;
 					}
 				}
 				ImGui::EndDragDropTarget();
 			}
 		};
+
+		s_pendingHierarchyDrop = {};
 
 		// 上部固定ヘッダー領域：「+」ボタンと上部ドロップ＆右クリック領域
 		if (ImGui::Button("+")) {
@@ -325,7 +390,7 @@ void Scene::RenderHierarchy()
 		ImVec2 headerAvail = ImGui::GetContentRegionAvail();
 		float headerWidth = headerAvail.x > 1.0f ? headerAvail.x : 1.0f;
 		ImGui::InvisibleButton("##HierarchyHeaderDropZone", ImVec2(headerWidth, ImGui::GetFrameHeight()));
-		acceptRootUnparentDrop();
+		acceptRootUnparentDrop(3); // 3: MoveToRootTop
 		if (ImGui::BeginPopupContextItem("HierarchyHeaderContextPopup")) {
 			drawCreateObjectMenu();
 			ImGui::EndPopup();
@@ -343,12 +408,12 @@ void Scene::RenderHierarchy()
 				}
 			}
 
-			// 下部の余白エリア（子オブジェクトをD&Dすると親子関係を解除してルートへ戻す）
+			// 下部の余白エリア（子オブジェクトをD&Dすると親子関係を解除してルート末尾へ移動）
 			ImVec2 avail = ImGui::GetContentRegionAvail();
 			if (avail.x < 1.0f) avail.x = 1.0f;
 			if (avail.y < 40.0f) avail.y = 40.0f;
 			ImGui::InvisibleButton("##HierarchyRootDropZone", avail);
-			acceptRootUnparentDrop();
+			acceptRootUnparentDrop(4); // 4: MoveToRootBottom
 
 			// 余白エリア（InvisibleButton）上での右クリックメニュー
 			if (ImGui::BeginPopupContextItem("HierarchyEmptyItemContextPopup")) {
@@ -364,6 +429,79 @@ void Scene::RenderHierarchy()
 			}
 		}
 		ImGui::EndChild();
+
+		// D&D による親子化・並び替えの確定処理（イテレータ安全のためループ外で実行）
+		if (s_pendingHierarchyDrop.mode >= 0 && s_pendingHierarchyDrop.src != nullptr) {
+			auto srcIt = std::find_if(_gameObjects.begin(), _gameObjects.end(),
+				[](const std::shared_ptr<GameObject>& o) { return o.get() == s_pendingHierarchyDrop.src; });
+			auto targetIt = std::find_if(_gameObjects.begin(), _gameObjects.end(),
+				[](const std::shared_ptr<GameObject>& o) { return o.get() == s_pendingHierarchyDrop.target; });
+
+			if (srcIt != _gameObjects.end()) {
+				std::shared_ptr<GameObject> srcObj = *srcIt;
+				if (s_pendingHierarchyDrop.mode == 3) {
+					// ヘッダー領域へのドロップ：親解除＋ルート先頭へ移動
+					if (srcObj->GetParent() != nullptr) {
+						srcObj->SetParent(nullptr, true);
+					}
+					_gameObjects.splice(_gameObjects.begin(), _gameObjects, srcIt);
+				}
+				else if (s_pendingHierarchyDrop.mode == 4) {
+					// 下部余白へのドロップ：親解除＋ルート末尾へ移動
+					if (srcObj->GetParent() != nullptr) {
+						srcObj->SetParent(nullptr, true);
+					}
+					_gameObjects.splice(_gameObjects.end(), _gameObjects, srcIt);
+				}
+				else if (targetIt != _gameObjects.end() && srcIt != targetIt) {
+					std::shared_ptr<GameObject> targetObj = *targetIt;
+					if (s_pendingHierarchyDrop.mode == 0) {
+						// 中央エリアへのドロップ：targetObj の子オブジェクトにする
+						if (!srcObj->IsAncestorOf(targetObj)) {
+							srcObj->SetParent(targetObj, true);
+						}
+					}
+					else if (s_pendingHierarchyDrop.mode == 1 || s_pendingHierarchyDrop.mode == 2) {
+						// 上端(1:直前) / 下端(2:直後) エリアへのドロップ：targetObj と同じ親階層で並び替え
+						bool insertAfter = (s_pendingHierarchyDrop.mode == 2);
+						std::shared_ptr<GameObject> desiredParent = targetObj->GetParent();
+						if (!desiredParent || (srcObj != desiredParent && !srcObj->IsAncestorOf(desiredParent))) {
+							if (srcObj->GetParent() != desiredParent) {
+								srcObj->SetParent(desiredParent, true);
+							}
+
+							// 親がいる場合は親の _children ベクタ内の順序も更新
+							if (desiredParent) {
+								auto& siblings = desiredParent->_children;
+								siblings.erase(
+									std::remove_if(siblings.begin(), siblings.end(),
+										[&](const std::shared_ptr<GameObject>& c) { return c.get() == srcObj.get(); }),
+									siblings.end()
+								);
+								auto sibTargetIt = std::find_if(siblings.begin(), siblings.end(),
+									[&](const std::shared_ptr<GameObject>& c) { return c.get() == targetObj.get(); });
+								if (sibTargetIt != siblings.end()) {
+									if (insertAfter) ++sibTargetIt;
+									siblings.insert(sibTargetIt, srcObj);
+								} else {
+									siblings.push_back(srcObj);
+								}
+							}
+
+							// Scene::_gameObjects リスト内の順序も更新（ルート表示順＆シリアライズ順の同期）
+							auto insertPos = targetIt;
+							if (insertAfter) {
+								++insertPos;
+							}
+							if (insertPos != srcIt) {
+								_gameObjects.splice(insertPos, _gameObjects, srcIt);
+							}
+						}
+					}
+				}
+			}
+			s_pendingHierarchyDrop = {};
+		}
 
 		// リネーム用モーダルウィンドウの処理
 		if(_openPopup) {

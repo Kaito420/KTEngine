@@ -486,10 +486,153 @@
                         }
                     },
                     {
-                        "polymorphic_id": 2147483659,
-                        "polymorphic_name": "SphereObject",
+                        "polymorphic_id": 1073741824,
                         "ptr_wrapper": {
                             "id": 2147483663,
+                            "data": {
+                                "ID": 12,
+                                "Name": "MeshField",
+                                "Active": true,
+                                "ExecuteInEditor": false,
+                                "Transform": {
+                                    "Position": {
+                                        "x": 0.0,
+                                        "y": -1.4018795490264893,
+                                        "z": 0.0
+                                    },
+                                    "Scale": {
+                                        "x": 1.0,
+                                        "y": 1.0,
+                                        "z": 1.0
+                                    },
+                                    "Rotation": {
+                                        "x": 0.0,
+                                        "y": 0.0,
+                                        "z": -0.0
+                                    },
+                                    "Quaternion": {
+                                        "x": -0.0,
+                                        "y": 0.0,
+                                        "z": -0.0,
+                                        "w": 1.0
+                                    }
+                                },
+                                "Components": [
+                                    {
+                                        "polymorphic_id": 2147483659,
+                                        "polymorphic_name": "ProceduralMesh",
+                                        "ptr_wrapper": {
+                                            "id": 2147483664,
+                                            "data": {
+                                                "value0": {
+                                                    "Active": true,
+                                                    "ExecuteInEditor": true
+                                                },
+                                                "Width": 10.0,
+                                                "Depth": 10.0,
+                                                "SegmentsX": 32,
+                                                "SegmentsZ": 32,
+                                                "GeneratorMode": 2,
+                                                "DisplacementMapPath": "",
+                                                "DisplacementScale": 0.5,
+                                                "DisplacementMidpoint": 0.0,
+                                                "InvertDisplacement": false,
+                                                "DispSmoothRadius": 1,
+                                                "DispTilingX": 1.0,
+                                                "DispTilingY": 1.0,
+                                                "DispOffsetX": 0.0,
+                                                "DispOffsetY": 0.0,
+                                                "NoiseType": 2,
+                                                "NoiseAmplitude": 1.659999966621399,
+                                                "NoiseFrequency": 3.0,
+                                                "NoiseOctaves": 4,
+                                                "NoisePersistence": 0.5,
+                                                "NoiseLacunarity": 2.0,
+                                                "NoiseSeed": 1337,
+                                                "TerraceSteps": 6.0,
+                                                "UseIslandFalloff": false,
+                                                "FalloffStrength": 1.5
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 3,
+                                        "ptr_wrapper": {
+                                            "id": 2147483665,
+                                            "data": {
+                                                "value0": {
+                                                    "Active": true,
+                                                    "ExecuteInEditor": false
+                                                },
+                                                "VertexShaderID": "DirectionalLight",
+                                                "VertexLayoutID": "DirectionalLight",
+                                                "PixelShaderID": "Geometry",
+                                                "BaseColor": {
+                                                    "x": 1.0,
+                                                    "y": 1.0,
+                                                    "z": 1.0,
+                                                    "w": 1.0
+                                                },
+                                                "EmissionColor": {
+                                                    "x": 0.0,
+                                                    "y": 0.0,
+                                                    "z": 0.0,
+                                                    "w": 0.0
+                                                },
+                                                "Metallic": 0.0,
+                                                "Specular": 0.5,
+                                                "Roughness": 0.5,
+                                                "NormalWeight": 1.0,
+                                                "ShadingModelID": 0,
+                                                "FlipU": false,
+                                                "FlipV": false,
+                                                "TexturePath": "asset/model/field004.dds",
+                                                "NormalMapPath": "",
+                                                "MetallicMapPath": "",
+                                                "RoughnessMapPath": "",
+                                                "ARMMapPath": "",
+                                                "MappingMode": 0,
+                                                "UVTilingX": 1.0,
+                                                "UVTilingY": 1.0,
+                                                "UVOffsetX": 0.0,
+                                                "UVOffsetY": 0.0,
+                                                "UVWrapMode": 0,
+                                                "UVScaleMode": 0,
+                                                "ProcScale3D": 1.0,
+                                                "ProcSeed": 1337
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 7,
+                                        "ptr_wrapper": {
+                                            "id": 2147483666,
+                                            "data": {
+                                                "value0": {
+                                                    "value0": {
+                                                        "Active": true,
+                                                        "ExecuteInEditor": true
+                                                    },
+                                                    "Center": {
+                                                        "x": 0.0,
+                                                        "y": 0.0,
+                                                        "z": 0.0
+                                                    }
+                                                },
+                                                "MeshColliderMode": 0
+                                            }
+                                        }
+                                    }
+                                ],
+                                "ParentID": -1
+                            }
+                        }
+                    },
+                    {
+                        "polymorphic_id": 2147483660,
+                        "polymorphic_name": "SphereObject",
+                        "ptr_wrapper": {
+                            "id": 2147483667,
                             "data": {
                                 "ID": 8,
                                 "Name": "Sphere",
@@ -515,129 +658,6 @@
                                         "x": 0.0,
                                         "y": -0.0,
                                         "z": 0.0,
-                                        "w": 1.0
-                                    }
-                                },
-                                "Components": [
-                                    {
-                                        "polymorphic_id": 3,
-                                        "ptr_wrapper": {
-                                            "id": 2147483664,
-                                            "data": {
-                                                "value0": {
-                                                    "Active": true,
-                                                    "ExecuteInEditor": false
-                                                },
-                                                "VertexShaderID": "DirectionalLight",
-                                                "VertexLayoutID": "DirectionalLight",
-                                                "PixelShaderID": "DirectionalLight",
-                                                "BaseColor": {
-                                                    "x": 1.0,
-                                                    "y": 1.0,
-                                                    "z": 1.0,
-                                                    "w": 1.0
-                                                },
-                                                "EmissionColor": {
-                                                    "x": 0.0,
-                                                    "y": 0.0,
-                                                    "z": 0.0,
-                                                    "w": 0.0
-                                                },
-                                                "Metallic": 0.0,
-                                                "Specular": 0.5,
-                                                "Roughness": 0.5,
-                                                "NormalWeight": 1.0,
-                                                "ShadingModelID": 0,
-                                                "FlipU": false,
-                                                "FlipV": false,
-                                                "TexturePath": "",
-                                                "NormalMapPath": "",
-                                                "MetallicMapPath": "",
-                                                "RoughnessMapPath": "",
-                                                "ARMMapPath": "",
-                                                "MappingMode": 0,
-                                                "UVTilingX": 1.0,
-                                                "UVTilingY": 1.0,
-                                                "UVOffsetX": 0.0,
-                                                "UVOffsetY": 0.0,
-                                                "UVWrapMode": 0,
-                                                "UVScaleMode": 0,
-                                                "ProcScale3D": 1.0,
-                                                "ProcSeed": 1337
-                                            }
-                                        }
-                                    },
-                                    {
-                                        "polymorphic_id": 2147483660,
-                                        "polymorphic_name": "Sphere",
-                                        "ptr_wrapper": {
-                                            "id": 2147483665,
-                                            "data": {
-                                                "value0": {
-                                                    "Active": true,
-                                                    "ExecuteInEditor": false
-                                                },
-                                                "Radius": 0.5,
-                                                "StackCount": 16,
-                                                "SliceCount": 16
-                                            }
-                                        }
-                                    },
-                                    {
-                                        "polymorphic_id": 2147483661,
-                                        "polymorphic_name": "ColliderSphere",
-                                        "ptr_wrapper": {
-                                            "id": 2147483666,
-                                            "data": {
-                                                "value0": {
-                                                    "value0": {
-                                                        "Active": true,
-                                                        "ExecuteInEditor": true
-                                                    },
-                                                    "Center": {
-                                                        "x": 0.0,
-                                                        "y": 0.0,
-                                                        "z": 0.0
-                                                    }
-                                                },
-                                                "Radius": 0.2800000011920929
-                                            }
-                                        }
-                                    }
-                                ],
-                                "ParentID": -1
-                            }
-                        }
-                    },
-                    {
-                        "polymorphic_id": 1073741824,
-                        "ptr_wrapper": {
-                            "id": 2147483667,
-                            "data": {
-                                "ID": 9,
-                                "Name": "Human",
-                                "Active": true,
-                                "ExecuteInEditor": false,
-                                "Transform": {
-                                    "Position": {
-                                        "x": -1.4702165126800538,
-                                        "y": 0.0,
-                                        "z": 0.0
-                                    },
-                                    "Scale": {
-                                        "x": 0.12999999523162843,
-                                        "y": 0.12999999523162843,
-                                        "z": 0.12999999523162843
-                                    },
-                                    "Rotation": {
-                                        "x": 0.0,
-                                        "y": 0.0,
-                                        "z": -0.0
-                                    },
-                                    "Quaternion": {
-                                        "x": -0.0,
-                                        "y": 0.0,
-                                        "z": -0.0,
                                         "w": 1.0
                                     }
                                 },
@@ -691,7 +711,8 @@
                                         }
                                     },
                                     {
-                                        "polymorphic_id": 6,
+                                        "polymorphic_id": 2147483661,
+                                        "polymorphic_name": "Sphere",
                                         "ptr_wrapper": {
                                             "id": 2147483669,
                                             "data": {
@@ -699,43 +720,19 @@
                                                     "Active": true,
                                                     "ExecuteInEditor": false
                                                 },
-                                                "FileName": "asset/model/Human.fbx",
-                                                "FlipWinding": false,
-                                                "FlipNormals": false,
-                                                "CullMode": 0
+                                                "Radius": 0.5,
+                                                "StackCount": 16,
+                                                "SliceCount": 16
                                             }
                                         }
                                     },
                                     {
                                         "polymorphic_id": 2147483662,
-                                        "polymorphic_name": "Animator",
+                                        "polymorphic_name": "ColliderSphere",
                                         "ptr_wrapper": {
                                             "id": 2147483670,
                                             "data": {
                                                 "value0": {
-                                                    "Active": true,
-                                                    "ExecuteInEditor": true
-                                                },
-                                                "CurrentClipIndex": 1,
-                                                "Speed": 1.0,
-                                                "IsPlaying": true,
-                                                "IsLooping": true,
-                                                "DefaultCrossfadeDuration": 0.25,
-                                                "ExtraAnimationFiles": [
-                                                    "asset/animation/Human_Idle.fbx",
-                                                    "asset/animation/Human_Jump.fbx",
-                                                    "asset/animation/Human_Walking.fbx",
-                                                    "asset/animation/Human_Running.fbx"
-                                                ]
-                                            }
-                                        }
-                                    },
-                                    {
-                                        "polymorphic_id": 7,
-                                        "ptr_wrapper": {
-                                            "id": 2147483671,
-                                            "data": {
-                                                "value0": {
                                                     "value0": {
                                                         "Active": true,
                                                         "ExecuteInEditor": true
@@ -746,129 +743,7 @@
                                                         "z": 0.0
                                                     }
                                                 },
-                                                "MeshColliderMode": 1
-                                            }
-                                        }
-                                    }
-                                ],
-                                "ParentID": -1
-                            }
-                        }
-                    },
-                    {
-                        "polymorphic_id": 1073741824,
-                        "ptr_wrapper": {
-                            "id": 2147483672,
-                            "data": {
-                                "ID": 10,
-                                "Name": "Torus",
-                                "Active": true,
-                                "ExecuteInEditor": false,
-                                "Transform": {
-                                    "Position": {
-                                        "x": 1.1877604722976685,
-                                        "y": 1.1335783004760743,
-                                        "z": 0.0
-                                    },
-                                    "Scale": {
-                                        "x": 1.0,
-                                        "y": 1.0,
-                                        "z": 1.0
-                                    },
-                                    "Rotation": {
-                                        "x": 0.0,
-                                        "y": 0.0,
-                                        "z": -0.0
-                                    },
-                                    "Quaternion": {
-                                        "x": -0.0,
-                                        "y": 0.0,
-                                        "z": -0.0,
-                                        "w": 1.0
-                                    }
-                                },
-                                "Components": [
-                                    {
-                                        "polymorphic_id": 3,
-                                        "ptr_wrapper": {
-                                            "id": 2147483673,
-                                            "data": {
-                                                "value0": {
-                                                    "Active": true,
-                                                    "ExecuteInEditor": false
-                                                },
-                                                "VertexShaderID": "DirectionalLight",
-                                                "VertexLayoutID": "DirectionalLight",
-                                                "PixelShaderID": "DirectionalLight",
-                                                "BaseColor": {
-                                                    "x": 1.0,
-                                                    "y": 1.0,
-                                                    "z": 1.0,
-                                                    "w": 1.0
-                                                },
-                                                "EmissionColor": {
-                                                    "x": 0.0,
-                                                    "y": 0.0,
-                                                    "z": 0.0,
-                                                    "w": 0.0
-                                                },
-                                                "Metallic": 0.0,
-                                                "Specular": 0.5,
-                                                "Roughness": 0.5,
-                                                "NormalWeight": 1.0,
-                                                "ShadingModelID": 0,
-                                                "FlipU": false,
-                                                "FlipV": false,
-                                                "TexturePath": "asset/model/field004.dds",
-                                                "NormalMapPath": "",
-                                                "MetallicMapPath": "",
-                                                "RoughnessMapPath": "",
-                                                "ARMMapPath": "",
-                                                "MappingMode": 1,
-                                                "UVTilingX": 1.0,
-                                                "UVTilingY": 1.0,
-                                                "UVOffsetX": 0.0,
-                                                "UVOffsetY": 0.0,
-                                                "UVWrapMode": 0,
-                                                "UVScaleMode": 0,
-                                                "ProcScale3D": 1.0,
-                                                "ProcSeed": 1337
-                                            }
-                                        }
-                                    },
-                                    {
-                                        "polymorphic_id": 6,
-                                        "ptr_wrapper": {
-                                            "id": 2147483674,
-                                            "data": {
-                                                "value0": {
-                                                    "Active": true,
-                                                    "ExecuteInEditor": false
-                                                },
-                                                "FileName": "asset/model/torus.obj",
-                                                "FlipWinding": false,
-                                                "FlipNormals": false,
-                                                "CullMode": 0
-                                            }
-                                        }
-                                    },
-                                    {
-                                        "polymorphic_id": 7,
-                                        "ptr_wrapper": {
-                                            "id": 2147483675,
-                                            "data": {
-                                                "value0": {
-                                                    "value0": {
-                                                        "Active": true,
-                                                        "ExecuteInEditor": true
-                                                    },
-                                                    "Center": {
-                                                        "x": 0.0,
-                                                        "y": 0.0,
-                                                        "z": 0.0
-                                                    }
-                                                },
-                                                "MeshColliderMode": 0
+                                                "Radius": 0.2800000011920929
                                             }
                                         }
                                     }
@@ -880,7 +755,7 @@
                     {
                         "polymorphic_id": 8,
                         "ptr_wrapper": {
-                            "id": 2147483676,
+                            "id": 2147483671,
                             "data": {
                                 "ID": 11,
                                 "Name": "Cube",
@@ -913,7 +788,7 @@
                                     {
                                         "polymorphic_id": 3,
                                         "ptr_wrapper": {
-                                            "id": 2147483677,
+                                            "id": 2147483672,
                                             "data": {
                                                 "value0": {
                                                     "Active": true,
@@ -961,7 +836,7 @@
                                     {
                                         "polymorphic_id": 9,
                                         "ptr_wrapper": {
-                                            "id": 2147483678,
+                                            "id": 2147483673,
                                             "data": {
                                                 "value0": {
                                                     "Active": true,
@@ -973,7 +848,7 @@
                                     {
                                         "polymorphic_id": 10,
                                         "ptr_wrapper": {
-                                            "id": 2147483679,
+                                            "id": 2147483674,
                                             "data": {
                                                 "value0": {
                                                     "value0": {
@@ -1002,16 +877,162 @@
                     {
                         "polymorphic_id": 1073741824,
                         "ptr_wrapper": {
-                            "id": 2147483680,
+                            "id": 2147483675,
                             "data": {
-                                "ID": 12,
-                                "Name": "MeshField",
+                                "ID": 9,
+                                "Name": "Human",
                                 "Active": true,
                                 "ExecuteInEditor": false,
                                 "Transform": {
                                     "Position": {
+                                        "x": -1.4702165126800538,
+                                        "y": 0.0,
+                                        "z": 0.0
+                                    },
+                                    "Scale": {
+                                        "x": 0.12999999523162843,
+                                        "y": 0.12999999523162843,
+                                        "z": 0.12999999523162843
+                                    },
+                                    "Rotation": {
                                         "x": 0.0,
-                                        "y": -0.756049633026123,
+                                        "y": 0.0,
+                                        "z": -0.0
+                                    },
+                                    "Quaternion": {
+                                        "x": -0.0,
+                                        "y": 0.0,
+                                        "z": -0.0,
+                                        "w": 1.0
+                                    }
+                                },
+                                "Components": [
+                                    {
+                                        "polymorphic_id": 3,
+                                        "ptr_wrapper": {
+                                            "id": 2147483676,
+                                            "data": {
+                                                "value0": {
+                                                    "Active": true,
+                                                    "ExecuteInEditor": false
+                                                },
+                                                "VertexShaderID": "DirectionalLight",
+                                                "VertexLayoutID": "DirectionalLight",
+                                                "PixelShaderID": "DirectionalLight",
+                                                "BaseColor": {
+                                                    "x": 1.0,
+                                                    "y": 1.0,
+                                                    "z": 1.0,
+                                                    "w": 1.0
+                                                },
+                                                "EmissionColor": {
+                                                    "x": 0.0,
+                                                    "y": 0.0,
+                                                    "z": 0.0,
+                                                    "w": 0.0
+                                                },
+                                                "Metallic": 0.0,
+                                                "Specular": 0.5,
+                                                "Roughness": 0.5,
+                                                "NormalWeight": 1.0,
+                                                "ShadingModelID": 0,
+                                                "FlipU": false,
+                                                "FlipV": false,
+                                                "TexturePath": "",
+                                                "NormalMapPath": "",
+                                                "MetallicMapPath": "",
+                                                "RoughnessMapPath": "",
+                                                "ARMMapPath": "",
+                                                "MappingMode": 0,
+                                                "UVTilingX": 1.0,
+                                                "UVTilingY": 1.0,
+                                                "UVOffsetX": 0.0,
+                                                "UVOffsetY": 0.0,
+                                                "UVWrapMode": 0,
+                                                "UVScaleMode": 0,
+                                                "ProcScale3D": 1.0,
+                                                "ProcSeed": 1337
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 6,
+                                        "ptr_wrapper": {
+                                            "id": 2147483677,
+                                            "data": {
+                                                "value0": {
+                                                    "Active": true,
+                                                    "ExecuteInEditor": false
+                                                },
+                                                "FileName": "asset/model/Human.fbx",
+                                                "FlipWinding": false,
+                                                "FlipNormals": false,
+                                                "CullMode": 0
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 2147483663,
+                                        "polymorphic_name": "Animator",
+                                        "ptr_wrapper": {
+                                            "id": 2147483678,
+                                            "data": {
+                                                "value0": {
+                                                    "Active": true,
+                                                    "ExecuteInEditor": true
+                                                },
+                                                "CurrentClipIndex": 1,
+                                                "Speed": 1.0,
+                                                "IsPlaying": true,
+                                                "IsLooping": true,
+                                                "DefaultCrossfadeDuration": 0.25,
+                                                "ExtraAnimationFiles": [
+                                                    "asset/animation/Human_Idle.fbx",
+                                                    "asset/animation/Human_Jump.fbx",
+                                                    "asset/animation/Human_Walking.fbx",
+                                                    "asset/animation/Human_Running.fbx"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 7,
+                                        "ptr_wrapper": {
+                                            "id": 2147483679,
+                                            "data": {
+                                                "value0": {
+                                                    "value0": {
+                                                        "Active": true,
+                                                        "ExecuteInEditor": true
+                                                    },
+                                                    "Center": {
+                                                        "x": 0.0,
+                                                        "y": 0.0,
+                                                        "z": 0.0
+                                                    }
+                                                },
+                                                "MeshColliderMode": 1
+                                            }
+                                        }
+                                    }
+                                ],
+                                "ParentID": -1
+                            }
+                        }
+                    },
+                    {
+                        "polymorphic_id": 1073741824,
+                        "ptr_wrapper": {
+                            "id": 2147483680,
+                            "data": {
+                                "ID": 10,
+                                "Name": "Torus",
+                                "Active": true,
+                                "ExecuteInEditor": false,
+                                "Transform": {
+                                    "Position": {
+                                        "x": 1.1877604722976685,
+                                        "y": 1.1335783004760743,
                                         "z": 0.0
                                     },
                                     "Scale": {
@@ -1033,46 +1054,9 @@
                                 },
                                 "Components": [
                                     {
-                                        "polymorphic_id": 2147483663,
-                                        "polymorphic_name": "ProceduralMesh",
-                                        "ptr_wrapper": {
-                                            "id": 2147483681,
-                                            "data": {
-                                                "value0": {
-                                                    "Active": true,
-                                                    "ExecuteInEditor": true
-                                                },
-                                                "Width": 10.0,
-                                                "Depth": 10.0,
-                                                "SegmentsX": 32,
-                                                "SegmentsZ": 32,
-                                                "GeneratorMode": 0,
-                                                "DisplacementMapPath": "",
-                                                "DisplacementScale": 0.5,
-                                                "DisplacementMidpoint": 0.0,
-                                                "InvertDisplacement": false,
-                                                "DispSmoothRadius": 1,
-                                                "DispTilingX": 1.0,
-                                                "DispTilingY": 1.0,
-                                                "DispOffsetX": 0.0,
-                                                "DispOffsetY": 0.0,
-                                                "NoiseType": 0,
-                                                "NoiseAmplitude": 0.3499999940395355,
-                                                "NoiseFrequency": 3.0,
-                                                "NoiseOctaves": 4,
-                                                "NoisePersistence": 0.5,
-                                                "NoiseLacunarity": 2.0,
-                                                "NoiseSeed": 1337,
-                                                "TerraceSteps": 6.0,
-                                                "UseIslandFalloff": false,
-                                                "FalloffStrength": 1.5
-                                            }
-                                        }
-                                    },
-                                    {
                                         "polymorphic_id": 3,
                                         "ptr_wrapper": {
-                                            "id": 2147483682,
+                                            "id": 2147483681,
                                             "data": {
                                                 "value0": {
                                                     "Active": true,
@@ -1105,7 +1089,7 @@
                                                 "MetallicMapPath": "",
                                                 "RoughnessMapPath": "",
                                                 "ARMMapPath": "",
-                                                "MappingMode": 0,
+                                                "MappingMode": 1,
                                                 "UVTilingX": 1.0,
                                                 "UVTilingY": 1.0,
                                                 "UVOffsetX": 0.0,
@@ -1114,6 +1098,22 @@
                                                 "UVScaleMode": 0,
                                                 "ProcScale3D": 1.0,
                                                 "ProcSeed": 1337
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 6,
+                                        "ptr_wrapper": {
+                                            "id": 2147483682,
+                                            "data": {
+                                                "value0": {
+                                                    "Active": true,
+                                                    "ExecuteInEditor": false
+                                                },
+                                                "FileName": "asset/model/torus.obj",
+                                                "FlipWinding": false,
+                                                "FlipNormals": false,
+                                                "CullMode": 0
                                             }
                                         }
                                     },
