@@ -15,8 +15,17 @@ PS_IN main(VS_IN input)
     output.Position = mul(position, wvp);
     
     float3 localN = normalize(normal.xyz);
+    // Transform normal by Inverse-Transpose of World's 3x3 basis so non-uniform Scale preserves exact slope normals
+    float3 axisX = mul(float4(1.0f, 0.0f, 0.0f, 0.0f), World).xyz;
+    float3 axisY = mul(float4(0.0f, 1.0f, 0.0f, 0.0f), World).xyz;
+    float3 axisZ = mul(float4(0.0f, 0.0f, 1.0f, 0.0f), World).xyz;
+    float invSqX = 1.0f / max(1e-8f, dot(axisX, axisX));
+    float invSqY = 1.0f / max(1e-8f, dot(axisY, axisY));
+    float invSqZ = 1.0f / max(1e-8f, dot(axisZ, axisZ));
+    float3 worldNormal = normalize(localN.x * (axisX * invSqX) + localN.y * (axisY * invSqY) + localN.z * (axisZ * invSqZ));
+
     output.WorldPosition = float4(mul(position, World).xyz, localN.x);
-    output.Normal        = float4(mul(normal, World).xyz,   localN.y);
+    output.Normal        = float4(worldNormal,              localN.y);
     output.Diffuse       = float4(position.xyz,             localN.z);
     
     float2 uv = input.TexCoord;

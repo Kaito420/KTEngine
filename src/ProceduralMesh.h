@@ -74,6 +74,16 @@ protected:
 	bool  _useIslandFalloff = false;
 	float _falloffStrength  = 1.5f;
 
+	// Normal & UV Mapping Controls
+	// _normalMode: 0 = Smooth Sobel 8-Neighbor (Terrain Recommended), 1 = Area-Weighted Triangle, 2 = Flat / Faceted
+	int   _normalMode     = 0;
+	float _normalStrength = 1.0f;
+
+	// _uvMode: 0 = Normalized [0..1] (Whole Field), 1 = Per Grid Quad (1 Tile per Quad), 2 = Local Metric Size
+	int      _uvMode       = 0;
+	float    _uvQuadStep   = 1.0f; // Quads per UV repeat in Per-Quad mode (1.0 = 1 tile per quad)
+	XMFLOAT2 _meshUvTiling = { 1.0f, 1.0f };
+
 	// CPU Mesh Data (Shared with ColliderMesh)
 	std::vector<Vertex>       _vertices;
 	std::vector<unsigned int> _indices;
@@ -156,6 +166,14 @@ public:
 		try { ar(cereal::make_nvp("TerraceSteps", _terraceSteps)); } catch (...) {}
 		try { ar(cereal::make_nvp("UseIslandFalloff", _useIslandFalloff)); } catch (...) {}
 		try { ar(cereal::make_nvp("FalloffStrength", _falloffStrength)); } catch (...) {}
+		try { ar(cereal::make_nvp("NormalMode", _normalMode)); } catch (...) {}
+		try { ar(cereal::make_nvp("NormalStrength", _normalStrength)); } catch (...) {}
+		try { ar(cereal::make_nvp("UVMode", _uvMode)); } catch (...) {}
+		try { ar(cereal::make_nvp("UVQuadStep", _uvQuadStep)); } catch (...) {}
+		try {
+			ar(cereal::make_nvp("MeshUVTilingX", _meshUvTiling.x));
+			ar(cereal::make_nvp("MeshUVTilingY", _meshUvTiling.y));
+		} catch (...) {}
 	}
 };
 

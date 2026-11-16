@@ -115,8 +115,11 @@ PS_OUTPUT_GEOMETRY main(PS_IN input, bool isFrontFace : SV_IsFrontFace)
         normalMap = normalMap * 2.0f - 1.0f;
 
         float3 N = baseNormal;
-        float3 up = abs(N.y) < 0.999f ? float3(0.0f, 1.0f, 0.0f) : float3(1.0f, 0.0f, 0.0f);
-        float3 T = normalize(cross(up, N));
+        // Stable TBN basis aligned with object's U (+X) and V (-Z) axes without singularity at N=(0,1,0)
+        float3 worldFwd = normalize(mul(float4(0.0f, 0.0f, 1.0f, 0.0f), World).xyz);
+        float3 worldUp  = normalize(mul(float4(0.0f, 1.0f, 0.0f, 0.0f), World).xyz);
+        float3 refB = (abs(dot(N, worldFwd)) < 0.99f) ? -worldFwd : -worldUp;
+        float3 T = normalize(cross(refB, N));
         float3 B = cross(N, T);
 
         float3 worldNormal = normalize(T * normalMap.x + B * normalMap.y + N * normalMap.z);

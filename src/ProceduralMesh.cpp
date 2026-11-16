@@ -1,4 +1,4 @@
-﻿//=====================================================================================
+//=====================================================================================
 // ProceduralMesh.cpp
 // Author: KTEngine
 // Description: Implementation of ProceduralMesh (Subdivided Plane, PNG Displacement
@@ -360,6 +360,49 @@ float ProceduralMesh::EvaluateHeightAt(float normU, float normV, float localX, f
 }
 
 void ProceduralMesh::RecalculateNormals() {
+	int vertsX = _segmentsX + 1;
+	int vertsZ = _segmentsZ + 1;
+	float strength = (std::max)(0.01f, _normalStrength);
+
+	// Mode 0: Smooth 8-Neighbor Sobel Height-Gradient Normals (Eliminates diagonal triangle bias on ridges/valleys)
+	if (_normalMode == 0 && static_cast<int>(_vertices.size()) == vertsX * vertsZ) {
+		float stepX = (std::max)(1e-5f, _width / static_cast<float>(_segmentsX));
+		float stepZ = (std::max)(1e-5f, _depth / static_cast<float>(_segmentsZ));
+
+		auto getH = [&](int ix, int iz) -> float {
+			int cx = std::clamp(ix, 0, vertsX - 1);
+			int cz = std::clamp(iz, 0, vertsZ - 1);
+			return _vertices[static_cast<size_t>(cz) * vertsX + cx].position.y;
+		};
+
+		for (int iz = 0; iz < vertsZ; ++iz) {
+			for (int ix = 0; ix < vertsX; ++ix) {
+				// Sobel 3x3 kernel across (ix, iz) where +ix = +X and -iz = +Z
+				float hTL = getH(ix - 1, iz - 1);
+				float hT  = getH(ix,     iz - 1);
+				float hTR = getH(ix + 1, iz - 1);
+				float hL  = getH(ix - 1, iz);
+				float hR  = getH(ix + 1, iz);
+				float hBL = getH(ix - 1, iz + 1);
+				float hB  = getH(ix,     iz + 1);
+				float hBR = getH(ix + 1, iz + 1);
+
+				float dh_dx = ((hTR + 2.0f * hR + hBR) - (hTL + 2.0f * hL + hBL)) / (8.0f * stepX);
+				float dh_dz = ((hTL + 2.0f * hT + hTR) - (hBL + 2.0f * hB + hBR)) / (8.0f * stepZ);
+
+				KTVECTOR3 n(-dh_dx * strength, 1.0f, -dh_dz * strength);
+				if (n.MagnitudeSqr() > 1e-10f) {
+					n = n.Normalize();
+				} else {
+					n = KTVECTOR3(0.0f, 1.0f, 0.0f);
+				}
+				_vertices[static_cast<size_t>(iz) * vertsX + ix].normal = XMFLOAT3(n.x, n.y, n.z);
+			}
+		}
+		return;
+	}
+
+	// Mode 1 (Area-Weighted Triangle Normals) & Mode 2 (Sharp / Enhanced Triangle Normals)
 	for (auto& v : _vertices) {
 		v.normal = XMFLOAT3(0.0f, 0.0f, 0.0f);
 	}
@@ -377,13 +420,16 @@ void ProceduralMesh::RecalculateNormals() {
 
 		// Area-weighted face normal (Cross in LH coordinate system: (p1 - p0) x (p2 - p0))
 		KTVECTOR3 fn = Cross(p1 - p0, p2 - p0);
+		if (_normalMode == 2 && fn.MagnitudeSqr() > 1e-10f) {
+			fn = fn.Normalize();
+		}
 		_vertices[i0].normal.x += fn.x; _vertices[i0].normal.y += fn.y; _vertices[i0].normal.z += fn.z;
 		_vertices[i1].normal.x += fn.x; _vertices[i1].normal.y += fn.y; _vertices[i1].normal.z += fn.z;
 		_vertices[i2].normal.x += fn.x; _vertices[i2].normal.y += fn.y; _vertices[i2].normal.z += fn.z;
 	}
 
 	for (auto& v : _vertices) {
-		KTVECTOR3 n(v.normal.x, v.normal.y, v.normal.z);
+		KTVECTOR3 n(v.normal.x * strength, v.normal.y, v.normal.z * strength);
 		if (n.MagnitudeSqr() > 1e-10f) {
 			n = n.Normalize();
 			v.normal = XMFLOAT3(n.x, n.y, n.z);
@@ -441,6 +487,7 @@ void ProceduralMesh::RebuildMesh() {
 
 	float halfW = _width * 0.5f;
 	float halfD = _depth * 0.5f;
+	float quadStep = (std::max)(0.05f, _uvQuadStep);
 
 	for (int iz = 0; iz < vertsZ; ++iz) {
 		float v = static_cast<float>(iz) / static_cast<float>(_segmentsZ); // [0..1] from +Z to -Z
@@ -451,11 +498,23 @@ void ProceduralMesh::RebuildMesh() {
 
 			float localY = EvaluateHeightAt(u, v, localX, localZ);
 
+			float texU = u * _meshUvTiling.x;
+			float texV = v * _meshUvTiling.y;
+			if (_uvMode == 1) {
+				// Mode 1: Per Grid Quad (1.0 UV repeat per quadStep quads)
+				texU = (static_cast<float>(ix) / quadStep) * _meshUvTiling.x;
+				texV = (static_cast<float>(iz) / quadStep) * _meshUvTiling.y;
+			} else if (_uvMode == 2) {
+				// Mode 2: Local Metric Size (Independent of Subdivision count)
+				texU = (localX + halfW) * _meshUvTiling.x;
+				texV = (halfD - localZ) * _meshUvTiling.y;
+			}
+
 			Vertex& vert = _vertices[static_cast<size_t>(iz) * vertsX + ix];
 			vert.position = XMFLOAT3(localX, localY, localZ);
 			vert.normal   = XMFLOAT3(0.0f, 1.0f, 0.0f);
 			vert.color    = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-			vert.uv       = XMFLOAT2(u, v);
+			vert.uv       = XMFLOAT2(texU, texV);
 		}
 	}
 
@@ -466,14 +525,24 @@ void ProceduralMesh::RebuildMesh() {
 			unsigned int bottomLeft  = static_cast<unsigned int>((iz + 1) * vertsX + ix);
 			unsigned int bottomRight = bottomLeft + 1;
 
-			// Clockwise winding looking down (-Y) onto the +Y top surface in Left-Handed DirectX
-			_indices.push_back(topLeft);
-			_indices.push_back(topRight);
-			_indices.push_back(bottomLeft);
+			// Alternate quad diagonal split in a checkerboard pattern for symmetric ridge triangulation
+			if (((ix + iz) & 1) == 0) {
+				_indices.push_back(topLeft);
+				_indices.push_back(topRight);
+				_indices.push_back(bottomLeft);
 
-			_indices.push_back(bottomLeft);
-			_indices.push_back(topRight);
-			_indices.push_back(bottomRight);
+				_indices.push_back(bottomLeft);
+				_indices.push_back(topRight);
+				_indices.push_back(bottomRight);
+			} else {
+				_indices.push_back(topLeft);
+				_indices.push_back(topRight);
+				_indices.push_back(bottomRight);
+
+				_indices.push_back(topLeft);
+				_indices.push_back(bottomRight);
+				_indices.push_back(bottomLeft);
+			}
 		}
 	}
 
@@ -690,6 +759,39 @@ void ProceduralMesh::ShowUI() {
 	if (ImGui::SliderInt2("Subdivisions (X, Z)", segs, 1, 200)) {
 		_segmentsX = std::clamp(segs[0], 1, 256);
 		_segmentsZ = std::clamp(segs[1], 1, 256);
+		dirty = true;
+	}
+
+	ImGui::Separator();
+	ImGui::TextColored(ImVec4(0.65f, 0.85f, 1.0f, 1.0f), "Normals & UV Mapping (For Rock Normal Map):");
+	const char* normalModes[] = {
+		"Smooth Sobel 8-Neighbor (Terrain Best)",
+		"Area-Weighted Triangle Normals",
+		"Sharp / Faceted Normals"
+	};
+	if (ImGui::Combo("Normal Calculation", &_normalMode, normalModes, IM_ARRAYSIZE(normalModes))) {
+		dirty = true;
+	}
+	if (ImGui::SliderFloat("Normal Relief Strength", &_normalStrength, 0.1f, 5.0f, "%.2f")) {
+		dirty = true;
+	}
+
+	const char* uvModes[] = {
+		"Normalized [0..1] (Whole Field)",
+		"Per Grid Quad (1 Tile per Mesh Quad)",
+		"Local Metric Size (Resolution Independent)"
+	};
+	if (ImGui::Combo("Mesh UV Mode", &_uvMode, uvModes, IM_ARRAYSIZE(uvModes))) {
+		dirty = true;
+	}
+	if (_uvMode == 1) {
+		if (ImGui::SliderFloat("Quads per UV Tile", &_uvQuadStep, 0.25f, 16.0f, "%.2f")) {
+			dirty = true;
+		}
+	}
+	float mTiling[2] = { _meshUvTiling.x, _meshUvTiling.y };
+	if (ImGui::DragFloat2("Mesh UV Multiplier", mTiling, 0.05f, 0.01f, 100.0f, "%.2f")) {
+		_meshUvTiling = { mTiling[0], mTiling[1] };
 		dirty = true;
 	}
 
